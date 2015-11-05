@@ -2,7 +2,7 @@ from __future__ import print_function
 from biomajmanager.utils import Utils
 from biomajmanager.manager import Manager
 import os
-__author__ = 'tuco'
+__author__ = 'horkko'
 
 
 
@@ -32,7 +32,7 @@ class Links(object):
 
     def add_link(self, inc=1):
         '''
-
+        Increase link created number
         :param inc: Incremental value, default 1
         :type inc: Integer
         :return:
@@ -41,8 +41,22 @@ class Links(object):
         self.created_links += inc
         return
 
+    def check_links(self):
+        """
+        Check if some link(s) need to be (re)created. It uses do_links and set
+        simulate and verbose mode to True
+        :return: Number of links "virtually" created
+        :rtype: Int
+        """
+        Manager.simulate = True
+        Manager.verbose = False
+        self.do_links()
+        return self.created_links
+
     def do_links(self):
         '''
+        Create a list of links (Hard coded)
+        :TODO: Find a solution to make the list of link(s) configuratble
         :return: Number of created links
         :rtype: Integer
         '''
@@ -53,161 +67,203 @@ class Links(object):
         if Utils.user() != admin:
             Utils.error("[%s] You are not allowd to create link(s)" % Utils.user())
 
-        self._generate_dir_link('bowtie', 'index/bowtie')
-        self._generate_dir_link('bwa', 'index/bwa')
-        self._generate_dir_link('gatk', 'index/gatk')
-        self._generate_dir_link('picard', 'index/picard')
-        self._generate_dir_link('samtools', 'index/samtools')
-        self._generate_dir_link('bowtie', 'index/bowtie')
-        self._generate_dir_link('fusioncatcher', 'index/fustioncatcher')
-        self._generate_dir_link('soap', 'index/soap')
-        self._generate_dir_link('blast2', 'index/blast2')
-        self._generate_dir_link('blast+', 'index/blast+')
-        self._generate_files_link('blast2', 'fasta')
-        self._generate_files_link('blast2', 'index/blast2')
-        self._generate_files_link('hmmer', 'index/hmmer')
-        #self._link_fata()
-        self._generate_files_link('fasta', 'fasta', remove_ext=True)
-        self._link_golden()
-        self._link_ftp()
-        self._link_release()
-        self._link_taxodb()
+        self._generate_dir_link(source='bowtie', target='index/bowtie')
+        self._generate_dir_link(source='bwa', target='index/bwa')
+        self._generate_dir_link(source='gatk', target='index/gatk')
+        self._generate_dir_link(source='picard', target='index/picard')
+        self._generate_dir_link(source='samtools', target='index/samtools')
+        self._generate_dir_link(source='bowtie', target='index/bowtie')
+        self._generate_dir_link(source='fusioncatcher', target='index/fusioncatcher')
+        self._generate_dir_link(source='soap', target='index/soap')
+        self._generate_dir_link(source='blast2', target='index/blast2')
+        self._generate_dir_link(source='blast+', target='index/blast+')
+        self._generate_files_link(source='blast2', target='fasta')
+        self._generate_files_link(source='blast2', target='index/blast2')
+        self._generate_files_link(source='hmmer', target='index/hmmer')
+        self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
+        # Golden
+        self._generate_files_link(source='golden', target='index/golden')
+        self._generate_files_link(source='uncompressed', target='index/golden')
+        # Ftp
+        self._generate_dir_link(source='flat', target='ftp')
+        # Release
+        self._generate_dir_link(source='uncompressed', target='release', fallback='flat')
+        self._generate_files_link(source='bdb', target='index/bdb', no_ext=True)
         return self.created_links
 
 
-    def _generate_dir_link(self, from_dir=None, to_dir=None, msg=None):
+    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, msg=None):
         '''
-        Create a symbolink link between 'from_dir' and 'to_dir' for a directory
-        :param from_dir: Source directory to link
-        :type from_dir: String
-        :param to_dir: Destination directory name (relative to config param 'production_dir')
-        :type to_dir: String
+        Create a symbolink link between 'source' and 'target' for a directory
+        :param source: Source directory to link
+        :type source: String
+        :param target: Destination directory name (relative to config param 'production_dir')
+        :type target: String
+        :param hard: Create hard link instead of symlink
+        :type hard: Boolean (default False)
+        :param fallback: Alternative source if source does not exist
+        :type fallback: String
         :param msg: Message to display at the end of the function call (simulate mode)
         :type msg: String
         :return: Number of link(s) created
         :rtype: Integer
         '''
-        if not from_dir:
-            Utils.error("'from_dir' required")
-        if not to_dir:
-            Utils.errors("'to_dir' is required")
 
-        bank_name = self.manager.bank.name
-        from_dir = os.path.join(self.manager.bank.config.get('data.dir'),
-                                bank_name,
-                                self.manager.current_release(),
-                                from_dir)
-        if not os.path.isdir(from_dir):
-            Utils.warn("[%s] %s does not exists" % (bank_name, from_dir))
+        if self._prepare_links(source=source, target=target, fallback=fallback):
             return 0
 
-        to_dir = os.path.join(self.manager.bank.config.get('production_dir', section='MANAGER'),
-                              to_dir)
-        # Check destination directory where to create link(s)
-        if not os.path.exists(to_dir) and not os.path.isdir(to_dir):
-            if self.manager.simulate:
-                print("[%s] Creating directory %s" % (bank_name, to_dir))
-            else:
-                try:
-                    os.mkdir(to_dir)
-                except OSError as err:
-                    Utils.error("[%s] Can't create symlink: %s" % (bank_name, str(err)))
-
         # Final link name
-        link = os.path.join(to_dir, bank_name)
-        if not os.path.exists(link) and not os.path.islink(link):
-            if self.manager.simulate:
-                print("Linking %s -> %s" % (link, os.path.relpath(from_dir, start=to_dir)))
-            else:
-                try:
-                    os.symlink(os.path.relpath(from_dir, start=to_dir), link)
-                    self.add_link()
-                except OSError as err:
-                    Utils.error("[%s] Can't create symlink: %s" % (bank_name, str(err)))
+        slink = os.path.join(self.source)
+        tlink = os.path.join(self.target, self.manager.bank.name)
 
-        if self.manager.simulate:
+        self._make_links(links=[(slink, tlink)], hard=hard)
+
+        if Manager.simulate:
             if msg:
                 print(msg)
             else:
-                print("%s -> %s directory link done" % (to_dir, from_dir))
+                if Manager.verbose:
+                    print("%s -> %s directory link done" % (self.target, self.source))
         return self.created_links
 
-    def _generate_files_link(self, from_dir=None, to_dir=None, msg=None, remove_ext=None):
+    def _generate_files_link(self, source=None, target=None, msg=None, remove_ext=False, no_ext=False):
         '''
-        Links list of file from 'from_dir' to 'to_dir' directory
-        :param from_dir: Source directory to link
-        :type from_dir: String
-        :param to_dir: Destination directory name (relative to config param 'production_dir')
-        :type to_dir: String
+        Links list of file from 'source' to 'target' directory
+        :param source: Source directory to link
+        :type source: String
+        :param target: Destination directory name (relative to config param 'production_dir')
+        :type target: String
+        :param remove_ext: Create another link of the file without the file name extension
+        :type remove_ext: Boolean (default False)
+        :param no_ext: Create link only without file name extension
+        :type no_ext: Boolean (default False)
         :param msg: Message to display at the end of the function call (simulate mode)
         :type msg: String
         :return: Number of link(s) created
         :rtype: Integer
         '''
 
-        self._prepare_link(source=from_dir, target=to_dir)
-        files = os.listdir(from_dir)
-        self._make_links(files=files)
+        if self._prepare_links(source=source, target=target, use_deepest=True):
+            return 0
+
+        # Get files in the source directory
+        files = Utils.get_files(self.source)
         links = []
+
         for file in files:
-            link = os.path.join(to_dir, file)
-            links.append(link)
-            print(file)
-            if remove_ext:
+            # Source file link
+            slink = os.path.join(self.source, file)
+            if not no_ext:
+                tlink = os.path.join(self.target, file)
+                links.append((slink, tlink))
+                if self.manager.verbose:
+                    print("[_generate_files_link] [no_ext=%s] append slink %s" % (str(no_ext), slink))
+                    print("[_generate_files_link] [no_ext=%s] append tlink %s" % (str(no_ext), tlink))
+
+            # If asked to create another symbolic link without extension name
+            if remove_ext or no_ext:
                 new_file = os.path.splitext(os.path.basename(file))[0]
-                link = os.path.join(to_dir, new_file)
-                links.append(link)
-            for link in links:
-                if not os.path.exists(link) and not os.path.islink(link):
-                    if self.manager.simulate:
-                        print("Linking %s -> %s" % (link, os.path.relpath(from_dir, start=to_dir)))
-                    else:
-                        try:
-                            os.symlink(os.path.relpath(from_dir, start=to_dir), link)
-                            self.add_link()
-                        except OSError as err:
-                            Utils.error("[%s] Can't create symlink: %s" % (bank_name, str(err)))
-        if self.manager.simulate:
+                tlink = os.path.join(self.target, new_file)
+                links.append((slink, tlink))
+                if Manager.verbose:
+                    print("[_generate_files_link] [rm_ext=%s] [no_ext=%s] append slink %s" % (str(remove_ext), str(no_ext), slink))
+                    print("[_generate_files_link] [rm_ext=%s] [no_ext=%s] append tlink %s" % (str(remove_ext), str(no_ext), tlink))
+
+        self._make_links(links=links)
+
+        if Manager.simulate:
             if msg:
                 print(msg)
             else:
-                print("%s -> %s file link done" % (to_dir, from_dir))
+                if Manager.verbose:
+                    print("%s -> %s file link done" % (self.target, self.source))
         return self.created_links
 
-    def _prepare_link(self, source=None, target=None):
+    def _make_links(self, links=None, hard=False):
+        """
+        Try to create the links (symbolic or hard)
+        :param links:
+        :type links: List of links to create
+        :param hard: Create hard link
+        :type hard: Boolean
+        :return: Number of created link(s)
+        :rtype: Integer
+        """
+
+        if not links or not len(links):
+            return 0
+
+        for slink, tlink in links:
+            if not os.path.exists(tlink) and not os.path.islink(tlink):
+                if Manager.simulate and Manager.verbose:
+                    print("Linking %s -> %s" % (tlink, os.path.relpath(slink, start=self.target)))
+                else:
+                    try:
+                        if not Manager.simulate:
+                            if hard:
+                                os.link(os.path.relpath(slink, start=self.target), tlink)
+                            else:
+                                os.symlink(os.path.relpath(slink, start=self.target), tlink)
+                    except OSError as err:
+                        Utils.error("[%s] Can't create %slink %s: %s" %(self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
+                self.add_link()
+        return self.created_links
+
+    def _prepare_links(self, source=None, target=None, use_deepest=False, fallback=None):
         """
         Prepare stuff to create links
         :param source: Source path
-        :param targer: Destincation path
-        :return:
+        :type source: String
+        :param target: Destination path
+        :type target: String
+        :param use_deepest: Try to find deepest directory from source
+        :type use_deepest: Boolean
+        :param fallback: Alternative source if source does not exist
+        :type fallback: String
+        :return: 0/1
         """
 
         if not source:
             Utils.error("source required")
         if not target:
-            Utils.error("targer required")
+            Utils.error("target required")
 
         bank_name = self.manager.bank.name
-        source = os.path.join(self.manager.bank.config.get('data.dir'),
+        source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'),
                               bank_name,
                               self.manager.current_release(),
                               source)
         if not os.path.isdir(source):
-            Utils.warn("[%s] %s does not exists" % (bank_name, source))
-            return 0
-
-        target = os.path.join(self.manager.bank.config.get('production_dir', section='MANAGER'),
+            if fallback:
+                print("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
+                source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'),
+                                      bank_name,
+                                      self.manager.current_release(),
+                                      fallback)
+            else:
+                if not os.path.isdir(source):
+                    Utils.warn("[%s] %s does not exists" % (bank_name, source))
+                    return 1
+                
+        if use_deepest:
+            source = Utils.get_deepest_dir(source, full=use_deepest)
+        target = os.path.join(self.manager.config.get('MANAGER', 'production_dir'),
                               target)
 
         # Check destination directory where to create link(s)
         if not os.path.exists(target) and not os.path.isdir(target):
-            if self.manager.simulate:
+            if Manager.simulate and Manager.verbose:
                 print("[%s] Creating directory %s" % (bank_name, target))
             else:
                 try:
-                    os.mkdir(target)
+                    if not Manager.simulate:
+                        os.makedirs(target)
                 except OSError as err:
-                    Utils.error("[%s] Can't create symlink: %s" % (bank_name, str(err)))
+                    Utils.error("[%s] Can't create dirs: %s" % (bank_name, str(err)))
 
         self.source = source
         self.target = target
+        if Manager.verbose:
+            print("[prepare_links] source %s" % self.source)
+            print("[prepare_links] target %s" % self.target)
+        return 0
