@@ -21,7 +21,10 @@ class News(object):
         '''
 
         self.news_dir = None
-        self.max_news = News.MAX_NEWS
+        if max_news:
+            self.max_news = max_news
+        else:
+            self.max_news = News.MAX_NEWS
 
         if news_dir is not None:
             if not os.path.isdir(news_dir):
