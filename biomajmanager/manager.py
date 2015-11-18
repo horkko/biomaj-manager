@@ -154,8 +154,22 @@ class Manager(object):
         print("- Type(s) : %s" % ','.join(props['type']))
         print("- Owner : %s" % props['owner'])
         Utils.title('Releases')
-        Utils.title('Production')
-        Utils.title('Pending')
+        print("- Current release: %s" % str(self._current_release))
+        if 'production' in self.bank.bank:
+            Utils.title('Production')
+            for production in self.bank.bank['production']:
+                print("- Release %s (freeze:%s, size:%s, prod_dir:%s)" % (production['remoterelease'],
+                                                                          str(production['freeze']),
+                                                                          str(production['size']),
+                                                                          str(production['prod_dir'])))
+        pending = self.get_pending_session()
+        if pending:
+            release = pending['release']
+            session = self.bank.get_session_from_release(release)
+            if session:
+                Utils.title('Pending')
+                print("- Release %s (Last run %s)" %
+                      (str(release), datetime.fromtimestamp(session['id']).strftime(Manager.DATE_FMT)))
 
     @bank_required
     def bank_is_published(self):
@@ -190,15 +204,13 @@ class Manager(object):
 
         # Bank construction failed?
         if self.last_session_failed():
-            print("[%s] Can't switch, last session failed" % self.bank.name)
+            # A message should be printed from the function
+            #print("[%s] Can't switch, last session failed" % self.bank.name)
             return False
-        # If not pending session, then is means that no update is ready
-        if not self.get_pending_session():
-            print("[%s] Can't switch, no pending session" % self.bank.name)
-            return False
-        # 'current' link and 'future_release' links are there?
+
         if not self.update_ready():
             print("[%s] Can't switch, bank is not ready" % self.bank.name)
+            return False
         return True
 
     @bank_required
@@ -439,12 +451,17 @@ class Manager(object):
     def get_pending_session(self):
         """
         Request the database to check if some session(s) are pending to complete
-        :return: Dict or None
+        :return: Dict {'release'=release, 'session_id': id} or None
         """
-        has_pending = None
+        pending = None
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
-            return self.bank.bank['pending']
-        return has_pending
+            pending = {}
+            has_pending = self.bank.bank['pending']
+            for k,v in has_pending.items():
+                pending['release'] = k
+                pending['session_id'] = v
+
+        return pending
 
     @bank_required
     def get_published_release(self):
@@ -801,22 +818,9 @@ class Manager(object):
         :type show: Boolean, default=False
         :param fmt: Output format for tabulate, default psql
         :type fmt: String
-        :return: Dict from mongo: Key=release, value=run date(session id)
+        :return: self.get_pending_session()
         """
-        pending = self.get_pending_session()
-        if not pending:
-            return None
-        release = pending.keys()[0]
-
-        if show:
-            id = pending[release]
-            date = datetime.fromtimestamp(id).strftime("%Y-%m-%d %H:%M:%S")
-            info = []
-            info.append(["Release", "Run time"])
-            info.append([str(release), str(date)])
-            print("[%s] Pending session" % self.bank.name)
-            print(tabulate(info, headers="firstrow", tablefmt=fmt))
-        return pending
+        return self.get_pending_session()
 
     def show_need_update(self):
         """
