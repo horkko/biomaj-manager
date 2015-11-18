@@ -610,34 +610,30 @@ class Manager(object):
 
         # We have to be careful as pending session have over.status to false
         pending = self.get_pending_session()
+
         if pending:
-            release = pending.keys()[0]
+            release = pending['release']
             session = self.bank.get_session_from_release(release)
             if session and 'id' in session:
                 pending_id = session['id']
             else:
-                Utils.warn("[%s] Pending session found but cound not determine its session id.")
+                Utils.warn("[%s] Pending session found but could not determine its id.")
                 Utils.warn("Falling back to last_update_session")
+
         if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
             update_id = self.bank.bank['last_update_session']
 
-        # If last update session is pending, last_update_session and pending have the same session id
-        if update_id and pending_id and update_id == pending_id:
-            # We need to check each status, but 'over' and 'publish', to be sure its True
-            session = self.get_session_from_id(update_id)
-            for status in session['status'].keys():
-                if status == 'over' or status == 'publish':
-                    continue
-                self.messages.append("%s=%s" % (status, session['status'][status]))
-                if not session['status'][status]:
-                    has_failed = True
+        # If the last session is a pending session, then warn the user to finish first
+        if pending_id and update_id and pending_id == update_id:
+            Utils.warn("[%s] There is a pending session. Complete workflow first!" % self.bank.name)
+            has_failed = True
             return has_failed
 
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             for session in self.bank.bank['sessions']:
                 if update_id and session['id'] == update_id:
                     # If session terminated OK, status.over should be True
-                    has_failed = session['status']['over']
+                    has_failed = not session['status']['over']
                     break
         return has_failed
 
@@ -842,55 +838,43 @@ class Manager(object):
             self.bank = None
         return banks
 
-    def start_timer(self):
-        """
-        Start the timer
-        :return: Boolean
-        """
-
-        self._timer_start = time()
-        return True
-
-    def stop_timer(self):
-        """
-        Stop the timer
-        :return: Boolean
-        """
-        self._timer_stop = time()
-        return True
-
     @bank_required
     def update_ready(self):
         """
-        Check the update is ready to be published. We check we have old release ('current' link)
-        and a pending session is wainting as well as '.done' file created by our last postprocess
-        If the user don't use '.done' file as last postprocess, then we always return True
-        unless 'current' and 'future_release' are not there.
-
+        Check the update is ready to be published. Do to this we search in this order:
+        - Check a release is already published. If so, check it is not the last updated session
+        - Check if we have a 'status' entry and its over.status is true, meaning update went ok
+        db.banks.current not 'null' and we search for the most recent completed session to
+        retrieve its release. Once found, we set it to the be the future release to be published
         :return: Boolean
         """
         ready = False
 
-        # We get the release of the pending session
-        pending = self.get_pending_session()
-        if not pending:
-            return False
-        pending = pending.keys()
-        print("pending key: %s" % pending)
-        # Then we get the session for this release
-        session = self.bank.get_session_from_release(pending)
-        if not session:
-            return False
+        if not 'last_update_session' in self.bank.bank:
+            Utils.errors("No last session recorded")
+        last_update_id = self.bank.bank['last_update_session']
 
-        if self.bank.config.get('done.file'):
-            done_file = self.bank.config.get('done.file')
-            #last_session = self._get_last_session()
-            done = os.path.sep.join([self.bank.config.get('data.dir'),
-                                     self.bank.name,
-                                     session['prod_dir'],
-                                     done_file])
-            if not os.path.isfile(done):
+        # We're ok there's already a published release
+        if 'current' in self.bank.bank:
+            current_id = self.bank.bank['current']
+            # This means that we did not updated bank since last publish
+            if current_id == last_update_id:
                 ready = False
+                Utils.warn("[%s] There is not update ready to be published. Last session is already online" % self.bank.name)
+            else:
+                ready = True
+        # We first search for the last completed run. It should be in production
+        # We can search on status. If not in status, then it could be coming from
+        # a fresh migration (biomaj-migrate does not set status)
+        elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
+            # An entry in production means we've completed the update workflow
+            for production in self.bank.bank['production']:
+                if last_update_id == production['session']:
+                    session = self.get_session_from_id(last_update_id)
+                    if session:
+                        if 'over' in session['status'] and session['status']['over']:
+                            ready = True
+
         return ready
 
     """
