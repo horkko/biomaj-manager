@@ -183,10 +183,18 @@ def main():
         manager = Manager(bank=options.bank)
         if manager.can_switch():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
+            Utils.ok("[%s] Publishing ..." % manager.bank.name)
+            #manager.bank.publish()
+            Utils.ok("[%s] Bank published!" % manager.bank.name)
+        else:
+            print("[%s] Not ready to switch" % manager.bank.name)
+        sys.exit(0)
 
     if options.to_mongo:
         manager = Manager()
         manager.list_plugins()
+        #manager.load_plugins()
+        #manager.bioweb.load_mongo()
         sys.exit(0)
 
     if options.tool:
