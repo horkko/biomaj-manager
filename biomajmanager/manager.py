@@ -69,6 +69,7 @@ class Manager(object):
     simulate = False
     # Verbose mode
     verbose = False
+    DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
     def __init__(self, bank=None):
 
@@ -543,7 +544,7 @@ class Manager(object):
         for prod in productions:
             history.append({
             # Convert the time stamp from time() to a date
-                'created': datetime.fromtimestamp(prod['session']).strftime("%Y-%m-%d %H:%M:%S"),
+                'created': datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
                 'id': prod['session'],
                 'removed': None,
                 'status': 'available',
@@ -565,7 +566,7 @@ class Manager(object):
             dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
             status = 'available' if os.path.isdir(dir) else 'deleted'
             history.append({
-                    'created': datetime.fromtimestamp(sess['id']).strftime(("Y%-%m-%d %H:%M:%S")),
+                    'created': datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT),
                     'id': sess['id'],
                     'removed': True,
                     'status': status,
@@ -672,11 +673,11 @@ class Manager(object):
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              prod['remoterelease'],
-                                             datetime.fromtimestamp(prod['session']).strftime("%Y-%m-%d_%H:%M:%S")]),
+                                             datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT)]),
                              'type': 'bank',
                              'name': self.bank.name,
                              'version': prod['remoterelease'],
-                             'publication_date': datetime.fromtimestamp(prod['session']).strftime("%Y-%m-%d %H:%M:%S"),
+                             'publication_date': datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
                              'removal_date': None,
                              'bank_type': bank_type,
                              'bank_format': bank_format,
@@ -688,18 +689,18 @@ class Manager(object):
             new_id = '@'.join(['bank',
                                self.bank.name,
                                sess['remoterelease'],
-                               datetime.fromtimestamp(sess['id']).strftime("%Y-%m-%d_%H:%M:%S")])
+                               datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT.replace(' ', '_'))])
             if new_id in map(lambda d: d['_id'], history):
                 continue
 
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              sess['remoterelease'],
-                                             datetime.fromtimestamp(sess['id']).strftime("%Y-%m-%d_%H:%M:%S")]),
+                                             datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT.replace(' ', '_'))]),
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': sess['remoterelease'],
-                            'publication_date': datetime.fromtimestamp(sess['last_update_time']).strftime("%Y-%m-%d %H:%M:%S"),
+                            'publication_date': datetime.fromtimestamp(sess['last_update_time']).strftime(Manager.DATE_FMT),
                             'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
                                                                   else None,
                             'bank_type': bank_type,
@@ -746,7 +747,7 @@ class Manager(object):
                                     print("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                           % (bank.name,
                                           "Release " + prod['release'],
-                                          datetime.datetime.fromtimestamp(prod['session']).strftime('%Y-%m-%d %H:%M:%S'),
+                                          datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
                                           str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                     bank.config.get('server')))
                                 else:
@@ -754,13 +755,15 @@ class Manager(object):
                                     fv.write("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                              % (bank.name,
                                              "Release " + prod['release'],
-                                             datetime.datetime.fromtimestamp(prod['session']).strftime('%Y-%m-%d %H:%M:%S'),
+                                             datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
                                              str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                              bank.config.get('server')))
         except OSError as e:
             Utils.error("Can't access file: %s" % str(e))
         except IOError as e:
             Utils.error("Can't write to file %s: %s" % (file, str(e)))
+        finally:
+            fv.close()
         return 0
 
     def set_bank(self, bank):
