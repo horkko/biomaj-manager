@@ -5,7 +5,6 @@ from future import standard_library
 standard_library.install_aliases()
 
 import sys
-import os
 import argparse
 import pkg_resources
 
@@ -17,6 +16,8 @@ from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 import json
 
+from tabulate import tabulate
+from datetime import datetime
 
 def main():
 
@@ -128,13 +129,6 @@ def main():
         manager = Manager(bank=options.bank)
         linker = Links(manager=manager)
         linker.do_links()
-        #linker._generate_dir_link(source='blast2', target='blast2')
-        #linker._generate_files_link(source='bdb', target='index/bdb', no_ext=True)
-        #linker._generate_dir_link(source='uncompressed', target='index/golden')
-        #linker._generate_dir_link(source='flat', target='ftp')
-        #linker._generate_dir_link(source='uncompressed', target='release', fallback='flat')
-        #linker._generate_files_link(source='fasta', target='fasta', remove_ext=True)
-        #linker._generate_files_link(source='blast2', target='index/blast2')
         etime = Utils.elapsed_time()
         print("[%s] %d link(s) created (%f sec)" % (options.bank, linker.created_links, etime))
         sys.exit(0)
