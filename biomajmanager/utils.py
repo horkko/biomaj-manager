@@ -2,7 +2,7 @@ from __future__ import print_function
 import os
 import sys
 from time import time
-
+# from biomajmanager.manager import Manager
 
 class Utils(object):
 
@@ -135,10 +135,10 @@ class Utils(object):
         '''
         return os.getenv('USER')
 
-    #@staticmethod
-    #def verbose(msg):
-    #    if Manager.verbose:
-    #        print('[VERBOSE] %s' % msg, file=sys.stdout)
+    # @staticmethod
+    # def verbose(msg):
+    #     #if Manager.verbose:
+    #     print('[VERBOSE] %s' % msg, file=sys.stdout)
 
     @staticmethod
     def warn(msg):
