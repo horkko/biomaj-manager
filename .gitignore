@@ -45,7 +45,7 @@ pip-selfcheck.json
 .ipython*
 .viminfo
 *.properties
-
+.lesshst
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -56,6 +56,8 @@ nosetests.xml
 coverage.xml
 *,cover
 
+# MacOSX stuff
+Library
 # Translations
 *.mo
 *.pot
