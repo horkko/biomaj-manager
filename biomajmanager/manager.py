@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from datetime import datetime
-from time import time
 import re
 import os
 import string
@@ -9,7 +8,6 @@ import string
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
 from biomaj.mongo_connector import MongoConnector
-from tabulate import tabulate
 from biomajmanager.utils import Utils
 
 
@@ -584,7 +582,8 @@ class Manager(object):
     def last_session_failed(self):
         """
         Check if the last building bank session failed
-
+        - If we find a pending session, we return False and warn the user to finish it
+        - Then, we look into session and check that the last session.status.over is True/False
         :return:Boolean
         """
         has_failed = True
