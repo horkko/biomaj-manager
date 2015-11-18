@@ -149,7 +149,21 @@ def main():
         if not options.bank:
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
-        manager.show_pending_session(show=True)
+
+        # Supoprt output to stdout
+        pending = manager.get_pending_session()
+        if options.oformat:
+            writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
+            writer.write(file='pending' + '.' + options.oformat)
+        else:
+            release = pending['release']
+            id = pending['session_id']
+            date = datetime.fromtimestamp(id).strftime(Manager.DATE_FMT)
+            info = []
+            info.append(["Release", "Run time"])
+            info.append([str(release), str(date)])
+            print("[%s] Pending session" % manager.bank.name)
+            print(tabulate(info, headers="firstrow", tablefmt='psql'))
         sys.exit(0)
 
     if options.save_versions:
