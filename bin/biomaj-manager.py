@@ -4,9 +4,10 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 
-import sys
 import argparse
+import json
 import pkg_resources
+import sys
 
 from biomaj.options import Options
 from biomajmanager.manager import Manager
@@ -14,10 +15,9 @@ from biomajmanager.writer import Writer
 from biomajmanager.news import News
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
-import json
-
-from tabulate import tabulate
 from datetime import datetime
+from tabulate import tabulate
+
 
 def main():
 
@@ -205,8 +205,7 @@ def main():
         sys.exit(0)
 
     # Not yet implemented options
-    if options.update or options.clean_links or options.to_mongo \
-        or options.pending or options.save_versions:
+    if options.clean_links or options.to_mongo:
         print("Not yet implemented")
         sys.exit(0)
 
