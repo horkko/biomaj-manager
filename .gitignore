@@ -43,6 +43,7 @@ pip-selfcheck.json
 .dbshell
 .idea
 .ipython*
+.gitconfig
 .viminfo
 *.properties
 .lesshst
