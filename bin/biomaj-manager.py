@@ -74,7 +74,6 @@ def main():
         Utils.start_timer()
         if options.bank:
             manager = Manager(bank=options.bank)
-            manager.start_timer()
             formats[options.bank] = manager.formats_as_string()
         else:
             for bank in Manager.get_bank_list():
