@@ -70,6 +70,7 @@ class News(object):
                     text += line
                 news_data.append({'type': type, 'date': date, 'title': title, 'text': text, 'item': item})
                 item += 1
+                new.close()
 
         self.data = {'news': news_data}
         return self.data
