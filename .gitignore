@@ -44,7 +44,7 @@ pip-selfcheck.json
 .idea
 .ipython*
 .viminfo
-*.properties
+# *.properties
 .gitconfig
 .lesshst
 # Unit test / coverage reports
