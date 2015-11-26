@@ -35,8 +35,7 @@ class News(object):
                 Utils.error("Configuration has no 'MANAGER' section")
             else:
                 self.news_dir = config.get('MANAGER', 'news_dir')
-        if max_news is not None:
-            self.max_news = max_news
+
         self.data = None
 
 
@@ -70,6 +69,7 @@ class News(object):
                     text += line
                 news_data.append({'type': type, 'date': date, 'title': title, 'text': text, 'item': item})
                 item += 1
+                new.close()
 
         self.data = {'news': news_data}
         return self.data

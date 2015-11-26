@@ -45,7 +45,8 @@ pip-selfcheck.json
 .ipython*
 .gitconfig
 .viminfo
-*.properties
+# *.properties
+.gitconfig
 .lesshst
 # Unit test / coverage reports
 htmlcov/

@@ -49,6 +49,8 @@ class Utils(object):
         Get the last directories from a path
         :param path: Path to start from
         :type path: String
+        :param full: Get the full path otherwise the directory only
+        :type full: Boolean
         :return: List of directories
         :rtype: List
         """
@@ -61,7 +63,7 @@ class Utils(object):
                 if full:
                     dirs.append(dirpath)
                 else:
-                    dirs.append(os.path.dirname(dirpath))
+                    dirs.append(os.path.basename(dirpath))
         return dirs
 
     @staticmethod
