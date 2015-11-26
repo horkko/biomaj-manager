@@ -6,10 +6,12 @@ import shutil
 import os
 import sys
 import tempfile
+import filecmp
 import copy
 import stat
 
 from biomajmanager.utils import Utils
+from biomajmanager.news import News
 
 import unittest
 __author__ = 'tuco'
@@ -68,6 +70,18 @@ class UtilsForTests(object):
 
         if self.manager_properties is None:
             self.__copy_test_manager_properties()
+
+    def copy_news_files(self):
+        """
+        Copy news file from test directory to 'news' testing directory
+        :return:
+        """
+        curdir = self.__get_curdir()
+        for news in ['news1.txt', 'news2.txt', 'news3.txt']:
+            from_news = os.path.join(curdir, news)
+            to_news = os.path.join(self.news_dir, news)
+            shutil.copyfile(from_news, to_news)
+
 
     def clean(self):
         '''
@@ -211,10 +225,35 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertEqual(b_tmp_file2, files[1])
         shutil.rmtree(self.utils.tmp_dir)
 
-class TestBiomajManagerUtils(unittest.TestCase):
+class TestBiomajManagerNews(unittest.TestCase):
 
     def setUp(self):
         self.utils = UtilsForTests()
 
     def tearDown(self):
         self.utils.clean()
+
+    def test_FileNewsContentEqual(self):
+        """
+        Check the content of 2 generated news files are identical
+        :return:
+        """
+
+        self.utils.copy_news_files()
+        data = []
+        for i in range(1, 3):
+            data.append({'type': 'type' + str(i),
+                         'date': str(i) + '0/12/2015',
+                         'title': 'News%s Title' % str(i),
+                         'text': 'This is text #%s from news%s' %  (str(i), str(i)),
+                         'item': str(i)})
+        news = News(news_dir=self.utils.news_dir)
+        news_data = news.get_news()
+        # Compare data
+        data = data.reverse()
+        if 'news' in news_data:
+            for d in news_data['news']:
+                n = data.pop()
+                for k in ['type', 'date', 'title', 'text', 'item']:
+                    self.assertEqual(d[key], n[key])
+        shutil.rmtree(self.utils.news_dir)
