@@ -4,10 +4,10 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 
-import sys
-import os
 import argparse
+import json
 import pkg_resources
+import sys
 
 from biomaj.options import Options
 from biomajmanager.manager import Manager
@@ -15,19 +15,23 @@ from biomajmanager.writer import Writer
 from biomajmanager.news import News
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
-import json
+from datetime import datetime
+from tabulate import tabulate
 
 
 def main():
 
-    description = "BioMAJ Manager adds some functionalities around BioMAJ."
+    description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
     parser.add_argument('-C', '--clean_links', dest="clean_links", help="Remove old links (Permissions required)",
                         action="store_true", default=False)
+    parser.add_argument('-D', '--save_versions', dest="save_versions", help="Prints info about all banks into version file. (Requires permissions)",
+                        action="store_true", default=False)
     parser.add_argument('-H', '--history', dest="history", help="Prints banks releases history. [-b] available.",
                         action="store_true", default=False)
-    parser.add_argument('-i', '--info', dest="info", help="Print info about a bank. [-b REQUIRED]", action="store_true", default=False)
+    parser.add_argument('-i', '--info', dest="info", help="Print info about a bank. [-b REQUIRED]",
+                        action="store_true", default=False)
     parser.add_argument('-J', '--check_links', dest="check_links", help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]",
                         action="store_true", default=False)
     parser.add_argument('-l', '--links', dest="links", help="Just (re)create symlink, don't do any bank switch. (Permissions required). [-b REQUIRED]",
@@ -36,14 +40,21 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb)",
                         action="store_true", default=False)
-    parser.add_argument('-N', '--news', dest="news", help="Create news. [Default output txt]", action="store_true", default=False)
-    parser.add_argument('-n', '--simulate', dest="simulate", help="Simulate action, don't do it really.", action="store_true", default=False)
+    parser.add_argument('-N', '--news', dest="news", help="Create news. [Default output txt]",
+                        action="store_true", default=False)
+    parser.add_argument('-n', '--simulate', dest="simulate", help="Simulate action, don't do it really.",
+                        action="store_true", default=False)
     parser.add_argument('-P', '--show_pending', dest="pending", help="Show pending release(s). [-b] available",
                         action="store_true", default=False)
-    parser.add_argument('-s', '--switch', dest="switch", help="Switch a bank to its new version. [-b REQUIRED]", action="store_true", default=False)
-    parser.add_argument('-U', '--show_update', dest="update", help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that need to be updated. [-b] available.",
+    parser.add_argument('-s', '--switch', dest="switch", help="Switch a bank to its new version. [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-v', '--version', dest="version", help="Show version", action="store_true", default=False)
+    parser.add_argument('-U', '--show_update', dest="show_update", help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that need to be updated. [-b] available.",
+                        action="store_true", default=False)
+    parser.add_argument('-v', '--version', dest="version", help="Show version",
+                        action="store_true", default=False)
+    parser.add_argument('-V', '--verbose', dest="verbose", help="Activate verbose mode",
+                        action="store_true", default=False)
+
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank", help="Bank name")
     parser.add_argument('-o', '--out', dest="out", help="Output file")
@@ -54,6 +65,8 @@ def main():
 
     options = Options()
     parser.parse_args(namespace=options)
+    Manager.simulate = options.simulate
+    Manager.verbose = options.verbose
 
     if options.bank_formats:
         formats = { }
@@ -61,7 +74,6 @@ def main():
         Utils.start_timer()
         if options.bank:
             manager = Manager(bank=options.bank)
-            manager.start_timer()
             formats[options.bank] = manager.formats_as_string()
         else:
             for bank in Manager.get_bank_list():
@@ -70,6 +82,17 @@ def main():
         Utils.stop_timer()
         print(formats)
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
+        sys.exit(0)
+
+    if options.check_links:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank)
+        linker = Links(manager=manager)
+        if linker.check_links():
+            print("[%s] %d link(s) need to be created" % (options.bank, linker.created_links))
+        else:
+            print("[%s] All links OK" % options.bank)
         sys.exit(0)
 
     if options.history:
@@ -98,6 +121,17 @@ def main():
         print(manager.bank.config.get('db.packages'))
         sys.exit(0)
 
+    if options.links:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        Utils.start_timer()
+        manager = Manager(bank=options.bank)
+        linker = Links(manager=manager)
+        linker.do_links()
+        etime = Utils.elapsed_time()
+        print("[%s] %d link(s) created (%f sec)" % (options.bank, linker.created_links, etime))
+        sys.exit(0)
+
     if options.news:
         # Try to determine news directory from config gile
         config = Manager.load_config()
@@ -108,6 +142,58 @@ def main():
         news.get_news()
         writer = Writer(config=config, data=news.data, format=options.oformat)
         writer.write(file='news' + '.' + options.oformat)
+        sys.exit(0)
+
+    if options.pending:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank)
+
+        # Supoprt output to stdout
+        pending = manager.get_pending_session()
+        if options.oformat:
+            writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
+            writer.write(file='pending' + '.' + options.oformat)
+        else:
+            release = pending['release']
+            id = pending['session_id']
+            date = datetime.fromtimestamp(id).strftime(Manager.DATE_FMT)
+            info = []
+            info.append(["Release", "Run time"])
+            info.append([str(release), str(date)])
+            print("[%s] Pending session" % manager.bank.name)
+            print(tabulate(info, headers="firstrow", tablefmt='psql'))
+        sys.exit(0)
+
+    if options.save_versions:
+        manager = Manager()
+        manager.save_banks_version()
+        sys.exit(0)
+
+    if options.show_update:
+        manager = Manager()
+        updates = manager.show_need_update()
+        print(updates)
+        sys.exit(0)
+
+    if options.switch:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank)
+        if manager.can_switch():
+            Utils.ok("[%s] Ready to switch" % manager.bank.name)
+            Utils.ok("[%s] Publishing ..." % manager.bank.name)
+            #manager.bank.publish()
+            Utils.ok("[%s] Bank published!" % manager.bank.name)
+        else:
+            print("[%s] Not ready to switch" % manager.bank.name)
+        sys.exit(0)
+
+    if options.to_mongo:
+        manager = Manager()
+        manager.list_plugins()
+        #manager.load_plugins()
+        #manager.bioweb.load_mongo()
         sys.exit(0)
 
     if options.tool:
@@ -125,27 +211,8 @@ def main():
         print("Biomaj-manager: %s (Biomaj: %s)" % (str(version), str(biomaj_version)))
         sys.exit(0)
 
-    if options.links:
-        if not options.bank:
-            Utils.error("A bank name is required")
-        Utils.start_timer()
-        manager = Manager(bank=options.bank, simulate=options.simulate)
-        linker = Links(manager=manager)
-        dirs = linker._generate_dir_link(from_dir='blast2', to_dir='blast2')
-        files = linker._generate_files_link(from_dir='fasta', to_dir='fasta', remove_ext=True)
-        files = linker._generate_files_link(from_dir='blast2', to_dir='index/blast2')
-        etime = Utils.elapsed_time()
-        print("[%s] %d created link(s) (%f sec)" % (options.bank, linker.created_links, etime))
-        sys.exit(0)
-
-    if options.to_mongo:
-        manager = Manager()
-        manager.list_plugins()
-        sys.exit(0)
-
     # Not yet implemented options
-    if options.update or options.links or options.clean_links or options.check_links or options.to_mongo \
-        or options.pending:
+    if options.clean_links or options.to_mongo:
         print("Not yet implemented")
         sys.exit(0)
 
