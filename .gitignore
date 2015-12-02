@@ -5,6 +5,9 @@ __pycache__/
 # C extensions
 *.so
 
+# OSX stuff
+Library/
+
 # Distribution / packaging
 .Python
 env/
@@ -39,6 +42,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 pip-selfcheck.json
 
+.lesshst
 .dbshell
 .idea
 .ipython*
@@ -58,9 +62,6 @@ coverage.xml
 # Translations
 *.mo
 *.pot
-
-# Django stuff:
-*.log
 
 # Sphinx documentation
 docs/_build/
