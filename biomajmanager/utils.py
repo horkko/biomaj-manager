@@ -79,3 +79,8 @@ class Utils(object):
     def warn(msg):
         print('[WARNING] ' + msg, file=sys.stderr)
 
+    @staticmethod
+    def verbose(msg):
+        from .manager import Manager
+        if Manager.verbose:
+            print('[VERBOSE] ' + msg, file=sys.stdout)
