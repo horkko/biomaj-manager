@@ -1,0 +1,2 @@
+type1:10/12/2015:News1 Title
+This is text #1 from news1
