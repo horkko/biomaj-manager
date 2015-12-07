@@ -4,6 +4,7 @@ from datetime import datetime
 import re
 import os
 import string
+import sys
 
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
@@ -69,15 +70,23 @@ class Manager(object):
     simulate = False
     # Verbose mode
     verbose = False
+    # Default date format string
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
-    def __init__(self, bank=None):
-
+    def __init__(self, bank=None, cfg=None, global_cfg=None):
+        """
+        Manager instance creation
+        :param bank: Bank name
+        :param config: Configuration file (global.properties)
+        :return:
+        """
         # Our bank
         self.bank = None
         # The root installation of biomaj3
         self.root = None
         # Where to find global.properties
+        self.config_file = None
+        # Configuration object
         self.config = None
         # Where data are located
         self.bank_prod = None
@@ -89,11 +98,9 @@ class Manager(object):
         self.messages = []
 
         try:
-            if not 'BIOMAJ_CONF' in os.environ:
-                Utils.error("BIOMAJ_CONF is not set")
-            else:
-                self.config = Manager.load_config()
-                self.bank_prod = self.config.get('GENERAL', 'data.dir')
+            # Specific configuration file
+            self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
+            self.bank_prod = self.config.get('GENERAL', 'data.dir')
         except Exception as e:
             Utils.error(str(e))
 
@@ -115,26 +122,29 @@ class Manager(object):
             """
 
     @staticmethod
-    def load_config(file=None):
+    def load_config(cfg=None, global_cfg=None):
         """
         Load biomaj-manager configuration file (manager.properties). It uses BiomajConfig.load_config()
         to first load global.properties and determine where the config.dir is. manager.properties must
-        be located at the same place as global.properties
-        If a file is given, it will be searched and loaded from the same location as manager.properties
-        :param file: Config file to load
-        :type file: String
+        be located at the same place as global.properties or file parameter must point to manager.properties
+        :param cfg: Path to config file to load
+        :type cfg: String
+        :param global_cfg:
+        :type global_cfg:
         :return: ConfigParser object
         :rtype: configparser.SafeParser
         """
-        BiomajConfig.load_config()
+
+        # Load global.properties (or user defined global_cfg)
+        BiomajConfig.load_config(config_file=global_cfg)
         conf_dir = os.path.dirname(BiomajConfig.config_file)
-        cfg = None
+
         if not os.path.isdir(conf_dir):
-            Utils.error("Can't find config directory")
-        if file:
-            cfg = os.path.join(conf_dir, file)
-        else:
+            Utils.error("Can't find config directory '%s'" % conf_dir)
+
+        if not cfg:
             cfg = os.path.join(conf_dir, 'manager.properties')
+
         if not os.path.isfile(cfg):
             print("Can't find config file %s" % cfg)
         BiomajConfig.global_config.read(cfg)
@@ -162,14 +172,15 @@ class Manager(object):
                                                                           str(production['freeze']),
                                                                           str(production['size']),
                                                                           str(production['prod_dir'])))
-        pending = self.get_pending_session()
+        pending = self.get_pending_sessions()
         if pending:
-            release = pending['release']
-            session = self.bank.get_session_from_release(release)
-            if session:
-                Utils.title('Pending')
-                print("- Release %s (Last run %s)" %
-                      (str(release), datetime.fromtimestamp(session['id']).strftime(Manager.DATE_FMT)))
+            for pend in pending:
+                release = pend['release']
+                session = pend['session_id']
+                if session:
+                    Utils.title('Pending')
+                    print("- Release %s (Last run %s)" %
+                          (str(release), Utils.time2date(session['id'], Manager.DATE_FMT)))
 
     @bank_required
     def bank_is_published(self):
@@ -190,7 +201,7 @@ class Manager(object):
         """
         # Bank is updating?
         if self.bank.is_locked():
-            print("[%s] Can't switch, bank is being updated" % self.bank.name)
+            print("[%s] Can't switch, bank is being updated" % self.bank.name, file=sys.stderr)
             return False
         # Is there a bank already in production (published) ?
         #if not os.path.islink(self.get_current_link()): # and not os.path.islink(self.get_future_link()):
@@ -199,7 +210,7 @@ class Manager(object):
         # If there is no published bank yet, ask the user to do it first. Can't switch to new release version
         # if no bank is published yet
         if not self.bank_is_published():
-            print("[%s] There's no published bank yet. Publish it first" % self.bank.name)
+            print("[%s] There's no published bank yet. Publish it first" % self.bank.name, file=sys.stderr)
             return False
 
         # Bank construction failed?
@@ -209,7 +220,7 @@ class Manager(object):
             return False
 
         if not self.update_ready():
-            print("[%s] Can't switch, bank is not ready" % self.bank.name)
+            print("[%s] Can't switch, bank is not ready" % self.bank.name, file=sys.stderr)
             return False
         return True
 
@@ -448,18 +459,17 @@ class Manager(object):
         return values
 
     @bank_required
-    def get_pending_session(self):
+    def get_pending_sessions(self):
         """
         Request the database to check if some session(s) are pending to complete
         :return: Dict {'release'=release, 'session_id': id} or None
         """
         pending = None
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
-            pending = {}
+            pending = []
             has_pending = self.bank.bank['pending']
             for k,v in has_pending.items():
-                pending['release'] = k
-                pending['session_id'] = v
+                pending.append({'release': k, 'session_id': v })
 
         return pending
 
@@ -528,8 +538,7 @@ class Manager(object):
         """
         if not fmt:
             Utils.error("Format is required")
-        fmts = self.formats()
-        print("Formats: %s" % str(fmts))
+        fmts = self.formats(flat=True)
         if fmt in fmts:
             return True
         return False
@@ -561,7 +570,7 @@ class Manager(object):
         for prod in productions:
             history.append({
             # Convert the time stamp from time() to a date
-                'created': datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                'created': Utils.time2date(prod['session'], Manager.DATE_FMT),
                 'id': prod['session'],
                 'removed': None,
                 'status': 'available',
@@ -583,7 +592,7 @@ class Manager(object):
             dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
             status = 'available' if os.path.isdir(dir) else 'deleted'
             history.append({
-                    'created': datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT),
+                    'created': Utils.time2date(sess['id'], Manager.DATE_FMT),
                     'id': sess['id'],
                     'removed': True,
                     'status': status,
@@ -604,30 +613,24 @@ class Manager(object):
         - Then, we look into session and check that the last session.status.over is True/False
         :return:Boolean
         """
-        has_failed = True
+        has_failed = False
         update_id = None
-        pending_id = None
+        # pending_ids = None
 
         # We have to be careful as pending session have over.status to false
-        pending = self.get_pending_session()
-
-        if pending:
-            release = pending['release']
-            session = self.bank.get_session_from_release(release)
-            if session and 'id' in session:
-                pending_id = session['id']
-            else:
-                Utils.warn("[%s] Pending session found but could not determine its id.")
-                Utils.warn("Falling back to last_update_session")
+        pending = self.get_pending_sessions()
 
         if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
             update_id = self.bank.bank['last_update_session']
 
-        # If the last session is a pending session, then warn the user to finish first
-        if pending_id and update_id and pending_id == update_id:
-            Utils.warn("[%s] There is a pending session. Complete workflow first!" % self.bank.name)
-            has_failed = True
-            return has_failed
+        # Check the last updated session is not pending
+        if pending and update_id:
+            for pend in pending:
+                if pend['session_id'] == update_id:
+                    Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first!" %
+                               (self.bank.name, pend['release']))
+                has_failed = True
+                return has_failed
 
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             for session in self.bank.bank['sessions']:
@@ -686,11 +689,11 @@ class Manager(object):
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              prod['remoterelease'],
-                                             datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT)]),
+                                             Utils.time2date(prod['session'], Manager.DATE_FMT)]),
                              'type': 'bank',
                              'name': self.bank.name,
                              'version': prod['remoterelease'],
-                             'publication_date': datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                             'publication_date': Utils.time2date(prod['session'], Manager.DATE_FMT),
                              'removal_date': None,
                              'bank_type': bank_type,
                              'bank_format': bank_format,
@@ -702,18 +705,18 @@ class Manager(object):
             new_id = '@'.join(['bank',
                                self.bank.name,
                                sess['remoterelease'],
-                               datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT.replace(' ', '_'))])
+                               Utils.time2date(sess['id'], Manager.DATE_FMT.replace(' ', '_'))])
             if new_id in map(lambda d: d['_id'], history):
                 continue
 
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              sess['remoterelease'],
-                                             datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT.replace(' ', '_'))]),
+                                             Utils.time2date(sess['id'], Manager.DATE_FMT.replace(' ', '_'))]),
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': sess['remoterelease'],
-                            'publication_date': datetime.fromtimestamp(sess['last_update_time']).strftime(Manager.DATE_FMT),
+                            'publication_date': Utils.time2date(sess['last_update_time'], Manager.DATE_FMT),
                             'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
                                                                   else None,
                             'bank_type': bank_type,
@@ -760,7 +763,7 @@ class Manager(object):
                                     print("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                           % (bank.name,
                                           "Release " + prod['release'],
-                                          datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                                          Utils.time2date(prod['session'], Manager.DATE_FMT),
                                           str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                     bank.config.get('server')))
                                 else:
@@ -768,7 +771,7 @@ class Manager(object):
                                     fv.write("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                              % (bank.name,
                                              "Release " + prod['release'],
-                                             datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                                             Utils.time2date(prod['session'], Manager.DATE_FMT),
                                              str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                              bank.config.get('server')))
         except OSError as e:
@@ -814,9 +817,9 @@ class Manager(object):
         :type show: Boolean, default=False
         :param fmt: Output format for tabulate, default psql
         :type fmt: String
-        :return: self.get_pending_session()
+        :return: self.get_pending_sessions()
         """
-        return self.get_pending_session()
+        return self.get_pending_sessions()
 
     def show_need_update(self):
         """
@@ -911,7 +914,7 @@ class Manager(object):
         if not path:
             Utils.error("A path is required")
         if not os.path.exists(path):
-            print("[WARNING] Path %s does not exist" % path)
+            Utils.warn("Path %s does not exist" % path)
             return []
         formats = []
 

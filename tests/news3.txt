@@ -1,0 +1,2 @@
+type3:30/12/2015:News3 Title
+This is text #3 from news3

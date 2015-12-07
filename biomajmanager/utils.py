@@ -2,11 +2,15 @@ from __future__ import print_function
 import os
 import sys
 from time import time
+from datetime import datetime
 # from biomajmanager.manager import Manager
 
 class Utils(object):
 
     timer_start = timer_stop = 0.0
+    show_warn = True
+    show_debug = True
+    show_verbose = True
 
     @staticmethod
     def elapsed_time():
@@ -118,6 +122,21 @@ class Utils(object):
         Utils.timer_stop = time()
 
     @staticmethod
+    def time2date(id, fmt):
+        """
+        Convert a timestamp into a date following the format fmt
+        :param id: Timestamp to convert
+        :param fmt: Date format to follow for conversion
+        :return:
+        """
+        if not id:
+            Utils.error("timestamp required")
+        if not fmt:
+            Utils.error("date time format requried")
+
+        return datetime.fromtimestamp(id).strftime(fmt)
+
+    @staticmethod
     def title(msg):
         '''
         Prints a small title banner (message + underlined message)
@@ -137,14 +156,16 @@ class Utils(object):
         '''
         return os.getenv('USER')
 
-    # @staticmethod
-    # def verbose(msg):
-    #     #if Manager.verbose:
-    #     print('[VERBOSE] %s' % msg, file=sys.stdout)
+    @staticmethod
+    def verbose(msg):
+        from .manager import Manager
+        if Manager.verbose and Utils.show_verbose:
+            print('[VERBOSE] %s' % msg, file=sys.stdout)
 
     @staticmethod
     def warn(msg):
-        print('[WARNING] ' + msg, file=sys.stderr)
+        if Utils.show_warn:
+            print('[WARNING] ' + msg, file=sys.stderr)
 
     @staticmethod
     def verbose(msg):
