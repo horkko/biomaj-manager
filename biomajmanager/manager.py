@@ -70,15 +70,23 @@ class Manager(object):
     simulate = False
     # Verbose mode
     verbose = False
+    # Default date format string
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
-    def __init__(self, bank=None):
-
+    def __init__(self, bank=None, cfg=None, global_cfg=None):
+        """
+        Manager instance creation
+        :param bank: Bank name
+        :param config: Configuration file (global.properties)
+        :return:
+        """
         # Our bank
         self.bank = None
         # The root installation of biomaj3
         self.root = None
         # Where to find global.properties
+        self.config_file = None
+        # Configuration object
         self.config = None
         # Where data are located
         self.bank_prod = None
@@ -90,11 +98,9 @@ class Manager(object):
         self.messages = []
 
         try:
-            if not 'BIOMAJ_CONF' in os.environ:
-                Utils.error("BIOMAJ_CONF is not set")
-            else:
-                self.config = Manager.load_config()
-                self.bank_prod = self.config.get('GENERAL', 'data.dir')
+            # Specific configuration file
+            self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
+            self.bank_prod = self.config.get('GENERAL', 'data.dir')
         except Exception as e:
             Utils.error(str(e))
 
@@ -116,26 +122,29 @@ class Manager(object):
             """
 
     @staticmethod
-    def load_config(file=None):
+    def load_config(cfg=None, global_cfg=None):
         """
         Load biomaj-manager configuration file (manager.properties). It uses BiomajConfig.load_config()
         to first load global.properties and determine where the config.dir is. manager.properties must
-        be located at the same place as global.properties
-        If a file is given, it will be searched and loaded from the same location as manager.properties
-        :param file: Config file to load
-        :type file: String
+        be located at the same place as global.properties or file parameter must point to manager.properties
+        :param cfg: Path to config file to load
+        :type cfg: String
+        :param global_cfg:
+        :type global_cfg:
         :return: ConfigParser object
         :rtype: configparser.SafeParser
         """
-        BiomajConfig.load_config()
+
+        # Load global.properties (or user defined global_cfg)
+        BiomajConfig.load_config(config_file=global_cfg)
         conf_dir = os.path.dirname(BiomajConfig.config_file)
-        cfg = None
+
         if not os.path.isdir(conf_dir):
-            Utils.error("Can't find config directory")
-        if file:
-            cfg = os.path.join(conf_dir, file)
-        else:
+            Utils.error("Can't find config directory '%s'" % conf_dir)
+
+        if not cfg:
             cfg = os.path.join(conf_dir, 'manager.properties')
+
         if not os.path.isfile(cfg):
             print("Can't find config file %s" % cfg)
         BiomajConfig.global_config.read(cfg)
@@ -529,8 +538,7 @@ class Manager(object):
         """
         if not fmt:
             Utils.error("Format is required")
-        fmts = self.formats()
-        print("Formats: %s" % str(fmts))
+        fmts = self.formats(flat=True)
         if fmt in fmts:
             return True
         return False
