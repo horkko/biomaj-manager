@@ -6,14 +6,17 @@ import shutil
 import os
 import sys
 import tempfile
+import time
 import filecmp
 import copy
 import stat
+import unittest
+from pymongo import MongoClient
 
 from biomajmanager.utils import Utils
 from biomajmanager.news import News
+from biomajmanager.manager import Manager
 
-import unittest
 __author__ = 'tuco'
 
 
@@ -29,8 +32,9 @@ class UtilsForTests(object):
         '''
         self.global_properties = None
         self.manager_properties = None
-
-        self.test_dir = tempfile.mkdtemp('biomaj-manager')
+        self.db_test = 'bm_db_test'
+        self.col_test = 'bm_col_test'
+        self.test_dir = tempfile.mkdtemp('biomaj-manager_tests')
 
         # Global part
         self.conf_dir = os.path.join(self.test_dir, 'conf')
@@ -66,10 +70,25 @@ class UtilsForTests(object):
             os.makedirs(self.tmp_dir)
 
         if self.global_properties is None:
-            self.__copy_global_properties()
+            self.__copy_test_global_properties()
 
         if self.manager_properties is None:
             self.__copy_test_manager_properties()
+
+        # Set a mongo client
+        self.mongo_client = MongoClient('mongodb://localhost:27017')
+
+    def copy_file(self, file=None, todir=None):
+        """
+        Copy a file from the test dir to temp test zone
+        :param file: File to copy
+        :param todir: Destinatin directory
+        :return:
+        """
+        curdir = self.__get_curdir()
+        fromdir = os.path.join(curdir, file)
+        todir = os.path.join(todir, file)
+        shutil.copyfile(fromdir, todir)
 
     def copy_news_files(self):
         """
@@ -89,6 +108,14 @@ class UtilsForTests(object):
         '''
         shutil.rmtree(self.test_dir)
 
+    def drop_db(self):
+         """
+         Drop the mongo database after using it and close the connection
+         :return:
+         """
+         self.mongo_client.drop_database(self.db_test)
+         self.mongo_client.disconnect()
+
     def __get_curdir(self):
         """
         Get the current directory
@@ -97,8 +124,7 @@ class UtilsForTests(object):
         return os.path.dirname(os.path.realpath(__file__))
 
     def __copy_test_manager_properties(self):
-        if self.manager_properties is not None:
-            return
+
         self.manager_properties = os.path.join(self.conf_dir, 'manager.properties')
         curdir = self.__get_curdir()
         manager_template = os.path.join(curdir, 'manager.properties')
@@ -115,14 +141,13 @@ class UtilsForTests(object):
                     mout.write(line)
         mout.close()
 
-    def __copy_global_properties(self):
-        if self.global_properties is not None:
-            return
-        self.global_properties = os.path.join(self.conf_dir,'global.properties')
+    def __copy_test_global_properties(self):
+
+        self.global_properties = os.path.join(self.conf_dir, 'global.properties')
         curdir = os.path.dirname(os.path.realpath(__file__))
         global_template = os.path.join(curdir, 'global.properties')
-        fout = open(self.global_properties,'w')
-        with open(global_template,'r') as fin:
+        fout = open(self.global_properties, 'w')
+        with open(global_template, 'r') as fin:
             for line in fin:
                 if line.startswith('cache.dir'):
                     fout.write("cache.dir=%s\n" % self.cache_dir)
@@ -138,7 +163,6 @@ class UtilsForTests(object):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
                 else:
                     fout.write(line)
-        fout.close()
 
 
 class TestBiomajManagerUtils(unittest.TestCase):
@@ -233,6 +257,17 @@ class TestBiomajManagerNews(unittest.TestCase):
     def tearDown(self):
         self.utils.clean()
 
+    def test_NewsDirNotADirectory(self):
+        """
+        Check the dir given is not a directory
+        :return:
+        """
+        dir = "/foorbar"
+        #self.assertEqual("[ERROR] News dir %s is not a directory" % dir, News(news_dir=dir))
+        with self.assertRaises(SystemExit):
+            sys.stderr = open(os.devnull, 'w')
+            News(news_dir=dir)
+
     def test_FileNewsContentEqual(self):
         """
         Check the content of 2 generated news files are identical
@@ -241,19 +276,219 @@ class TestBiomajManagerNews(unittest.TestCase):
 
         self.utils.copy_news_files()
         data = []
-        for i in range(1, 3):
+        for i in range(1, 4):
             data.append({'type': 'type' + str(i),
                          'date': str(i) + '0/12/2015',
                          'title': 'News%s Title' % str(i),
                          'text': 'This is text #%s from news%s' %  (str(i), str(i)),
-                         'item': str(i)})
+                         'item': i-1})
         news = News(news_dir=self.utils.news_dir)
         news_data = news.get_news()
         # Compare data
-        data = data.reverse()
+        data.reverse()
+
         if 'news' in news_data:
             for d in news_data['news']:
                 n = data.pop()
                 for k in ['type', 'date', 'title', 'text', 'item']:
-                    self.assertEqual(d[key], n[key])
+                    self.assertEqual(d[k], n[k])
+        else:
+            raise(unittest.E)
         shutil.rmtree(self.utils.news_dir)
+
+
+class TestBioMajManagerManager(unittest.TestCase):
+
+    def setUp(self):
+        self.utils = UtilsForTests()
+        # Make our test global.properties set as env var
+        os.environ['BIOMAJ_CONF'] = self.utils.global_properties
+
+    def tearDown(self):
+        self.utils.clean()
+
+    def test_ConfigNoManagerSection(self):
+        """
+        Check we don't have a 'MANAGER' section in our config
+        :return:
+        """
+        no_sec = 'manager-nomanager-section.properties'
+        self.utils.copy_file(file=no_sec, todir=self.utils.conf_dir)
+        cfg = Manager.load_config(cfg=os.path.join(self.utils.conf_dir, no_sec))
+        self.assertFalse(cfg.has_section('MANAGER'))
+
+    def test_ManagerLoadConfig(self):
+        """
+        Check we can load any configuration file on demand
+        :return:
+        """
+        for file in ['m1.properties', 'm2.properties', 'm3.properties']:
+            self.utils.copy_file(file=file, todir=self.utils.test_dir)
+            cfg = Manager.load_config(cfg=os.path.join(self.utils.test_dir, file))
+            self.assertTrue(cfg.has_section('MANAGER'))
+            self.assertEqual(cfg.get('MANAGER', 'file.name'), file)
+
+    def test_ManagerBankPublishedTrue(self):
+        """
+        Check a bank is published or not (True)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        # at begining, biomaj create an empty bank entry into Mongodb
+        manager = Manager(bank='alu')
+        # If we do update we need to change 'bank_is_published' call find and iterate over the cursor to do the same test
+        #manager.bank.banks.update({'name': 'alu'}, {'$set': { 'current': True }})
+        manager.bank.bank['current'] = True
+        self.assertTrue(manager.bank_is_published())
+        #MongoConnector.client.drop_database(self.utils.db_test)
+        self.utils.drop_db()
+
+    def test_ManagerBankPublishedFalse(self):
+        """
+        Check a bank is published or not (False)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        # at begining, biomaj create an empty bank entry into Mongodb
+        manager = Manager(bank='alu')
+        # If we do update we need to change 'bank_is_published' call find and iterate over the cursor to do the same test
+        #manager.bank.banks.update({'name': 'alu'}, {'$set': { 'current': None }})
+        manager.bank.bank['current'] = None
+        self.assertFalse(manager.bank_is_published())
+        self.utils.drop_db()
+
+    def test_ManagerLastSessionFailedFalseNoPendingFalse(self):
+        """
+        Check we have a failed session and no pending session(s)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        data = {'name': 'alu',
+                'sessions': [{'id': 0, 'status': {'over': True}}, {'id': now, 'status':{'over': True}}],
+                'last_update_session': now,
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertFalse(manager.last_session_failed())
+        self.utils.drop_db()
+
+    def test_ManagerLastSessionFailedTrueNoPendingTrue(self):
+        """
+        Check we have a failed session and no pending session(s)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        data = {'name': 'alu',
+                'sessions': [{'id': 0, 'status': {'over': True}}, {'id': now, 'status':{'over': True}}],
+                'last_update_session': now,
+                'pending': {'12345': now}
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        Utils.show_warn = False
+        self.assertTrue(manager.last_session_failed())
+        self.utils.drop_db()
+
+    def test_ManagerLastSessionFailedTrueNoPendingFalse(self):
+        """
+        Check we have a failed session and no pending session(s)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        data = {'name': 'alu',
+                'sessions': [{'id': 0, 'status': {'over': True}}, {'id': now, 'status':{'over': False}}],
+                'last_update_session': now,
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        Utils.show_warn = False
+        self.assertTrue(manager.last_session_failed())
+        self.utils.drop_db()
+
+    @attr('bioweb')
+    def test_ManagerBankHasFormatsTrue(self):
+        """
+        Check if the bank has a specific format (True)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertTrue(manager.has_formats(fmt='blast'))
+        self.utils.drop_db()
+
+    @attr('bioweb')
+    def test_ManagerBankHasFormatsFalse(self):
+        """
+        Check if the bank has a specific format (False)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertFalse(manager.has_formats(fmt='unknown'))
+        self.utils.drop_db()
+
+    def test_ManagerGetSessionFromIDNotNone(self):
+        """
+        Check we retrieve the right session id (Not None)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        data = {'name': 'alu',
+                'sessions': [{'id': 1, 'status': { 'over': True}},
+                             {'id': 2, 'status': { 'over': True}},]}
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertIsNotNone(manager.get_session_from_id(1))
+        self.utils.drop_db()
+
+    def test_ManagerGetSessionFromIDNone(self):
+        """
+        Check we retrieve the right session id (None)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        data = {'name': 'alu',
+                'sessions': [{'id': 1, 'status': { 'over': True}},
+                             {'id': 2, 'status': { 'over': True}},]}
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertIsNone(manager.get_session_from_id(3))
+        self.utils.drop_db()
+
+    def test_ManagerGetPublishedReleaseNotNone(self):
+        """
+        Check we get a the published release (NotNone)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = 'R54'
+        data = {'name': 'alu',
+                'current': now,
+                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        rel = manager.get_published_release()
+        self.assertIsNotNone(rel)
+        self.utils.drop_db()
+
+    def test_ManagerGetPublishedReleaseNone(self):
+        """
+        Check we get a the published release (None)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = 'R54'
+        data = {'name': 'alu',
+                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        rel = manager.get_published_release()
+        self.assertIsNone(rel)
+        self.utils.drop_db()
