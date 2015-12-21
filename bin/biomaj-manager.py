@@ -15,7 +15,6 @@ from biomajmanager.writer import Writer
 from biomajmanager.news import News
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
-from datetime import datetime
 from tabulate import tabulate
 
 
@@ -192,10 +191,10 @@ def main():
         sys.exit(0)
 
     if options.to_mongo:
-        manager = Manager()
-        manager.list_plugins()
-        #manager.load_plugins()
-        #manager.bioweb.load_mongo()
+        manager = Manager(bank=options.bank)
+        manager.load_plugins()
+        data = manager.plugins.bioweb.get_info_for_bank(options.bank)
+        manager.plugins.bioweb.update_db(data)
         sys.exit(0)
 
     if options.tool:
