@@ -127,7 +127,7 @@ class Utils(object):
         Convert a timestamp into a date following the format fmt
         :param id: Timestamp to convert
         :param fmt: Date format to follow for conversion
-        :return:
+        :return: date (String)
         """
         if not id:
             Utils.error("timestamp required")
@@ -166,9 +166,3 @@ class Utils(object):
     def warn(msg):
         if Utils.show_warn:
             print('[WARNING] ' + msg, file=sys.stderr)
-
-    @staticmethod
-    def verbose(msg):
-        from .manager import Manager
-        if Manager.verbose:
-            print('[VERBOSE] ' + msg, file=sys.stdout)

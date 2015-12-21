@@ -247,7 +247,7 @@ class Links(object):
                 
         if use_deepest:
             source = Utils.get_deepest_dir(source, full=use_deepest)
-        target = os.path.join(self.manager.config.get('MANAGER', 'production_dir'),
+        target = os.path.join(self.manager.config.get('MANAGER', 'production.dir'),
                               target)
 
         # Check destination directory where to create link(s)

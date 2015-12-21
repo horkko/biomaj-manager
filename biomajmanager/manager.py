@@ -10,58 +10,8 @@ from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
 from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
-
-
-def bank_required(func):
-    """
-    Decorator function that check a bank name is set
-    :param func:
-    :return:
-    """
-
-    def _check_bank_required(*args, **kwargs):
-        """
-        """
-
-        self = args[0]
-        if self.bank is None:
-            Utils.error("A bank name is required")
-        return func(*args, **kwargs)
-    return _check_bank_required
-
-def user_granted(func):
-    """
-    Decorator that check a user has enough right to perform action
-    :param func: Decorated function
-    :type: Function
-    :return:
-    """
-    def _check_user_granted(*args, **kwargs):
-        """
-        Check the user has enough right to perform action(s)
-        If a bank is set, we first set the user as the owner of
-        the current bank. Otherwise we try to find it from the
-        config file, we search for 'user.admin' property
-
-        :return: Boolean
-        """
-
-        self = args[0]
-        admin = None
-        admin = self.config.get('GENERAL', 'admin')
-        if self.bank:
-            props = self.bank.get_properties()
-            if 'owner' in props and props['owner']:
-                admin = props['owner']
-        if not admin:
-            Utils.error("Could not find admin user either in config nor in bank")
-
-        user = self._current_user()
-
-        if admin != user:
-            Utils.error("[%s] User %s, permission denied" % (admin, user))
-        return func(*args, **kwargs)
-    return _check_user_granted
+from biomajmanager.plugins import Plugins
+from biomajmanager.decorators import bank_required, user_granted
 
 
 class Manager(object):
@@ -100,13 +50,15 @@ class Manager(object):
         try:
             # Specific configuration file
             self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
-            self.bank_prod = self.config.get('GENERAL', 'data.dir')
+            if self.config.has_option('GENERAL', 'data.dir'):
+                self.bank_prod = self.config.get('GENERAL', 'data.dir')
         except Exception as e:
             Utils.error(str(e))
 
         if bank is not None:
             self.bank = Bank(name=bank, no_log=True)
-            self.bank_prod = self.bank.config.get('data.dir')
+            if self.bank.config.get('data.dir'):
+                self.bank_prod = self.bank.config.get('data.dir')
 
             """
             # Check if manager.properties is here and put it into global_conf
@@ -136,17 +88,21 @@ class Manager(object):
         """
 
         # Load global.properties (or user defined global_cfg)
-        BiomajConfig.load_config(config_file=global_cfg)
-        conf_dir = os.path.dirname(BiomajConfig.config_file)
+        Utils.verbose("[manager] Loading Biomaj global configuration file")
+        try:
+            BiomajConfig.load_config(config_file=global_cfg)
+        except Exception as err:
+            Utils.error("Error while loading biomaj config: %s" % str(err))
 
+        conf_dir = os.path.dirname(BiomajConfig.config_file)
         if not os.path.isdir(conf_dir):
             Utils.error("Can't find config directory '%s'" % conf_dir)
-
         if not cfg:
             cfg = os.path.join(conf_dir, 'manager.properties')
-
         if not os.path.isfile(cfg):
             print("Can't find config file %s" % cfg)
+
+        Utils.verbose("[manager] Reading manager configuration file")
         BiomajConfig.global_config.read(cfg)
         return BiomajConfig.global_config
 
@@ -236,14 +192,25 @@ class Manager(object):
         current = 'NA'
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
+            release = None
             session = self.get_session_from_id(self.bank.bank['current'])
-            release = session['release'] or session['remoterelease']
-            current = release
+            if 'release' in session and session['release']:
+                release = session=['release']
+            elif 'remoterelease' in session and session['remoterelease']:
+                release = session['remoterelease']
+            if release:
+                current = release
         # Then we fallback to production which handle release(s) that have been
         # completed, workflow(s) over
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
             production = self.bank.bank['production'][-1]
-            current = production['release'] or production['remoterelease']
+            release = None
+            if 'release' in production and production['release']:
+                release = production['release']
+            elif 'remoterelease'in production and production['remoterelease']:
+                release = production['remoterelease']
+            if release:
+                current = release
         else:
             Utils.error("Can't get current release, no production available")
         self._current_release = current
@@ -649,8 +616,16 @@ class Manager(object):
         if self.config.has_section('PLUGINS'):
             plugins = self.config.get('PLUGINS', 'plugins.list')
             for plugin in plugins.split(','):
-                for key in self.get_config_regex(regex='^'+plugin, section='PLUGINS', want_values=False):
-                    print("%s=%s" % (key, self.config.get('PLUGINS', key)))
+                Utils.ok("Plugin is %s\n-------------" % plugin)
+                for key in self.get_config_regex(regex='^' + plugin.lower(), section=plugin, want_values=False):
+                    print("%s=%s" % (key, self.config.get(plugin, key)))
+
+    def load_plugins(self):
+        """
+        Load all the plugins and activate them from manager.properties (plugins.list property)
+        """
+        self.plugins = Plugins(self.config)
+        return
 
     @bank_required
     def mongo_history(self, bank=None):
