@@ -7,15 +7,13 @@ import os
 import sys
 import tempfile
 import time
-import filecmp
-import copy
-import stat
 import unittest
 from pymongo import MongoClient
 
 from biomajmanager.utils import Utils
 from biomajmanager.news import News
 from biomajmanager.manager import Manager
+
 
 __author__ = 'tuco'
 
@@ -65,6 +63,9 @@ class UtilsForTests(object):
         self.prod_dir = os.path.join(self.test_dir,'production')
         if not os.path.exists(self.prod_dir):
             os.makedirs(self.prod_dir)
+        self.plugins_dir = os.path.join(self.test_dir,'plugins')
+        if not os.path.exists(self.plugins_dir):
+            os.makedirs(self.plugins_dir)
         self.tmp_dir = os.path.join(self.test_dir, 'tmp')
         if not os.path.exists(self.tmp_dir):
             os.makedirs(self.tmp_dir)
@@ -101,6 +102,15 @@ class UtilsForTests(object):
             to_news = os.path.join(self.news_dir, news)
             shutil.copyfile(from_news, to_news)
 
+    def copy_plugins(self):
+        """
+        Copy plugins from test directory to 'plugins' testing directory
+        :return:
+        """
+        dsrc = 'tests/plugins'
+        for file in os.listdir(dsrc):
+            shutil.copyfile(os.path.join(dsrc, file),
+                            os.path.join(self.plugins_dir, file))
 
     def clean(self):
         '''
@@ -115,6 +125,14 @@ class UtilsForTests(object):
          """
          self.mongo_client.drop_database(self.db_test)
          self.mongo_client.disconnect()
+
+    def print_err(self, msg):
+        """
+        Prints message on sys.stderr
+        :param msg:
+        :return:
+        """
+        print(msg, file=sys.stderr)
 
     def __get_curdir(self):
         """
@@ -131,12 +149,14 @@ class UtilsForTests(object):
         mout = open(self.manager_properties, 'w')
         with open(manager_template, 'r') as min:
             for line in min:
-                if line.startswith('template_dir'):
-                    mout.write("template_dir=%s\n" % self.template_dir)
-                elif line.startswith('news_dir'):
-                    mout.write("news_dir=%s" % self.news_dir)
-                elif line.startswith('production_dir'):
-                    mout.write("production_dir=%s" % self.prod_dir)
+                if line.startswith('template.dir'):
+                    mout.write("template.dir=%s\n" % self.template_dir)
+                elif line.startswith('news.dir'):
+                    mout.write("news.dir=%s\n" % self.news_dir)
+                elif line.startswith('production.dir'):
+                    mout.write("production.dir=%s\n" % self.prod_dir)
+                elif line.startswith('plugins.dir'):
+                    mout.write("plugins.dir=%s\n" % self.plugins_dir)
                 else:
                     mout.write(line)
         mout.close()
@@ -492,3 +512,132 @@ class TestBioMajManagerManager(unittest.TestCase):
         rel = manager.get_published_release()
         self.assertIsNone(rel)
         self.utils.drop_db()
+
+    def test_ManagerGetDictSections(self):
+        """
+        Get sections for a bank
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        dsections = manager.get_dict_sections(tool='blast2')
+        for val in ['alupro', 'alunuc']:
+            self.assertDictContainsSubset(val, dsections)
+
+    def test_ManagerGetDictSections(self):
+        """
+        Check we get rigth sections for bank
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        lsections = manager.get_list_sections(tool='golden')
+        self.assertListEqual(lsections, ['alunuc', 'alupro'])
+
+    def test_ManagerGetCurrentRelease(self):
+        """
+        Check we get the right current release
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = 'R54'
+        data = {'name': 'alu',
+                'current': now,
+                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertEqual(release, manager.current_release())
+
+class TestBiomajManagerPlugins(unittest.TestCase):
+
+    def setUp(self):
+        self.utils = UtilsForTests()
+        self.utils.copy_plugins()
+        # Make our test global.properties set as env var
+        os.environ['BIOMAJ_CONF'] = self.utils.global_properties
+
+    def tearDown(self):
+        self.utils.clean()
+
+    @attr('plugins')
+    def test_PluginsLoaded(self):
+        """
+        Check a list of plugins are well loaded
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertEqual(manager.plugins.myplugins.get_name(), 'Myplugins')
+        self.assertEqual(manager.plugins.anotherplugin.get_name(), 'Anotherplugin')
+
+    @attr('plugins')
+    def test_PluginsCheckConfigValues(self):
+        """
+        Check the plugins config values
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertEqual(manager.plugins.myplugins.get_cfg_name(), 'myplugins')
+        self.assertEqual(manager.plugins.myplugins.get_cfg_value(), '1')
+        self.assertEqual(manager.plugins.anotherplugin.get_cfg_name(), 'anotherplugin')
+        self.assertEqual(manager.plugins.anotherplugin.get_cfg_value(), '2')
+
+    @attr('plugins')
+    def test_PluginsCheckMethodValue(self):
+        """
+        Check the value returned by method is OK
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertEqual(manager.plugins.myplugins.get_value(), 1)
+        self.assertEqual(manager.plugins.myplugins.get_string(), 'test')
+        self.assertEqual(manager.plugins.anotherplugin.get_value(), 1)
+        self.assertEqual(manager.plugins.anotherplugin.get_string(), 'test')
+
+    @attr('plugins')
+    def test_PluginsCheckTrue(self):
+        """
+        Check boolean returned by method
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertTrue(manager.plugins.myplugins.get_true())
+        self.assertTrue(manager.plugins.anotherplugin.get_true())
+
+    @attr('plugins')
+    def test_PluginsCheckFalse(self):
+        """
+        Check boolean returned by method
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertFalse(manager.plugins.myplugins.get_false())
+        self.assertFalse(manager.plugins.anotherplugin.get_false())
+
+    @attr('plugins')
+    def test_PluginsCheckNone(self):
+        """
+        Check None returned by method
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertIsNone(manager.plugins.myplugins.get_none())
+        self.assertIsNone(manager.plugins.anotherplugin.get_none())
+
+    @attr('plugins')
+    def test_PluginsCheckException(self):
+        """
+        Check exception returned by method
+        :return:
+        """
+        manager = Manager()
+        manager.load_plugins()
+        self.assertRaises(Exception, manager.plugins.myplugins.get_exception())
+        self.assertRaises(Exception, manager.plugins.anotherplugin.get_exception())
