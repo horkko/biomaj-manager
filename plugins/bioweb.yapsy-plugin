@@ -1,0 +1,9 @@
+[Core]
+Name = bioweb
+Module = Bioweb
+
+[Documentation]
+Author = Emmanuel Quevillon
+Version = 0.1
+Website = 
+Description = Export json info into bioweb MongoDB
