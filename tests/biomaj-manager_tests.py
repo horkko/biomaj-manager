@@ -193,6 +193,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
     def tearDown(self):
         self.utils.clean()
 
+    @attr('utils')
     def test_deepest_dir(self):
         """
         Check we get the right deepest dir from a complete path
@@ -205,6 +206,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertEqual(deepest, 'c')
         shutil.rmtree(self.utils.tmp_dir)
 
+    @attr('utils')
     def test_deepest_dir_full(self):
         """
         Check we get the right full deepest dir
@@ -217,6 +219,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertEqual(deepest, dir)
         shutil.rmtree(self.utils.tmp_dir)
 
+    @attr('utils')
     def test_deepest_dirs(self):
         """
         Check we get the right list of deepest dir
@@ -235,6 +238,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertEqual(d, 'd')
         shutil.rmtree(self.utils.tmp_dir)
 
+    @attr('utils')
     def test_deepest_dirs_full(self):
         """
         Check we get the right list of deepest dir
@@ -253,6 +257,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertEqual(d, dir2)
         shutil.rmtree(self.utils.tmp_dir)
 
+    @attr('utils')
     def test_get_files(self):
         """
         Check we get the right file list from a directory
@@ -268,6 +273,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertEqual(b_tmp_file1, files[0])
         self.assertEqual(b_tmp_file2, files[1])
         shutil.rmtree(self.utils.tmp_dir)
+
 
 class TestBiomajManagerNews(unittest.TestCase):
 
