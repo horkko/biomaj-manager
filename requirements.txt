@@ -1,5 +1,7 @@
 appnope==0.1.0
 biomaj==3.0.10
+capture==0.1
+coverage==4.0.3
 decorator==4.0.4
 drmaa==0.7.6
 elasticsearch==2.1.0
@@ -22,7 +24,7 @@ ptyprocess==0.5
 py-bcrypt==0.4
 pyasn1==0.1.9
 pycurl==7.19.5.2
-pymongo==2.7.2
+pymongo==3.2
 simplegeneric==0.8.1
 six==1.10.0
 tabulate==0.7.5
