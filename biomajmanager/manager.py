@@ -624,7 +624,7 @@ class Manager(object):
         """
         Load all the plugins and activate them from manager.properties (plugins.list property)
         """
-        self.plugins = Plugins(self.config)
+        self.plugins = Plugins(manager=self)
         return
 
     @bank_required

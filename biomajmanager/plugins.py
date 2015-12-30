@@ -7,16 +7,17 @@ from yapsy.IPlugin import IPlugin
 
 class Plugins(object):
 
-    def __init__(self, config):
+    def __init__(self, manager=None):
         """
         Create the plugin object
-        :param config: Configuration object
-        :type config: biomaj.config object
+        :param manager: Manager instance
+        :type config: biomajmanager.manager
         :return:
         """
-        if not config:
-            Utils.error("'config' is required.")
-        self.config = config
+        if not manager:
+            Utils.error("'manager' is required")
+        self.manager = manager
+        self.config = self.manager.config
 
         if not self.config.has_section('PLUGINS'):
             Utils.error("Can't load plugins, no section found!")
@@ -47,7 +48,8 @@ class Plugins(object):
                 if not pluginInfo.is_activated:
                     pm.activatePluginByName(pluginInfo.name)
                 setattr(self, pluginInfo.name.lower(), pluginInfo.plugin_object)
-                pluginInfo.plugin_object.set_config(config)
+                pluginInfo.plugin_object.set_config(self.config)
+                pluginInfo.plugin_object.set_manager(self.manager)
 
 
 class BMPlugin(IPlugin):
@@ -58,15 +60,27 @@ class BMPlugin(IPlugin):
     def get_name(self):
         return self.__class__.__name__
 
+    def get_config(self):
+        """
+        Get the BioMAJ manager config as object
+        """
+        return self.config
+
+    def get_manager(self):
+        """
+        Get the BioMAJ manager instance
+        :return: biomajmanager.manager
+        """
+        return self.manager
+
     def set_config(self, config):
         """
         Set BioMAJ manager config object
         """
         self.config = config
 
-    def get_config(self):
+    def set_manager(self, manager):
         """
-        Get the BioMAJ manager config as object
+        Set BioMAJ manager config object
         """
-        return self.config
-                
+        self.manager = manager
