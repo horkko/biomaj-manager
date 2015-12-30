@@ -124,7 +124,7 @@ class UtilsForTests(object):
          :return:
          """
          self.mongo_client.drop_database(self.db_test)
-         self.mongo_client.disconnect()
+         self.mongo_client.close()
 
     def print_err(self, msg):
         """
@@ -333,6 +333,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     def tearDown(self):
         self.utils.clean()
 
+    @attr('manager')
     def test_ConfigNoManagerSection(self):
         """
         Check we don't have a 'MANAGER' section in our config
@@ -343,6 +344,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         cfg = Manager.load_config(cfg=os.path.join(self.utils.conf_dir, no_sec))
         self.assertFalse(cfg.has_section('MANAGER'))
 
+    @attr('manager')
     def test_ManagerLoadConfig(self):
         """
         Check we can load any configuration file on demand
@@ -354,6 +356,7 @@ class TestBioMajManagerManager(unittest.TestCase):
             self.assertTrue(cfg.has_section('MANAGER'))
             self.assertEqual(cfg.get('MANAGER', 'file.name'), file)
 
+    @attr('manager')
     def test_ManagerBankPublishedTrue(self):
         """
         Check a bank is published or not (True)
@@ -363,12 +366,11 @@ class TestBioMajManagerManager(unittest.TestCase):
         # at begining, biomaj create an empty bank entry into Mongodb
         manager = Manager(bank='alu')
         # If we do update we need to change 'bank_is_published' call find and iterate over the cursor to do the same test
-        #manager.bank.banks.update({'name': 'alu'}, {'$set': { 'current': True }})
         manager.bank.bank['current'] = True
         self.assertTrue(manager.bank_is_published())
-        #MongoConnector.client.drop_database(self.utils.db_test)
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerBankPublishedFalse(self):
         """
         Check a bank is published or not (False)
@@ -383,6 +385,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertFalse(manager.bank_is_published())
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerLastSessionFailedFalseNoPendingFalse(self):
         """
         Check we have a failed session and no pending session(s)
@@ -399,6 +402,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertFalse(manager.last_session_failed())
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerLastSessionFailedTrueNoPendingTrue(self):
         """
         Check we have a failed session and no pending session(s)
@@ -417,6 +421,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.last_session_failed())
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerLastSessionFailedTrueNoPendingFalse(self):
         """
         Check we have a failed session and no pending session(s)
@@ -434,7 +439,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.last_session_failed())
         self.utils.drop_db()
 
-    @attr('bioweb')
+    @attr('manager')
     def test_ManagerBankHasFormatsTrue(self):
         """
         Check if the bank has a specific format (True)
@@ -445,7 +450,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.has_formats(fmt='blast'))
         self.utils.drop_db()
 
-    @attr('bioweb')
+    @attr('manager')
     def test_ManagerBankHasFormatsFalse(self):
         """
         Check if the bank has a specific format (False)
@@ -456,6 +461,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertFalse(manager.has_formats(fmt='unknown'))
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerGetSessionFromIDNotNone(self):
         """
         Check we retrieve the right session id (Not None)
@@ -470,6 +476,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNotNone(manager.get_session_from_id(1))
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerGetSessionFromIDNone(self):
         """
         Check we retrieve the right session id (None)
@@ -484,6 +491,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNone(manager.get_session_from_id(3))
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerGetPublishedReleaseNotNone(self):
         """
         Check we get a the published release (NotNone)
@@ -502,6 +510,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNotNone(rel)
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerGetPublishedReleaseNone(self):
         """
         Check we get a the published release (None)
@@ -519,6 +528,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNone(rel)
         self.utils.drop_db()
 
+    @attr('manager')
     def test_ManagerGetDictSections(self):
         """
         Get sections for a bank
@@ -530,6 +540,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         for val in ['alupro', 'alunuc']:
             self.assertDictContainsSubset(val, dsections)
 
+    @attr('manager')
     def test_ManagerGetDictSections(self):
         """
         Check we get rigth sections for bank
@@ -540,6 +551,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         lsections = manager.get_list_sections(tool='golden')
         self.assertListEqual(lsections, ['alunuc', 'alupro'])
 
+    @attr('manager')
     def test_ManagerGetCurrentRelease(self):
         """
         Check we get the right current release
