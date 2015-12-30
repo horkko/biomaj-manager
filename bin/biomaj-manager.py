@@ -157,8 +157,7 @@ def main():
             for pend in pending:
                 release = pend['release']
                 id = pend['session_id']
-                #date = datetime.fromtimestamp(id).strftime(Manager.DATE_FMT)
-                date = Utils.time2date(id, Manager.DATE_FMT)
+                date = Utils.time2datefmt(id, Manager.DATE_FMT)
                 info = []
                 info.append(["Release", "Run time"])
                 info.append([str(release), str(date)])
@@ -193,8 +192,7 @@ def main():
     if options.to_mongo:
         manager = Manager(bank=options.bank)
         manager.load_plugins()
-        data = manager.plugins.bioweb.get_info_for_bank(options.bank)
-        manager.plugins.bioweb.update_db(data)
+        manager.plugins.bioweb.update_bioweb_catalog()
         sys.exit(0)
 
     if options.tool:

@@ -136,7 +136,7 @@ class Manager(object):
                 if session:
                     Utils.title('Pending')
                     print("- Release %s (Last run %s)" %
-                          (str(release), Utils.time2date(session['id'], Manager.DATE_FMT)))
+                          (str(release), Utils.time2datefmt(session['id'], Manager.DATE_FMT)))
 
     @bank_required
     def bank_is_published(self):
@@ -537,7 +537,7 @@ class Manager(object):
         for prod in productions:
             history.append({
             # Convert the time stamp from time() to a date
-                'created': Utils.time2date(prod['session'], Manager.DATE_FMT),
+                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                 'id': prod['session'],
                 'removed': None,
                 'status': 'available',
@@ -559,7 +559,7 @@ class Manager(object):
             dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
             status = 'available' if os.path.isdir(dir) else 'deleted'
             history.append({
-                    'created': Utils.time2date(sess['id'], Manager.DATE_FMT),
+                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
                     'id': sess['id'],
                     'removed': True,
                     'status': status,
@@ -650,54 +650,66 @@ class Manager(object):
         else:
             Utils.error("No sessions found for bank %s" % self.bank.name)
         history = []
+        packages = []
 
         # Check db.packages is set for the current bank
         if not self.bank.config.get('db.packages'):
             Utils.warn("[%s] db.packages not set!" % self.bank.name)
-            return []
-        description = self.bank.config.get('db.fullname').strip()
-        packages = self.bank.config.get('db.packages').replace('\\', '').replace('\n', '').strip().split(',')
+        else:
+            packages = map((lambda p: 'pack@' + p), self.bank.config.get('db.packages')
+                                                     .replace('\\', '').replace('\n', '').strip().split(','))
+
+        description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
+        status = 'unknown'
 
         for prod in productions:
+            if 'current' in self.bank.bank:
+                if prod['session'] == self.bank.bank['current']:
+                    status = 'online'
+                else:
+                    status = 'deprecated'
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              prod['remoterelease'],
-                                             Utils.time2date(prod['session'], Manager.DATE_FMT)]),
+                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT)]),
                              'type': 'bank',
                              'name': self.bank.name,
                              'version': prod['remoterelease'],
-                             'publication_date': Utils.time2date(prod['session'], Manager.DATE_FMT),
+                             'publication_date': Utils.time2date(prod['session']),
                              'removal_date': None,
                              'bank_type': bank_type,
                              'bank_format': bank_format,
                              'packages': packages,
                              'description': description,
+                             'status': status
                             })
+
         for sess in sessions:
             # Don't repeat production item stored in sessions
             new_id = '@'.join(['bank',
                                self.bank.name,
                                sess['remoterelease'],
-                               Utils.time2date(sess['id'], Manager.DATE_FMT.replace(' ', '_'))])
+                               Utils.time2datefmt(sess['id'], Manager.DATE_FMT)])
             if new_id in map(lambda d: d['_id'], history):
                 continue
 
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              sess['remoterelease'],
-                                             Utils.time2date(sess['id'], Manager.DATE_FMT.replace(' ', '_'))]),
+                                             Utils.time2datefmt(sess['id'], Manager.DATE_FMT)]),
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': sess['remoterelease'],
-                            'publication_date': Utils.time2date(sess['last_update_time'], Manager.DATE_FMT),
+                            'publication_date': Utils.time2date(sess['last_update_time']),
                             'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
                                                                   else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packages': packages,
                             'description': description,
+                            'status': 'deleted'
                             })
         return history
 
@@ -738,7 +750,7 @@ class Manager(object):
                                     print("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                           % (bank.name,
                                           "Release " + prod['release'],
-                                          Utils.time2date(prod['session'], Manager.DATE_FMT),
+                                          Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                                           str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                     bank.config.get('server')))
                                 else:
@@ -746,7 +758,7 @@ class Manager(object):
                                     fv.write("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                              % (bank.name,
                                              "Release " + prod['release'],
-                                             Utils.time2date(prod['session'], Manager.DATE_FMT),
+                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                                              str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                              bank.config.get('server')))
         except OSError as e:
