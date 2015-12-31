@@ -98,6 +98,6 @@ class Bioweb(BMPlugin):
         except InvalidName as err:
             raise Exception("Error getting collection: %s" % str(err))
         except Exception as err:
-            raise Exception("Error while setting mongo configuration: %s" % str(err))
+            raise Exception("Error while setting Mongo configuration: %s" % str(err))
 
         Bioweb.connected = True
