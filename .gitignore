@@ -40,12 +40,16 @@ pip-log.txt
 pip-delete-this-directory.txt
 pip-selfcheck.json
 
+# MongoDB
+.mongo*
+
 .dbshell
 .idea
 .ipython*
 .viminfo
 # *.properties
 .gitconfig
+.git-credentials
 .lesshst
 # Unit test / coverage reports
 htmlcov/
