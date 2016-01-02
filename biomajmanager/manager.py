@@ -4,63 +4,14 @@ from datetime import datetime
 import re
 import os
 import string
+import sys
 
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
 from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
-
-
-def bank_required(func):
-    """
-    Decorator function that check a bank name is set
-    :param func:
-    :return:
-    """
-
-    def _check_bank_required(*args, **kwargs):
-        """
-        """
-
-        self = args[0]
-        if self.bank is None:
-            Utils.error("A bank name is required")
-        return func(*args, **kwargs)
-    return _check_bank_required
-
-def user_granted(func):
-    """
-    Decorator that check a user has enough right to perform action
-    :param func: Decorated function
-    :type: Function
-    :return:
-    """
-    def _check_user_granted(*args, **kwargs):
-        """
-        Check the user has enough right to perform action(s)
-        If a bank is set, we first set the user as the owner of
-        the current bank. Otherwise we try to find it from the
-        config file, we search for 'user.admin' property
-
-        :return: Boolean
-        """
-
-        self = args[0]
-        admin = None
-        admin = self.config.get('GENERAL', 'admin')
-        if self.bank:
-            props = self.bank.get_properties()
-            if 'owner' in props and props['owner']:
-                admin = props['owner']
-        if not admin:
-            Utils.error("Could not find admin user either in config nor in bank")
-
-        user = self._current_user()
-
-        if admin != user:
-            Utils.error("[%s] User %s, permission denied" % (admin, user))
-        return func(*args, **kwargs)
-    return _check_user_granted
+from biomajmanager.plugins import Plugins
+from biomajmanager.decorators import bank_required, user_granted
 
 
 class Manager(object):
@@ -69,15 +20,23 @@ class Manager(object):
     simulate = False
     # Verbose mode
     verbose = False
+    # Default date format string
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
-    def __init__(self, bank=None):
-
+    def __init__(self, bank=None, cfg=None, global_cfg=None):
+        """
+        Manager instance creation
+        :param bank: Bank name
+        :param config: Configuration file (global.properties)
+        :return:
+        """
         # Our bank
         self.bank = None
         # The root installation of biomaj3
         self.root = None
         # Where to find global.properties
+        self.config_file = None
+        # Configuration object
         self.config = None
         # Where data are located
         self.bank_prod = None
@@ -89,17 +48,17 @@ class Manager(object):
         self.messages = []
 
         try:
-            if not 'BIOMAJ_CONF' in os.environ:
-                Utils.error("BIOMAJ_CONF is not set")
-            else:
-                self.config = Manager.load_config()
+            # Specific configuration file
+            self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
+            if self.config.has_option('GENERAL', 'data.dir'):
                 self.bank_prod = self.config.get('GENERAL', 'data.dir')
         except Exception as e:
             Utils.error(str(e))
 
         if bank is not None:
             self.bank = Bank(name=bank, no_log=True)
-            self.bank_prod = self.bank.config.get('data.dir')
+            if self.bank.config.get('data.dir'):
+                self.bank_prod = self.bank.config.get('data.dir')
 
             """
             # Check if manager.properties is here and put it into global_conf
@@ -115,28 +74,35 @@ class Manager(object):
             """
 
     @staticmethod
-    def load_config(file=None):
+    def load_config(cfg=None, global_cfg=None):
         """
         Load biomaj-manager configuration file (manager.properties). It uses BiomajConfig.load_config()
         to first load global.properties and determine where the config.dir is. manager.properties must
-        be located at the same place as global.properties
-        If a file is given, it will be searched and loaded from the same location as manager.properties
-        :param file: Config file to load
-        :type file: String
+        be located at the same place as global.properties or file parameter must point to manager.properties
+        :param cfg: Path to config file to load
+        :type cfg: String
+        :param global_cfg:
+        :type global_cfg:
         :return: ConfigParser object
         :rtype: configparser.SafeParser
         """
-        BiomajConfig.load_config()
+
+        # Load global.properties (or user defined global_cfg)
+        Utils.verbose("[manager] Loading Biomaj global configuration file")
+        try:
+            BiomajConfig.load_config(config_file=global_cfg)
+        except Exception as err:
+            Utils.error("Error while loading biomaj config: %s" % str(err))
+
         conf_dir = os.path.dirname(BiomajConfig.config_file)
-        cfg = None
         if not os.path.isdir(conf_dir):
-            Utils.error("Can't find config directory")
-        if file:
-            cfg = os.path.join(conf_dir, file)
-        else:
+            Utils.error("Can't find config directory '%s'" % conf_dir)
+        if not cfg:
             cfg = os.path.join(conf_dir, 'manager.properties')
         if not os.path.isfile(cfg):
             print("Can't find config file %s" % cfg)
+
+        Utils.verbose("[manager] Reading manager configuration file")
         BiomajConfig.global_config.read(cfg)
         return BiomajConfig.global_config
 
@@ -162,14 +128,15 @@ class Manager(object):
                                                                           str(production['freeze']),
                                                                           str(production['size']),
                                                                           str(production['prod_dir'])))
-        pending = self.get_pending_session()
+        pending = self.get_pending_sessions()
         if pending:
-            release = pending['release']
-            session = self.bank.get_session_from_release(release)
-            if session:
-                Utils.title('Pending')
-                print("- Release %s (Last run %s)" %
-                      (str(release), datetime.fromtimestamp(session['id']).strftime(Manager.DATE_FMT)))
+            for pend in pending:
+                release = pend['release']
+                session = pend['session_id']
+                if session:
+                    Utils.title('Pending')
+                    print("- Release %s (Last run %s)" %
+                          (str(release), Utils.time2datefmt(session['id'], Manager.DATE_FMT)))
 
     @bank_required
     def bank_is_published(self):
@@ -190,7 +157,7 @@ class Manager(object):
         """
         # Bank is updating?
         if self.bank.is_locked():
-            print("[%s] Can't switch, bank is being updated" % self.bank.name)
+            print("[%s] Can't switch, bank is being updated" % self.bank.name, file=sys.stderr)
             return False
         # Is there a bank already in production (published) ?
         #if not os.path.islink(self.get_current_link()): # and not os.path.islink(self.get_future_link()):
@@ -199,7 +166,7 @@ class Manager(object):
         # If there is no published bank yet, ask the user to do it first. Can't switch to new release version
         # if no bank is published yet
         if not self.bank_is_published():
-            print("[%s] There's no published bank yet. Publish it first" % self.bank.name)
+            print("[%s] There's no published bank yet. Publish it first" % self.bank.name, file=sys.stderr)
             return False
 
         # Bank construction failed?
@@ -209,7 +176,7 @@ class Manager(object):
             return False
 
         if not self.update_ready():
-            print("[%s] Can't switch, bank is not ready" % self.bank.name)
+            print("[%s] Can't switch, bank is not ready" % self.bank.name, file=sys.stderr)
             return False
         return True
 
@@ -225,14 +192,25 @@ class Manager(object):
         current = 'NA'
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
+            release = None
             session = self.get_session_from_id(self.bank.bank['current'])
-            release = session['release'] or session['remoterelease']
-            current = release
+            if 'release' in session and session['release']:
+                release = session=['release']
+            elif 'remoterelease' in session and session['remoterelease']:
+                release = session['remoterelease']
+            if release:
+                current = release
         # Then we fallback to production which handle release(s) that have been
         # completed, workflow(s) over
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
             production = self.bank.bank['production'][-1]
-            current = production['release'] or production['remoterelease']
+            release = None
+            if 'release' in production and production['release']:
+                release = production['release']
+            elif 'remoterelease'in production and production['remoterelease']:
+                release = production['remoterelease']
+            if release:
+                current = release
         else:
             Utils.error("Can't get current release, no production available")
         self._current_release = current
@@ -448,18 +426,17 @@ class Manager(object):
         return values
 
     @bank_required
-    def get_pending_session(self):
+    def get_pending_sessions(self):
         """
         Request the database to check if some session(s) are pending to complete
         :return: Dict {'release'=release, 'session_id': id} or None
         """
         pending = None
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
-            pending = {}
+            pending = []
             has_pending = self.bank.bank['pending']
             for k,v in has_pending.items():
-                pending['release'] = k
-                pending['session_id'] = v
+                pending.append({'release': k, 'session_id': v })
 
         return pending
 
@@ -528,8 +505,7 @@ class Manager(object):
         """
         if not fmt:
             Utils.error("Format is required")
-        fmts = self.formats()
-        print("Formats: %s" % str(fmts))
+        fmts = self.formats(flat=True)
         if fmt in fmts:
             return True
         return False
@@ -561,7 +537,7 @@ class Manager(object):
         for prod in productions:
             history.append({
             # Convert the time stamp from time() to a date
-                'created': datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                 'id': prod['session'],
                 'removed': None,
                 'status': 'available',
@@ -583,7 +559,7 @@ class Manager(object):
             dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
             status = 'available' if os.path.isdir(dir) else 'deleted'
             history.append({
-                    'created': datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT),
+                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
                     'id': sess['id'],
                     'removed': True,
                     'status': status,
@@ -604,30 +580,24 @@ class Manager(object):
         - Then, we look into session and check that the last session.status.over is True/False
         :return:Boolean
         """
-        has_failed = True
+        has_failed = False
         update_id = None
-        pending_id = None
+        # pending_ids = None
 
         # We have to be careful as pending session have over.status to false
-        pending = self.get_pending_session()
-
-        if pending:
-            release = pending['release']
-            session = self.bank.get_session_from_release(release)
-            if session and 'id' in session:
-                pending_id = session['id']
-            else:
-                Utils.warn("[%s] Pending session found but could not determine its id.")
-                Utils.warn("Falling back to last_update_session")
+        pending = self.get_pending_sessions()
 
         if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
             update_id = self.bank.bank['last_update_session']
 
-        # If the last session is a pending session, then warn the user to finish first
-        if pending_id and update_id and pending_id == update_id:
-            Utils.warn("[%s] There is a pending session. Complete workflow first!" % self.bank.name)
-            has_failed = True
-            return has_failed
+        # Check the last updated session is not pending
+        if pending and update_id:
+            for pend in pending:
+                if pend['session_id'] == update_id:
+                    Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first!" %
+                               (self.bank.name, pend['release']))
+                has_failed = True
+                return has_failed
 
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             for session in self.bank.bank['sessions']:
@@ -646,8 +616,16 @@ class Manager(object):
         if self.config.has_section('PLUGINS'):
             plugins = self.config.get('PLUGINS', 'plugins.list')
             for plugin in plugins.split(','):
-                for key in self.get_config_regex(regex='^'+plugin, section='PLUGINS', want_values=False):
-                    print("%s=%s" % (key, self.config.get('PLUGINS', key)))
+                Utils.ok("Plugin is %s\n-------------" % plugin)
+                for key in self.get_config_regex(regex='^' + plugin.lower(), section=plugin, want_values=False):
+                    print("%s=%s" % (key, self.config.get(plugin, key)))
+
+    def load_plugins(self):
+        """
+        Load all the plugins and activate them from manager.properties (plugins.list property)
+        """
+        self.plugins = Plugins(manager=self)
+        return
 
     @bank_required
     def mongo_history(self, bank=None):
@@ -672,54 +650,66 @@ class Manager(object):
         else:
             Utils.error("No sessions found for bank %s" % self.bank.name)
         history = []
+        packages = []
 
         # Check db.packages is set for the current bank
         if not self.bank.config.get('db.packages'):
             Utils.warn("[%s] db.packages not set!" % self.bank.name)
-            return []
-        description = self.bank.config.get('db.fullname').strip()
-        packages = self.bank.config.get('db.packages').replace('\\', '').replace('\n', '').strip().split(',')
+        else:
+            packages = map((lambda p: 'pack@' + p), self.bank.config.get('db.packages')
+                                                     .replace('\\', '').replace('\n', '').strip().split(','))
+
+        description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
+        status = 'unknown'
 
         for prod in productions:
+            if 'current' in self.bank.bank:
+                if prod['session'] == self.bank.bank['current']:
+                    status = 'online'
+                else:
+                    status = 'deprecated'
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              prod['remoterelease'],
-                                             datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT)]),
+                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT)]),
                              'type': 'bank',
                              'name': self.bank.name,
                              'version': prod['remoterelease'],
-                             'publication_date': datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                             'publication_date': Utils.time2date(prod['session']),
                              'removal_date': None,
                              'bank_type': bank_type,
                              'bank_format': bank_format,
                              'packages': packages,
                              'description': description,
+                             'status': status
                             })
+
         for sess in sessions:
             # Don't repeat production item stored in sessions
             new_id = '@'.join(['bank',
                                self.bank.name,
                                sess['remoterelease'],
-                               datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT.replace(' ', '_'))])
+                               Utils.time2datefmt(sess['id'], Manager.DATE_FMT)])
             if new_id in map(lambda d: d['_id'], history):
                 continue
 
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              sess['remoterelease'],
-                                             datetime.fromtimestamp(sess['id']).strftime(Manager.DATE_FMT.replace(' ', '_'))]),
+                                             Utils.time2datefmt(sess['id'], Manager.DATE_FMT)]),
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': sess['remoterelease'],
-                            'publication_date': datetime.fromtimestamp(sess['last_update_time']).strftime(Manager.DATE_FMT),
+                            'publication_date': Utils.time2date(sess['last_update_time']),
                             'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
                                                                   else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packages': packages,
                             'description': description,
+                            'status': 'deleted'
                             })
         return history
 
@@ -760,7 +750,7 @@ class Manager(object):
                                     print("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                           % (bank.name,
                                           "Release " + prod['release'],
-                                          datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                                          Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                                           str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                     bank.config.get('server')))
                                 else:
@@ -768,7 +758,7 @@ class Manager(object):
                                     fv.write("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
                                              % (bank.name,
                                              "Release " + prod['release'],
-                                             datetime.fromtimestamp(prod['session']).strftime(Manager.DATE_FMT),
+                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                                              str(prod['size']) if 'size' in prod and prod['size'] else "NA",
                                              bank.config.get('server')))
         except OSError as e:
@@ -814,9 +804,9 @@ class Manager(object):
         :type show: Boolean, default=False
         :param fmt: Output format for tabulate, default psql
         :type fmt: String
-        :return: self.get_pending_session()
+        :return: self.get_pending_sessions()
         """
-        return self.get_pending_session()
+        return self.get_pending_sessions()
 
     def show_need_update(self):
         """
@@ -911,7 +901,7 @@ class Manager(object):
         if not path:
             Utils.error("A path is required")
         if not os.path.exists(path):
-            print("[WARNING] Path %s does not exist" % path)
+            Utils.warn("Path %s does not exist" % path)
             return []
         formats = []
 

@@ -31,7 +31,7 @@ class Writer(object):
             if not config.has_section('MANAGER'):
                 Utils.error("Configuration has no 'MANAGER' section")
             else:
-                self.template_dir = config.get('MANAGER', 'template_dir')
+                self.template_dir = config.get('MANAGER', 'template.dir')
 
         #else:
         #    self.template_dir = os.path.join(template_dir, format)

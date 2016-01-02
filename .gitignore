@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# OSX stuff
+Library/
+
 # Distribution / packaging
 .Python
 env/
@@ -43,9 +46,12 @@ pip-selfcheck.json
 # MongoDB
 .mongo*
 
+.lesshst
 .dbshell
 .idea
 .ipython*
+.gitconfig
+.git-credentials
 .viminfo
 # *.properties
 .gitconfig
@@ -66,9 +72,6 @@ Library
 # Translations
 *.mo
 *.pot
-
-# Django stuff:
-*.log
 
 # Sphinx documentation
 docs/_build/

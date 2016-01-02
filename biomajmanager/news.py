@@ -34,7 +34,7 @@ class News(object):
             if not config.has_section('MANAGER'):
                 Utils.error("Configuration has no 'MANAGER' section")
             else:
-                self.news_dir = config.get('MANAGER', 'news_dir')
+                self.news_dir = config.get('MANAGER', 'news.dir')
 
         self.data = None
 

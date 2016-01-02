@@ -15,7 +15,6 @@ from biomajmanager.writer import Writer
 from biomajmanager.news import News
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
-from datetime import datetime
 from tabulate import tabulate
 
 
@@ -150,19 +149,20 @@ def main():
         manager = Manager(bank=options.bank)
 
         # Supoprt output to stdout
-        pending = manager.get_pending_session()
+        pending = manager.get_pending_sessions()
         if options.oformat:
             writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
             writer.write(file='pending' + '.' + options.oformat)
         else:
-            release = pending['release']
-            id = pending['session_id']
-            date = datetime.fromtimestamp(id).strftime(Manager.DATE_FMT)
-            info = []
-            info.append(["Release", "Run time"])
-            info.append([str(release), str(date)])
-            print("[%s] Pending session" % manager.bank.name)
-            print(tabulate(info, headers="firstrow", tablefmt='psql'))
+            for pend in pending:
+                release = pend['release']
+                id = pend['session_id']
+                date = Utils.time2datefmt(id, Manager.DATE_FMT)
+                info = []
+                info.append(["Release", "Run time"])
+                info.append([str(release), str(date)])
+                print("[%s] Pending session" % manager.bank.name)
+                print(tabulate(info, headers="firstrow", tablefmt='psql'))
         sys.exit(0)
 
     if options.save_versions:
@@ -190,10 +190,9 @@ def main():
         sys.exit(0)
 
     if options.to_mongo:
-        manager = Manager()
-        manager.list_plugins()
-        #manager.load_plugins()
-        #manager.bioweb.load_mongo()
+        manager = Manager(bank=options.bank)
+        manager.load_plugins()
+        manager.plugins.bioweb.update_bioweb_catalog()
         sys.exit(0)
 
     if options.tool:

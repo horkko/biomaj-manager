@@ -2,11 +2,15 @@ from __future__ import print_function
 import os
 import sys
 from time import time
+from datetime import datetime
 # from biomajmanager.manager import Manager
 
 class Utils(object):
 
     timer_start = timer_stop = 0.0
+    show_warn = True
+    show_debug = True
+    show_verbose = True
 
     @staticmethod
     def elapsed_time():
@@ -27,7 +31,7 @@ class Utils(object):
 
     @staticmethod
     def error(msg):
-        print('[ERROR] ' + msg, file=sys.stderr)
+        print('[ERROR] %s' % str(msg), file=sys.stderr)
         sys.exit(1)
 
     @staticmethod
@@ -40,7 +44,7 @@ class Utils(object):
         :rtype: List
         """
         if not path or not os.path.isdir(path):
-            Utils.error("Path not found: %s" % path)
+            Utils.error("Path not found: %s" % str(path))
         return os.listdir(path)
 
     @staticmethod
@@ -55,7 +59,7 @@ class Utils(object):
         :rtype: List
         """
         if not os.path.exists(path) and os.path.isdir(path):
-            Utils.error("%s does not exists" % path)
+            Utils.error("%s does not exists" % str(path))
 
         dirs = []
         for dirpath, dirnames, filenames in os.walk(path):
@@ -79,7 +83,7 @@ class Utils(object):
         """
         dirs = Utils.get_deepest_dirs(path, full=full)
         if len(dirs) > 1:
-            Utils.warn("More than one deepest dir found at %s: Only first returned" % path)
+            Utils.warn("More than one deepest dir found at %s: Only first returned" % str(path))
         return dirs[0]
 
     @staticmethod
@@ -90,7 +94,7 @@ class Utils(object):
         :type msg: String
         :return:
         """
-        print("[OK] %s" % msg)
+        print("[OK] %s" % str(msg))
 
     @staticmethod
     def reset_timer():
@@ -118,13 +122,39 @@ class Utils(object):
         Utils.timer_stop = time()
 
     @staticmethod
+    def time2date(id):
+        """
+        Convert a timestamp into a datetime object
+        :param id: Timestamp to convert
+        :return: datetime object
+        """
+        if not id:
+            Utils.error("timestamp required")
+        return datetime.fromtimestamp(id)
+
+    @staticmethod
+    def time2datefmt(id, fmt):
+        """
+        Convert a timestamp into a date following the format fmt
+        :param id: Timestamp to convert
+        :param fmt: Date format to follow for conversion
+        :return: date (String)
+        """
+        if not id:
+            Utils.error("timestamp required")
+        if not fmt:
+            Utils.error("date time format requried")
+
+        return datetime.fromtimestamp(id).strftime(fmt)
+
+    @staticmethod
     def title(msg):
         '''
         Prints a small title banner (message + underlined message)
         :param msg:
         :return:
         '''
-        title = "* " + msg + " *"
+        title = "* " + str(msg) + " *"
         print(title)
         print('-' * len(title))
 
@@ -137,12 +167,13 @@ class Utils(object):
         '''
         return os.getenv('USER')
 
-    # @staticmethod
-    # def verbose(msg):
-    #     #if Manager.verbose:
-    #     print('[VERBOSE] %s' % msg, file=sys.stdout)
+    @staticmethod
+    def verbose(msg):
+        from .manager import Manager
+        if Manager.verbose and Utils.show_verbose:
+            print('[VERBOSE] %s' % str(msg), file=sys.stdout)
 
     @staticmethod
     def warn(msg):
-        print('[WARNING] ' + msg, file=sys.stderr)
-
+        if Utils.show_warn:
+            print('[WARNING] %s' % str(msg), file=sys.stderr)
