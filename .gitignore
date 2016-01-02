@@ -43,11 +43,15 @@ pip-log.txt
 pip-delete-this-directory.txt
 pip-selfcheck.json
 
+# MongoDB
+.mongo*
+
 .lesshst
 .dbshell
 .idea
 .ipython*
 .gitconfig
+.git-credentials
 .viminfo
 # *.properties
 .gitconfig
