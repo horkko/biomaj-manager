@@ -1,0 +1,9 @@
+[Core]
+Name = myplugin
+Module = Myplugin
+
+[Documentation]
+Author = Emmanuel Quevillon
+Version = 0.1
+Website =
+Description = Test plugin
