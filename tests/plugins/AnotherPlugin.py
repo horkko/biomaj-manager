@@ -1,5 +1,3 @@
-__author__ = 'tuco'
-
 from biomajmanager.plugins import BMPlugin
 
 
