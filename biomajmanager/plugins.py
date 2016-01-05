@@ -7,6 +7,8 @@ from yapsy.IPlugin import IPlugin
 
 class Plugins(object):
 
+    CATEGORY = 'MANAGER'
+
     def __init__(self, manager=None):
         """
         Create the plugin object
@@ -26,28 +28,25 @@ class Plugins(object):
         if not self.config.has_option('PLUGINS', 'plugins.list'):
             Utils.error("plugins.list is not defined!")
 
-        pm = PluginManager()
-        self.pm = pm
-        pm.setPluginPlaces([self.config.get('MANAGER', 'plugins.dir')])
-        # Set our Base plugin (BMPPlugin) as category of "Base"
-        # All inherited plugins will be then pushed in the same category
-        pm.setCategoriesFilter({"Base": BMPlugin})
+        pm = PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
+                           categories_filter={Plugins.CATEGORY: BMPlugin})
         pm.collectPlugins()
+        self.pm = pm
         user_plugins = [ ]
 
         # Load user wanted plugin(s)
         for plugin in self.config.get('PLUGINS', 'plugins.list').split(','):
             plugin.strip()
             # We need to lower the plugin name
-            user_plugins.append(plugin.lower())
+            user_plugins.append(plugin)
 
         # This means that all plugins must inherits from BMPlugin
-        for pluginInfo in pm.getPluginsOfCategory("Base"):
+        for pluginInfo in pm.getPluginsOfCategory(Plugins.CATEGORY):
             Utils.verbose("[manager] plugin name => %s" % pluginInfo.name)
             if pluginInfo.name in user_plugins:
                 if not pluginInfo.is_activated:
                     pm.activatePluginByName(pluginInfo.name)
-                setattr(self, pluginInfo.name.lower(), pluginInfo.plugin_object)
+                setattr(self, pluginInfo.name, pluginInfo.plugin_object)
                 pluginInfo.plugin_object.set_config(self.config)
                 pluginInfo.plugin_object.set_manager(self.manager)
 
