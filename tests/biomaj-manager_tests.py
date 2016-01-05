@@ -588,13 +588,8 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-<<<<<<< HEAD
-        self.assertEqual(manager.plugins.myplugin.get_name(), 'Myplugin')
-        self.assertEqual(manager.plugins.anotherplugin.get_name(), 'Anotherplugin')
-=======
         self.assertEqual(manager.plugins.myplugin.get_name(), 'myplugin')
         self.assertEqual(manager.plugins.anotherplugin.get_name(), 'anotherplugin')
->>>>>>> e6f984dab7d6d4a62b5cdb6973c782200a588cf9
 
     @attr('plugins')
     def test_PluginsCheckConfigValues(self):
