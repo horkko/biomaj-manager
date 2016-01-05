@@ -1,7 +1,7 @@
 from biomajmanager.plugins import BMPlugin
 
 
-class Anotherplugin(BMPlugin):
+class anotherplugin(BMPlugin):
     """
 
     """

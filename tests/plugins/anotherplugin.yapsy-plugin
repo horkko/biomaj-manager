@@ -1,6 +1,6 @@
 [Core]
 Name = anotherplugin
-Module = Anotherplugin
+Module = anotherplugin
 
 [Documentation]
 Author = Emmanuel Quevillon
