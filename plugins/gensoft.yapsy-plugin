@@ -1,6 +1,6 @@
 [Core]
 Name = gensoft
-Module = Gensoft
+Module = gensoft
 
 [Documentation]
 Author = Emmanuel Quevillon

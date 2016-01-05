@@ -577,7 +577,8 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
     def tearDown(self):
-        self.utils.clean()
+        pass
+        #self.utils.clean()
 
     @attr('plugins')
     def test_PluginsLoaded(self):
@@ -587,8 +588,8 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertEqual(manager.plugins.myplugins.get_name(), 'Myplugins')
-        self.assertEqual(manager.plugins.anotherplugin.get_name(), 'Anotherplugin')
+        self.assertEqual(manager.plugins.myplugin.get_name(), 'myplugin')
+        self.assertEqual(manager.plugins.anotherplugin.get_name(), 'anotherplugin')
 
     @attr('plugins')
     def test_PluginsCheckConfigValues(self):
@@ -598,8 +599,8 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertEqual(manager.plugins.myplugins.get_cfg_name(), 'myplugins')
-        self.assertEqual(manager.plugins.myplugins.get_cfg_value(), '1')
+        self.assertEqual(manager.plugins.myplugin.get_cfg_name(), 'myplugin')
+        self.assertEqual(manager.plugins.myplugin.get_cfg_value(), '1')
         self.assertEqual(manager.plugins.anotherplugin.get_cfg_name(), 'anotherplugin')
         self.assertEqual(manager.plugins.anotherplugin.get_cfg_value(), '2')
 
@@ -611,8 +612,8 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertEqual(manager.plugins.myplugins.get_value(), 1)
-        self.assertEqual(manager.plugins.myplugins.get_string(), 'test')
+        self.assertEqual(manager.plugins.myplugin.get_value(), 1)
+        self.assertEqual(manager.plugins.myplugin.get_string(), 'test')
         self.assertEqual(manager.plugins.anotherplugin.get_value(), 1)
         self.assertEqual(manager.plugins.anotherplugin.get_string(), 'test')
 
@@ -624,7 +625,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertTrue(manager.plugins.myplugins.get_true())
+        self.assertTrue(manager.plugins.myplugin.get_true())
         self.assertTrue(manager.plugins.anotherplugin.get_true())
 
     @attr('plugins')
@@ -635,7 +636,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertFalse(manager.plugins.myplugins.get_false())
+        self.assertFalse(manager.plugins.myplugin.get_false())
         self.assertFalse(manager.plugins.anotherplugin.get_false())
 
     @attr('plugins')
@@ -646,7 +647,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertIsNone(manager.plugins.myplugins.get_none())
+        self.assertIsNone(manager.plugins.myplugin.get_none())
         self.assertIsNone(manager.plugins.anotherplugin.get_none())
 
     @attr('plugins')
@@ -657,5 +658,5 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         manager = Manager()
         manager.load_plugins()
-        self.assertRaises(Exception, manager.plugins.myplugins.get_exception())
+        self.assertRaises(Exception, manager.plugins.myplugin.get_exception())
         self.assertRaises(Exception, manager.plugins.anotherplugin.get_exception())
