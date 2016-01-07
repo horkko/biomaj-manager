@@ -3,9 +3,6 @@
 __pycache__/
 *.py[cod]
 
-# C extensions
-*.so
-
 # OSX stuff
 Library/
 
@@ -45,7 +42,8 @@ pip-selfcheck.json
 
 # MongoDB
 .mongo*
-
+# Mysql
+.mysql_history
 .lesshst
 .dbshell
 .idea
@@ -78,3 +76,5 @@ docs/_build/
 
 # PyBuilder
 target/
+
+!.gitignore
