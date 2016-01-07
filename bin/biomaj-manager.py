@@ -37,7 +37,7 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-L', '--bank_formats', dest="bank_formats", help="List supported formats and index for each banks. [-b] available.",
                         action="store_true", default=False)
-    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb)",
+    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
                         action="store_true", default=False)
     parser.add_argument('-N', '--news', dest="news", help="Create news. [Default output txt]",
                         action="store_true", default=False)
@@ -56,6 +56,7 @@ def main():
 
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank", help="Bank name")
+    parser.add_argument('--db_type', dest="db_type", help="BioMAJ database type [MySQL, MongoDB]")
     parser.add_argument('-o', '--out', dest="out", help="Output file")
     parser.add_argument('-F', '--format', dest="oformat", help="Output format. Supported [csv, html, json, txt]")
     parser.add_argument('-T', '--templates', dest="template_dir", help="Template directory. Overwrites template_dir")
@@ -190,9 +191,19 @@ def main():
         sys.exit(0)
 
     if options.to_mongo:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        if not options.db_type:
+            Utils.error("--db_type required")
+
         manager = Manager(bank=options.bank)
         manager.load_plugins()
-        manager.plugins.bioweb.update_bioweb_catalog()
+        if options.db_type.lower() == 'mongodb':
+            manager.plugins.bioweb.update_bioweb()
+        elif options.db_type.lower() == 'mysql':
+            manager.plugins.bioweb.update_bioweb_from_mysql()
+        else:
+            Utils.error("%s not supported. Only mysql or mongodb" % options.db_type)
         sys.exit(0)
 
     if options.tool:

@@ -1,7 +1,7 @@
 from __future__ import print_function
 import os
 import sys
-from time import time
+from time import time, tzname
 from datetime import datetime
 # from biomajmanager.manager import Manager
 
@@ -85,6 +85,20 @@ class Utils(object):
         if len(dirs) > 1:
             Utils.warn("More than one deepest dir found at %s: Only first returned" % str(path))
         return dirs[0]
+
+    @staticmethod
+    def local2utc(value):
+        """
+        Convert a locatime datetime object to UTC
+        """
+        import pytz
+
+        if not isinstance(value, datetime):
+            Utils.error("datetime object required! %s" % value)
+        time_zone = tzname[0]
+        local_time_zone = pytz.timezone(time_zone)
+        local_date_time = local_time_zone.localize(value)
+        return local_date_time.astimezone(pytz.UTC)
 
     @staticmethod
     def ok(msg):

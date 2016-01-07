@@ -45,6 +45,7 @@ class Plugins(object):
             Utils.verbose("[manager] plugin name => %s" % pluginInfo.name)
             if pluginInfo.name in user_plugins:
                 if not pluginInfo.is_activated:
+                    Utils.verbose("[manager] plugin %s activated" % pluginInfo.name)
                     pm.activatePluginByName(pluginInfo.name)
                 setattr(self, pluginInfo.name, pluginInfo.plugin_object)
                 pluginInfo.plugin_object.set_config(self.config)
