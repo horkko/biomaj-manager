@@ -107,9 +107,6 @@ class Bioweb(BMPlugin):
                                 'description': description,
                                 'status': status,
                                 })
-            #Utils.ok("%d entries" % len(history))
-            #from pprint import pprint
-            #Utils.ok(pprint(history))
             if not self._update_bioweb_catalog(history):
                 Utils.error("Can't update bioweb.catalog")
         except mysql.connector.ProgrammingError as error:
