@@ -173,12 +173,20 @@ class Bioweb(BMPlugin):
             Utils.error("No configuration object set")
 
         try:
+            # Try to connect to MongoDB using url
             #url = self.config.get(self.get_name(), 'bioweb.mongo.url')
             #self.mongo_client = MongoClient(url)
 
+            # Try to connect to MongoDB using args
             mongo_host = self.config.get(self.get_name(), 'bioweb.mongo.host')
             mongo_port = int(self.config.get(self.get_name(), 'bioweb.mongo.port'))
-            self.mongo_client = MongoClient(host=mongo_host, port=mongo_port, ssl=True, ssl_cert_reqs=ssl.CERT_NONE)
+            mongo_use_ssl = int(self.config.get(self.get_name(), 'bioweb.mongo.use_ssl'))
+            mongo_options = {}
+            if mongo_use_ssl:
+                mongo_options['ssl'] = True
+                mongo_options['ssl_cert_reqs'] = ssl.CERT_NONE
+            # Specific SSL agrs for bioweb-prod
+            self.mongo_client = MongoClient(host=mongo_host, port=mongo_port, **mongo_options)
 
             dbname = self.config.get(self.get_name(), 'bioweb.mongo.db')
             coll_catalog = self.config.get(self.get_name(), 'bioweb.mongo.collection.catalog')
