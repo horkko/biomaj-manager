@@ -194,8 +194,8 @@ def main():
             #manager.bank.publish()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
             manager.load_plugins()
-            manager.plugins.bioweb.set_bank_update_news(manager.bank.bank)
-            Utils.ok("New bank update sent!")
+            if not manager.plugins.bioweb.update_bioweb():
+                Utils.error("[%s] Can't update bioweb history" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
         sys.exit(0)
@@ -203,9 +203,9 @@ def main():
     if options.test:
         manager = Manager(bank=options.bank)
         manager.load_plugins()
-        manager.plugins.bioweb._init_db()
-        #if not manager.plugins.bioweb.set_bank_update_news():
-        #    Utils.error("Can't set news")
+        #manager.plugins.bioweb._init_db()
+        if not manager.plugins.bioweb.set_bank_update_news():
+            Utils.error("Can't set news")
         sys.exit(0)
 
     if options.to_mongo:
