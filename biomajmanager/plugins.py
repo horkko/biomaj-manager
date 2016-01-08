@@ -9,11 +9,13 @@ class Plugins(object):
 
     CATEGORY = 'MANAGER'
 
-    def __init__(self, manager=None):
+    def __init__(self, manager=None, name=None):
         """
         Create the plugin object
         :param manager: Manager instance
         :type config: biomajmanager.manager
+        :param name: Name of the plugin to load. [DEFAULT: load all plugins]
+        :type name: String
         :return:
         """
         if not manager:
