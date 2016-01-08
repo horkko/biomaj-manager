@@ -3,7 +3,7 @@ from __future__ import print_function
 from biomajmanager.utils import Utils
 from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
-
+import os
 
 class Plugins(object):
 
@@ -28,6 +28,8 @@ class Plugins(object):
         if not self.config.has_option('PLUGINS', 'plugins.list'):
             Utils.error("plugins.list is not defined!")
 
+        if not os.path.isdir(self.config.get('MANAGER', 'plugins.dir')):
+            Utils.error("Can't find plugins.dir")
         pm = PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
                            categories_filter={Plugins.CATEGORY: BMPlugin})
         pm.collectPlugins()
