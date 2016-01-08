@@ -4,7 +4,7 @@ import os
 import sys
 import time
 import datetime
-
+import ssl
 from biomajmanager.plugins import BMPlugin
 from biomajmanager.utils import Utils
 from biomajmanager.news import News
@@ -35,10 +35,27 @@ class Bioweb(BMPlugin):
 
         query = {}
         if name:
-            query = {'name': name}
+            query['name'] = name
         else:
-            query = {'name': self.manager.bank.name}
+            query['name'] = self.manager.bank.name
         return self.dbname.get_collection('catalog').find(query)
+
+    def set_bank_update_news(self):
+        """
+        Send a new to MongoDB to let bioweb know about bank update. Update MongoDB
+        :return: Boolean
+        """
+
+        if not self.manager.bank:
+            Utils.error("A bank name is required")
+
+        data = {}
+        data['message'] = "Bank %s updated to version %s" % (self.manager.bank.name, str(self.manager.current_release()))
+        data['date'] = Utils.time2date(self.manager.bank['current'])
+        data['operation'] = "databank update"
+        data['type'] = Bioweb.COLLECTION_TYPE
+        data['name'] = self.manager.bank.name
+        return self._update_biowebdb(data=data, collection='news.biomaj')
 
     def update_bioweb(self):
         """
@@ -47,7 +64,7 @@ class Bioweb(BMPlugin):
         """
 
         history = self.manager.mongo_history()
-        if not self._update_bioweb_catalog(history):
+        if not self._update_biowebdb(data=history):
             Utils.error("Can't update bioweb.catalog")
 
         return True
@@ -107,7 +124,7 @@ class Bioweb(BMPlugin):
                                 'description': description,
                                 'status': status,
                                 })
-            if not self._update_bioweb_catalog(history):
+            if not self._update_biowebdb(data=history):
                 Utils.error("Can't update bioweb.catalog")
         except mysql.connector.ProgrammingError as error:
             Utils.error("[Syntax Error] %s" % str(error))
@@ -130,8 +147,8 @@ class Bioweb(BMPlugin):
         :type filter: Dict
         :param data: Original data to update
         :type data: Dict
-	:param col: Collection name
- 	:type col: String
+        :param col: Collection name
+        :type col: String
         :return: Boolean
         """
 
@@ -153,16 +170,24 @@ class Bioweb(BMPlugin):
             Utils.error("No configuration object set")
 
         try:
-            url = self.config.get(self.get_name(), 'bioweb.mongo.url')
+            #url = self.config.get(self.get_name(), 'bioweb.mongo.url')
+            #self.mongo_client = MongoClient(url)
+
+            mongo_host = self.config.get(self.get_name(), 'bioweb.mongo.host')
+            mongo_port = int(self.config.get(self.get_name(), 'bioweb.mongo.port'))
+            self.mongo_client = MongoClient(host=mongo_host, port=mongo_port, ssl=True, ssl_cert_reqs=ssl.CERT_NONE)
+
             dbname = self.config.get(self.get_name(), 'bioweb.mongo.db')
             coll_catalog = self.config.get(self.get_name(), 'bioweb.mongo.collection.catalog')
             coll_news = self.config.get(self.get_name(), 'bioweb.mongo.collection.news')
-            self.mongo_client = MongoClient(url)
+
             self.dbname = self.mongo_client[dbname]
             self.collcatalog = self.dbname[coll_catalog]
             self.collnews = self.dbname[coll_news]
-        except (ConnectionFailure, InvalidURI) as err:
-            raise Exception("Can't connect to Mongo database %s: %s" % (dbname, str(err)))
+        except ConnectionFailure as err:
+            raise Exception("[ConnectionFailure] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
+        except InvalidURI as err:
+            raise Exception("[InvalidURI] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
         except OperationFailure as err:
             raise Exception("Operation failed: %s" % str(err))
         except InvalidName as err:
@@ -172,7 +197,7 @@ class Bioweb(BMPlugin):
 
         Bioweb.connected = True
 
-    def _update_bioweb_catalog(self, data=None):
+    def _update_biowebdb(self, data=None, collection='catalog', upsert=True):
         """
         Function that really update the Mongodb collection ('catalog')
         It does an upsert to update the collection
@@ -188,10 +213,10 @@ class Bioweb(BMPlugin):
 
         matched = modified = upserted = 0
         for item in data:
-            res = self.dbname.get_collection('catalog').update_one({'type': Bioweb.COLLECTION_TYPE, '_id': item['_id'],
-                                                                    'name': self.manager.bank.name},
-                                                                    {'$set': item},
-                                                                    upsert=True)
+            res = self.dbname.get_collection(collection).update_one({'type': Bioweb.COLLECTION_TYPE, '_id': item['_id'],
+                                                                     'name': self.manager.bank.name},
+                                                                     {'$set': item},
+                                                                     upsert=upsert)
             matched += res.matched_count
             modified += res.modified_count
             if res.upserted_id:

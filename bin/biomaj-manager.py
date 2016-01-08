@@ -39,13 +39,15 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-N', '--news', dest="news", help="Create news. [Default output txt]",
+    parser.add_argument('-N', '--news', dest="news", help="Create news to display at BiomajWatcher. [Default output txt]",
                         action="store_true", default=False)
     parser.add_argument('-n', '--simulate', dest="simulate", help="Simulate action, don't do it really.",
                         action="store_true", default=False)
     parser.add_argument('-P', '--show_pending', dest="pending", help="Show pending release(s). [-b] available",
                         action="store_true", default=False)
     parser.add_argument('-s', '--switch', dest="switch", help="Switch a bank to its new version. [-b REQUIRED]",
+                        action="store_true", default=False)
+    parser.add_argument('-X', '--test', dest="test", help="Test method. [-b REQUIRED]",
                         action="store_true", default=False)
     parser.add_argument('-U', '--show_update', dest="show_update", help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that need to be updated. [-b] available.",
                         action="store_true", default=False)
@@ -135,13 +137,18 @@ def main():
     if options.news:
         # Try to determine news directory from config gile
         config = Manager.load_config()
-
-        if options.oformat is None:
-            options.oformat = 'txt'
         news = News(config=config)
         news.get_news()
-        writer = Writer(config=config, data=news.data, format=options.oformat)
-        writer.write(file='news' + '.' + options.oformat)
+        if options.db_type:
+            manager = Manager()
+            manager.load_plugins()
+            if not manager.plugins.bioweb.set_news(news.data):
+                Utils.error("Can't set news to collection")
+        else:
+            if options.oformat is None:
+                options.oformat = 'txt'
+            writer = Writer(config=config, data=news.data, format=options.oformat)
+            writer.write(file='news' + '.' + options.oformat)
         sys.exit(0)
 
     if options.pending:
@@ -186,8 +193,19 @@ def main():
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
             #manager.bank.publish()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
+            manager.load_plugins()
+            manager.plugins.bioweb.set_bank_update_news(manager.bank.bank)
+            Utils.ok("New bank update sent!")
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
+        sys.exit(0)
+
+    if options.test:
+        manager = Manager(bank=options.bank)
+        manager.load_plugins()
+        manager.plugins.bioweb._init_db()
+        #if not manager.plugins.bioweb.set_bank_update_news():
+        #    Utils.error("Can't set news")
         sys.exit(0)
 
     if options.to_mongo:
@@ -222,7 +240,7 @@ def main():
         sys.exit(0)
 
     # Not yet implemented options
-    if options.clean_links or options.to_mongo:
+    if options.clean_links:
         print("Not yet implemented")
         sys.exit(0)
 
