@@ -224,7 +224,7 @@ class Bioweb(BMPlugin):
 
         matched = modified = upserted = 0
         for item in data:
-            res = self.dbname.get_collection(collection).update_one({'type': Bioweb.COLLECTION_TYPE, '_id': item['_id'],
+            res = self.dbname.get_collection(collection).update_one({'type': Bioweb.COLLECTION_TYPE,
                                                                      'name': self.manager.bank.name},
                                                                      {'$set': item},
                                                                      upsert=upsert)
