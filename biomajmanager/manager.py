@@ -120,7 +120,7 @@ class Manager(object):
         print("- Type(s) : %s" % ','.join(props['type']))
         print("- Owner : %s" % props['owner'])
         Utils.title('Releases')
-        print("- Current release: %s" % str(self._current_release))
+        print("- Current release: %s" % str(self.current_release()))
         if 'production' in self.bank.bank:
             Utils.title('Production')
             for production in self.bank.bank['production']:
@@ -195,7 +195,7 @@ class Manager(object):
             release = None
             session = self.get_session_from_id(self.bank.bank['current'])
             if 'release' in session and session['release']:
-                release = session=['release']
+                release = session['release']
             elif 'remoterelease' in session and session['remoterelease']:
                 release = session['remoterelease']
             if release:
@@ -212,7 +212,7 @@ class Manager(object):
             if release:
                 current = release
         else:
-            Utils.error("Can't get current release, no production available")
+            Utils.error("Can't get current release, no production available nor bank published")
         self._current_release = current
         return str(current)
 
