@@ -49,13 +49,16 @@ class Bioweb(BMPlugin):
         if not self.manager.bank:
             Utils.error("A bank name is required")
 
-        data = {}
-        data['message'] = "Bank %s updated to version %s" % (self.manager.bank.name, str(self.manager.current_release()))
-        data['date'] = Utils.time2date(self.manager.bank['current'])
-        data['operation'] = "databank update"
-        data['type'] = Bioweb.COLLECTION_TYPE
-        data['name'] = self.manager.bank.name
-        return self._update_biowebdb(data=data, collection='news.biomaj')
+        if 'current' in self.manager.bank.bank:
+            data = {}
+            data['message'] = "Bank %s updated to version %s" % (self.manager.bank.name, str(self.manager.current_release()))
+            data['date'] = Utils.time2date(self.manager.bank.bank['current'])
+            data['operation'] = "databank update"
+            data['type'] = Bioweb.COLLECTION_TYPE
+            data['name'] = self.manager.bank.name
+            return self._update_biowebdb(data=[data], collection='news')
+        Utils.warn("Can't set new %s bank version, not published yet" % self.manager.bank.name)
+        return False
 
     def update_bioweb(self):
         """
