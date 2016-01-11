@@ -133,7 +133,7 @@ class Bioweb(BMPlugin):
                                 'removal_date': row['removed'], #Utils.local2utc(row['removed']) if row['removed'] else row['removed'],
                                 'bank_type': bank_type,
                                 'bank_format': bank_format,
-                                'packages': packages,
+                                'packageVersions': packages,
                                 'description': description,
                                 'status': status,
                                 })
