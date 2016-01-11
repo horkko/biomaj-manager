@@ -203,25 +203,28 @@ def main():
     if options.test:
         manager = Manager(bank=options.bank)
         manager.load_plugins()
-        #manager.plugins.bioweb._init_db()
-        if not manager.plugins.bioweb.set_bank_update_news():
-            Utils.error("Can't set news")
+        manager.plugins.bioweb._init_db()
         sys.exit(0)
 
     if options.to_mongo:
-        if not options.bank:
-            Utils.error("A bank name is required")
         if not options.db_type:
             Utils.error("--db_type required")
 
-        manager = Manager(bank=options.bank)
-        manager.load_plugins()
-        if options.db_type.lower() == 'mongodb':
-            manager.plugins.bioweb.update_bioweb()
-        elif options.db_type.lower() == 'mysql':
-            manager.plugins.bioweb.update_bioweb_from_mysql()
+        list = []
+        if not options.bank:
+            list = Manager.get_bank_list()
         else:
-            Utils.error("%s not supported. Only mysql or mongodb" % options.db_type)
+            list.append(options.bank)
+
+        for bank in list:
+            manager = Manager(bank=bank)
+            manager.load_plugins()
+            if options.db_type.lower() == 'mongodb':
+                manager.plugins.bioweb.update_bioweb()
+            elif options.db_type.lower() == 'mysql':
+                manager.plugins.bioweb.update_bioweb_from_mysql()
+            else:
+                Utils.error("%s not supported. Only mysql or mongodb" % options.db_type)
         sys.exit(0)
 
     if options.tool:
