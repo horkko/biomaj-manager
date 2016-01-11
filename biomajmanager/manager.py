@@ -235,10 +235,10 @@ class Manager(object):
         formats = []
         if flat:
             formats = {}
-        if self.bank.config.get('db.packages'):
-            packages = self.bank.config.get('db.packages').replace('\\', '').replace('\n','').split(',')
+        if self.get_bank_packages(): #bank.config.get('db.packages'):
+            packages = self.get_bank_packages() #self.bank.config.get('db.packages').replace('\\', '').replace('\n','').split(',')
             for package in packages:
-                (name, version) = package.split('@')
+                (_, name, version) = package.split('@')
                 # formats = {}
                 # {'cfamiliaris': {'GenomeAnalysisTK': ['2.4.9'], 'picars-tools': ['1.94'],
                 # 'bowtie': ['0.12.7'], 'samtools': ['0.1.19'], 'bwa': ['0.5.9', '0.6.2', '0.7.4'],
@@ -282,10 +282,11 @@ class Manager(object):
     def get_bank_packages(self):
         """
         Retrieve the list of linked packages for the current bank
-        :return:
+        :return: List of defined pckages for a bank
+        :rtype: List of string 'pack@<pack_name>@<pack_version>'
         """
         # Check db.packages is set for the current bank
-        packages = []
+        packages = None
         if not self.bank.config.get('db.packages'):
             Utils.warn("[%s] db.packages not set!" % self.bank.name)
         else:
@@ -545,7 +546,7 @@ class Manager(object):
         history = []
 
         description = self.bank.config.get('db.fullname').strip()
-        packages = self.bank.config.get('db.packages').replace('\\', '').strip().split(',')
+        packages = self.get_bank_packages() #self.bank.config.get('db.packages').replace('\\', '').strip().split(',')
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
 
@@ -563,7 +564,7 @@ class Manager(object):
                 'bank_type': bank_type,
                 'bank_format': bank_format,
                 'description': description,
-                'packages': packages,
+                'packageVersions': packages,
 
             })
 
@@ -583,7 +584,7 @@ class Manager(object):
                     'bank_type': bank_type,
                     'bank_format': bank_format,
                     'description': description,
-                    'packages': packages,
+                    'packageVersions': packages,
                 })
         return history
 
@@ -689,7 +690,7 @@ class Manager(object):
                              'removal_date': None,
                              'bank_type': bank_type,
                              'bank_format': bank_format,
-                             'packages': packages,
+                             'packageVersions': packages,
                              'description': description,
                              'status': status
                             })
@@ -715,7 +716,7 @@ class Manager(object):
                                                                   else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
-                            'packages': packages,
+                            'packageVersions': packages,
                             'description': description,
                             'status': 'deleted'
                             })
