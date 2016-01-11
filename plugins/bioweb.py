@@ -19,8 +19,23 @@ class Bioweb(BMPlugin):
     bioinformatics resources 
     """
 
-    connected = False
+    CONNECTED = False
     COLLECTION_TYPE = 'bank'
+
+    def getCollection(self, name):
+        """
+        Get a collection (pymongo) object from the list loaded at connection. If the collection does not exists
+        it prints an error on STDERR and exit(1)
+        :param name: Collectio name
+        :type name: String
+        :return: Collection object, or throws error
+        """
+        if not name:
+            Utils.error("A collection name is required")
+        if not name in self.collections:
+            Utils.error("Collection %s not found" % str(name))
+
+        return self.collections[name]
 
     def get_info_for_bank(self, name):
         """
@@ -30,7 +45,7 @@ class Bioweb(BMPlugin):
         :return: Pymongo Cursor for the bank
         """
 
-        if not Bioweb.connected:
+        if not Bioweb.CONNECTED:
             self._init_db()
 
         query = {}
@@ -38,7 +53,7 @@ class Bioweb(BMPlugin):
             query['name'] = name
         else:
             query['name'] = self.manager.bank.name
-        return self.dbname.get_collection('catalog').find(query)
+        return self.getCollection('catalog').find(query)
 
     def set_bank_update_news(self):
         """
@@ -157,11 +172,15 @@ class Bioweb(BMPlugin):
 
         if not col:
             Utils.error("A collection name is required")
-        if not Bioweb.connected:
+        if not Bioweb.CONNECTED:
             self._init_db()
 
-        res = self.dbname.get_collection(col).update_one(filter, {'$set': data})
+        res = self.getCollection(col).update_one(filter, {'$set': data})
         Utils.ok("%s document(s) matched, %s document(s) updated" % (str(res.matched_count), str(res.modified_count)))
+
+    """
+    Private methods
+    """
 
     def _init_db(self):
         """
@@ -173,10 +192,6 @@ class Bioweb(BMPlugin):
             Utils.error("No configuration object set")
 
         try:
-            # Try to connect to MongoDB using url
-            #url = self.config.get(self.get_name(), 'bioweb.mongo.url')
-            #self.mongo_client = MongoClient(url)
-
             # Try to connect to MongoDB using args
             mongo_host = self.config.get(self.get_name(), 'bioweb.mongo.host')
             mongo_port = int(self.config.get(self.get_name(), 'bioweb.mongo.port'))
@@ -187,14 +202,16 @@ class Bioweb(BMPlugin):
                 mongo_options['ssl_cert_reqs'] = ssl.CERT_NONE
             # Specific SSL agrs for bioweb-prod
             self.mongo_client = MongoClient(host=mongo_host, port=mongo_port, **mongo_options)
-
             dbname = self.config.get(self.get_name(), 'bioweb.mongo.db')
-            coll_catalog = self.config.get(self.get_name(), 'bioweb.mongo.collection.catalog')
-            coll_news = self.config.get(self.get_name(), 'bioweb.mongo.collection.news')
-
             self.dbname = self.mongo_client[dbname]
-            self.collcatalog = self.dbname[coll_catalog]
-            self.collnews = self.dbname[coll_news]
+            self.collections = {}
+
+            if not self.config.has_option(self.get_name(), 'bioweb.mongo.collections'):
+                Utils.error("No collection(s) set for bioweb database")
+
+            for collection in self.config.get(self.get_name(), 'bioweb.mongo.collections').strip().split(','):
+                self.collections[collection] = self.dbname[collection]
+
         except ConnectionFailure as err:
             raise Exception("[ConnectionFailure] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
         except InvalidURI as err:
@@ -206,32 +223,47 @@ class Bioweb(BMPlugin):
         except Exception as err:
             raise Exception("Error while setting Mongo configuration: %s" % str(err))
 
-        Bioweb.connected = True
+        Bioweb.CONNECTED = True
 
-    def _update_biowebdb(self, data=None, collection='catalog', upsert=True):
+    def _update_biowebdb(self, data=None, collection='catalog', params=None, upsert=True):
         """
         Function that really update the Mongodb collection ('catalog')
         It does an upsert to update the collection
         :param data: Data to be updated
         :type data: Dict
+        :param collection: Collection name to update (Default 'catalog')
+        :type collection: String
+        :param params: Extra parameters to filter documents to update
+        :type params: Dict
+        :param upsert: Perform upsert or not
+        :type upsert: Boolean
         :return: Boolean
         """
+        if not self.manager.bank.name:
+            Utils.error("Can't update, bank name required")
         if not data:
-            Utils.error("Need data to update bioweb catalog")
+            Utils.warn("[%s] No data to update bioweb catalog" % self.manager.bank.name)
+            return True
 
-        if not Bioweb.connected:
+        if not Bioweb.CONNECTED:
             self._init_db()
+
+        # Find arguments
+        search_params = {'type': Bioweb.COLLECTION_TYPE, 'name': self.manager.bank.name}
+
+        # Extra serach parameters?
+        if params is not None:
+            search_params.update(params)
 
         matched = modified = upserted = 0
         for item in data:
-            res = self.dbname.get_collection(collection).update_one({'type': Bioweb.COLLECTION_TYPE,
-                                                                     'name': self.manager.bank.name},
-                                                                     {'$set': item},
-                                                                     upsert=upsert)
+            if '_id' in item:
+                search_params['_id'] = item['_id']
+            res = self.getCollection(collection).update_one(search_params, {'$set': item},
+                                                            upsert=upsert)
             matched += res.matched_count
             modified += res.modified_count
             if res.upserted_id:
-                Utils.ok("Updated %s" % str(res.upserted_id))
                 upserted += 1
-        Utils.ok("Document(s) modification(s):\n\tMatched %d\n\tUpdated %d\n\tInserted %d" % (matched, modified, upserted))
+        Utils.ok("[%s] Document(s) modification(s):\n\tMatched %d\n\tUpdated %d\n\tInserted %d" % (self.manager.bank.name, matched, modified, upserted))
         return True
