@@ -1,13 +1,8 @@
 from __future__ import print_function
 
-import os
-import sys
-import time
-import datetime
 import ssl
 from biomajmanager.plugins import BMPlugin
 from biomajmanager.utils import Utils
-from biomajmanager.news import News
 from pymongo import MongoClient
 from pymongo.errors import InvalidName, ConnectionFailure, InvalidURI, OperationFailure
 
