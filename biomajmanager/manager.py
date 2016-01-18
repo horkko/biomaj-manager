@@ -4,6 +4,7 @@ from datetime import datetime
 import re
 import os
 import string
+import subprocess
 import sys
 
 from biomaj.bank import Bank
@@ -714,6 +715,22 @@ class Manager(object):
         return history
 
     @user_granted
+    def restart_stopped_jobs(self):
+        """
+        Restart jobs stopped by calling 'stop_running_jobs'
+        :return:
+        """
+        if not self.config.has_option('MANAGER', 'jobs.restart.exe'):
+            Utils.warn("[jobs.restart] jobs.restart.exe not set in configuration file. Action aborted.")
+            return False
+
+        script = self.config.get('MANAGER', 'jobs.restart.exe')
+        if not os.path.exists(script):
+            Utils.warn("[jobs.restart] script (%s) not found! Action aborted." % script)
+        args = self.config.get('MANAGER', 'jobs.restart.args')
+        return self._run_command(exe=script, args=args)
+
+    @user_granted
     def save_banks_version(self, file=None):
         """
         Save versions of bank when switching bank version (publish)
@@ -777,7 +794,7 @@ class Manager(object):
         """
         if not bank or bank is None:
             return False
-        if bank is Bank:
+        if bank is Bank and isinstance(bank, biomaj.bank):
             self.bank = bank
             return True
         return False
@@ -827,6 +844,23 @@ class Manager(object):
                 banks[self.bank.name] = self.bank
             self.bank = None
         return banks
+
+    @user_granted
+    def stop_running_jobs(self):
+        """
+        Stop running jobs using bank(s). This calls an external script which must be set
+        in the manager.properties configuration file.
+        :return: Boolean
+        """
+        if not self.config.has_option('MANAGER', 'jobs.stop.exe'):
+            Utils.warn("[jobs.stop] jobs.stops.exe not set in configuration file. Action aborted.")
+            return False
+
+        script = self.config.get('MANAGER', 'jobs.stop.exe')
+        if not os.path.exists(script):
+            Utils.warn("[jobs.stop] script (%s) not found! Action aborted." % script)
+        args = self.config.get('MANAGER', 'jobs.stop.args')
+        return self._run_command(exe=script, args=args)
 
     @bank_required
     def update_ready(self):
@@ -926,3 +960,32 @@ class Manager(object):
             return session
         else:
             Utils.error("No session found in bank %s" % str(self.bank.name))
+
+    def _run_command(self, exe=None, args=None, quiet=False):
+        """
+        Just run a system command using subprocess
+        :param exe: Executable to launch
+        :type exe: String
+        :param args: List of arguments
+        :type args: List
+        :param quiet: Quiet stdout, don't print on stdout
+        :type quiet: Boolean
+        :return: Boolean, raises: OSError, ValueError
+        """
+
+        stdout = stderr = None
+        if exe is None:
+            Utils.error("Can't run command, no exe provided")
+        if quiet:
+            stdout = open(os.devnull, 'wb')
+            stderr = open(os.devnull, 'wb')
+        try:
+            retcode = subprocess.check_call([exe] + args, stdout=stdout, stderr=stderr)
+        except subprocess.CalledProcessError as err:
+            Utils.error("[run command] Error: %s" % str(err))
+        except OSError as err:
+            Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
+        finally:
+            stdout.close()
+            stderr.close()
+        return True

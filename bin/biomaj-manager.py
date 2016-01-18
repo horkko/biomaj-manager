@@ -183,7 +183,9 @@ def main():
         if manager.can_switch():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
-            #manager.bank.publish()
+            manager.stop_running_jobs()
+            # manager.bank.publish()
+            manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
@@ -211,7 +213,7 @@ def main():
         sys.exit(0)
 
     # Not yet implemented options
-    if options.clean_links or options.to_mongo:
+    if options.clean_links:
         print("Not yet implemented")
         sys.exit(0)
 
