@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 from future import standard_library
+from pprint import pprint
 standard_library.install_aliases()
 
 import argparse
@@ -37,15 +38,17 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-L', '--bank_formats', dest="bank_formats", help="List supported formats and index for each banks. [-b] available.",
                         action="store_true", default=False)
-    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb)",
+    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-N', '--news', dest="news", help="Create news. [Default output txt]",
+    parser.add_argument('-N', '--news', dest="news", help="Create news to display at BiomajWatcher. [Default output txt]",
                         action="store_true", default=False)
     parser.add_argument('-n', '--simulate', dest="simulate", help="Simulate action, don't do it really.",
                         action="store_true", default=False)
     parser.add_argument('-P', '--show_pending', dest="pending", help="Show pending release(s). [-b] available",
                         action="store_true", default=False)
     parser.add_argument('-s', '--switch', dest="switch", help="Switch a bank to its new version. [-b REQUIRED]",
+                        action="store_true", default=False)
+    parser.add_argument('-X', '--test', dest="test", help="Test method. [-b REQUIRED]",
                         action="store_true", default=False)
     parser.add_argument('-U', '--show_update', dest="show_update", help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that need to be updated. [-b] available.",
                         action="store_true", default=False)
@@ -56,6 +59,7 @@ def main():
 
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank", help="Bank name")
+    parser.add_argument('--db_type', dest="db_type", help="BioMAJ database type [MySQL, MongoDB]")
     parser.add_argument('-o', '--out', dest="out", help="Output file")
     parser.add_argument('-F', '--format', dest="oformat", help="Output format. Supported [csv, html, json, txt]")
     parser.add_argument('-T', '--templates', dest="template_dir", help="Template directory. Overwrites template_dir")
@@ -108,7 +112,8 @@ def main():
         if options.oformat and options.oformat == 'json':
             print(json.dumps([h for hist in history for h in hist]))
         else:
-            print([h for hist in history for h in hist])
+            #pprint([h for hist in history for h in hist])
+            pprint(history)
         sys.exit(0)
 
     if options.info:
@@ -134,13 +139,18 @@ def main():
     if options.news:
         # Try to determine news directory from config gile
         config = Manager.load_config()
-
-        if options.oformat is None:
-            options.oformat = 'txt'
         news = News(config=config)
         news.get_news()
-        writer = Writer(config=config, data=news.data, format=options.oformat)
-        writer.write(file='news' + '.' + options.oformat)
+        if options.db_type:
+            manager = Manager()
+            manager.load_plugins()
+            if not manager.plugins.bioweb.set_news(news.data):
+                Utils.error("Can't set news to collection")
+        else:
+            if options.oformat is None:
+                options.oformat = 'txt'
+            writer = Writer(config=config, data=news.data, format=options.oformat)
+            writer.write(file='news' + '.' + options.oformat)
         sys.exit(0)
 
     if options.pending:
@@ -154,15 +164,18 @@ def main():
             writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
             writer.write(file='pending' + '.' + options.oformat)
         else:
-            for pend in pending:
-                release = pend['release']
-                id = pend['session_id']
-                date = Utils.time2datefmt(id, Manager.DATE_FMT)
-                info = []
-                info.append(["Release", "Run time"])
-                info.append([str(release), str(date)])
-                print("[%s] Pending session" % manager.bank.name)
-                print(tabulate(info, headers="firstrow", tablefmt='psql'))
+            if pending:
+                for pend in pending:
+                    release = pend['release']
+                    id = pend['session_id']
+                    date = Utils.time2datefmt(id, Manager.DATE_FMT)
+                    info = []
+                    info.append(["Release", "Run time"])
+                    info.append([str(release), str(date)])
+                    print("[%s] Pending session" % manager.bank.name)
+                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+            else:
+                print("[%s] No pending session" % manager.bank.name)
         sys.exit(0)
 
     if options.save_versions:
@@ -187,14 +200,39 @@ def main():
             # manager.bank.publish()
             manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
+            manager.load_plugins()
+            if not manager.plugins.bioweb.update_bioweb():
+                Utils.error("[%s] Can't update bioweb history" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
         sys.exit(0)
 
+    if options.test:
+        #manager = Manager(bank=options.bank)
+        #manager.load_plugins()
+        #manager.plugins.bioweb._init_db()
+        print("No test defined")
+        sys.exit(0)
+
     if options.to_mongo:
-        manager = Manager(bank=options.bank)
-        manager.load_plugins()
-        manager.plugins.bioweb.update_bioweb_catalog()
+        if not options.db_type:
+            Utils.error("--db_type required")
+
+        list = []
+        if not options.bank:
+            list = Manager.get_bank_list()
+        else:
+            list.append(options.bank)
+
+        for bank in list:
+            manager = Manager(bank=bank)
+            manager.load_plugins()
+            if options.db_type.lower() == 'mongodb':
+                manager.plugins.bioweb.update_bioweb()
+            elif options.db_type.lower() == 'mysql':
+                manager.plugins.bioweb.update_bioweb_from_mysql()
+            else:
+                Utils.error("%s not supported. Only mysql or mongodb" % options.db_type)
         sys.exit(0)
 
     if options.tool:

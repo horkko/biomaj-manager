@@ -121,7 +121,7 @@ class Manager(object):
         print("- Type(s) : %s" % ','.join(props['type']))
         print("- Owner : %s" % props['owner'])
         Utils.title('Releases')
-        print("- Current release: %s" % str(self._current_release))
+        print("- Current release: %s" % str(self.current_release()))
         if 'production' in self.bank.bank:
             Utils.title('Production')
             for production in self.bank.bank['production']:
@@ -196,7 +196,7 @@ class Manager(object):
             release = None
             session = self.get_session_from_id(self.bank.bank['current'])
             if 'release' in session and session['release']:
-                release = session=['release']
+                release = session['release']
             elif 'remoterelease' in session and session['remoterelease']:
                 release = session['remoterelease']
             if release:
@@ -213,7 +213,7 @@ class Manager(object):
             if release:
                 current = release
         else:
-            Utils.error("Can't get current release, no production available")
+            Utils.error("Can't get current release, no production available nor bank published")
         self._current_release = current
         return str(current)
 
@@ -236,10 +236,10 @@ class Manager(object):
         formats = []
         if flat:
             formats = {}
-        if self.bank.config.get('db.packages'):
-            packages = self.bank.config.get('db.packages').replace('\\', '').replace('\n','').split(',')
+        if self.get_bank_packages(): #bank.config.get('db.packages'):
+            packages = self.get_bank_packages() #self.bank.config.get('db.packages').replace('\\', '').replace('\n','').split(',')
             for package in packages:
-                (name, version) = package.split('@')
+                (_, name, version) = package.split('@')
                 # formats = {}
                 # {'cfamiliaris': {'GenomeAnalysisTK': ['2.4.9'], 'picars-tools': ['1.94'],
                 # 'bowtie': ['0.12.7'], 'samtools': ['0.1.19'], 'bwa': ['0.5.9', '0.6.2', '0.7.4'],
@@ -276,8 +276,71 @@ class Manager(object):
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
         for bank in banks:
-            banks_list.append(bank['name'])
+            # Avoid document without bank name
+            if 'name' in bank:
+                banks_list.append(bank['name'])
         return banks_list
+
+    @bank_required
+    def get_bank_packages(self):
+        """
+        Retrieve the list of linked packages for the current bank
+        :return: List of defined pckages for a bank
+        :rtype: List of string 'pack@<pack_name>@<pack_version>'
+        """
+        # Check db.packages is set for the current bank
+        packages = None
+        if not self.bank.config.get('db.packages'):
+            Utils.warn("[%s] db.packages not set!" % self.bank.name)
+        else:
+            packages = map((lambda p: 'pack@' + p), self.bank.config.get('db.packages')
+                                                     .replace('\\', '').replace('\n', '').strip().split(','))
+        return packages
+
+    @bank_required
+    def get_current_link(self):
+        """
+        Return the the path of the bank 'current' version symlink
+        :return: Complete path of 'current' link
+        :rtype: String
+        """
+        return os.path.join(self.bank.config.get('data.dir'),
+                            self.bank.name,
+                            'current')
+
+    @bank_required
+    def get_current_proddir(self):
+        """
+        Get the path of the current production bank
+        :return: Path to the current production bank
+        :rtype: String
+        """
+
+        release = self.current_release()
+        prod = self.bank.get_production(release)
+        if 'data_dir' in prod and 'prod_dir' in prod:
+            return os.path.join(prod['data_dir'], self.bank.name, prod['prod_dir'])
+        Utils.error("Can't get current production directory, element(s) missing")
+
+    def get_config_regex(self, section='GENERAL', regex=None, want_values=True):
+        """
+
+        :param section: Section to read, default 'GENERAL'
+        :type section: Str
+        :param regex: Regex to search the key with
+        :type regex: String
+        :return: List of values found
+        """
+        pattern = re.compile(regex)
+        keys = dict(self.config.items(section))
+        values = []
+        for key in keys:
+            if re.search(pattern, key):
+                if want_values:
+                    values.append(self.config.get(section, key))
+                else:
+                    values.append(key)
+        return values
 
     @bank_required
     def get_dict_sections(self, tool=None):
@@ -335,6 +398,17 @@ class Manager(object):
         return dbs
 
     @bank_required
+    def get_future_link(self):
+        """
+        Return the the path of the bank 'current' version symlink
+        :return: Complete path of 'future_release' link
+        :rtype: String
+        """
+        return os.path.join(self.bank.config.get('data.dir'),
+                            self.bank.name,
+                            'future_release')
+
+    @bank_required
     def get_list_sections(self, tool=None):
         """
             Get the "supported" blast2/golden indexes for this bank
@@ -371,70 +445,13 @@ class Manager(object):
         return dbs
 
     @bank_required
-    def get_current_link(self):
-        """
-        Return the the path of the bank 'current' version symlink
-        :return: Complete path of 'current' link
-        :rtype: String
-        """
-        return os.path.join(self.bank.config.get('data.dir'),
-                            self.bank.name,
-                            'current')
-
-    @bank_required
-    def get_current_proddir(self):
-        """
-        Get the path of the current production bank
-        :return: Path to the current production bank
-        :rtype: String
-        """
-
-        release = self.current_release()
-        prod = self.bank.get_production(release)
-        if 'data_dir' in prod and 'prod_dir' in prod:
-            return os.path.join(prod['data_dir'], self.bank.name, prod['prod_dir'])
-        Utils.error("Can't get current production directory, element(s) missing")
-
-    @bank_required
-    def get_future_link(self):
-        """
-        Return the the path of the bank 'current' version symlink
-        :return: Complete path of 'future_release' link
-        :rtype: String
-        """
-        return os.path.join(self.bank.config.get('data.dir'),
-                            self.bank.name,
-                            'future_release')
-
-    def get_config_regex(self, section='GENERAL', regex=None, want_values=True):
-        """
-
-        :param section: Section to read, default 'GENERAL'
-        :type section: Str
-        :param regex: Regex to search the key with
-        :type regex: String
-        :return: List of values found
-        """
-        pattern = re.compile(regex)
-        keys = dict(self.config.items(section))
-        values = []
-        for key in keys:
-            if re.search(pattern, key):
-                if want_values:
-                    values.append(self.config.get(section, key))
-                else:
-                    values.append(key)
-        return values
-
-    @bank_required
     def get_pending_sessions(self):
         """
         Request the database to check if some session(s) are pending to complete
         :return: Dict {'release'=release, 'session_id': id} or None
         """
-        pending = None
+        pending = []
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
-            pending = []
             has_pending = self.bank.bank['pending']
             for k,v in has_pending.items():
                 pending.append({'release': k, 'session_id': v })
@@ -531,7 +548,7 @@ class Manager(object):
         history = []
 
         description = self.bank.config.get('db.fullname').strip()
-        packages = self.bank.config.get('db.packages').replace('\\', '').strip().split(',')
+        packages = self.get_bank_packages() #self.bank.config.get('db.packages').replace('\\', '').strip().split(',')
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
 
@@ -549,7 +566,7 @@ class Manager(object):
                 'bank_type': bank_type,
                 'bank_format': bank_format,
                 'description': description,
-                'packages': packages,
+                'packageVersions': packages,
 
             })
 
@@ -569,7 +586,7 @@ class Manager(object):
                     'bank_type': bank_type,
                     'bank_format': bank_format,
                     'description': description,
-                    'packages': packages,
+                    'packageVersions': packages,
                 })
         return history
 
@@ -650,16 +667,9 @@ class Manager(object):
             sessions = self.bank.bank['sessions']
         else:
             Utils.error("No sessions found for bank %s" % self.bank.name)
+
         history = []
-        packages = []
-
-        # Check db.packages is set for the current bank
-        if not self.bank.config.get('db.packages'):
-            Utils.warn("[%s] db.packages not set!" % self.bank.name)
-        else:
-            packages = map((lambda p: 'pack@' + p), self.bank.config.get('db.packages')
-                                                     .replace('\\', '').replace('\n', '').strip().split(','))
-
+        packages = self.get_bank_packages()
         description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
@@ -682,7 +692,7 @@ class Manager(object):
                              'removal_date': None,
                              'bank_type': bank_type,
                              'bank_format': bank_format,
-                             'packages': packages,
+                             'packageVersions': packages,
                              'description': description,
                              'status': status
                             })
@@ -708,7 +718,7 @@ class Manager(object):
                                                                   else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
-                            'packages': packages,
+                            'packageVersions': packages,
                             'description': description,
                             'status': 'deleted'
                             })
@@ -755,6 +765,7 @@ class Manager(object):
         try:
             os.path.exists(file)
             banks = Manager.get_bank_list()
+            FILE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
             with open(file, mode='w') as fv:
                 for bank in banks:
                     bank = Bank(name=bank, no_log=True)
@@ -763,21 +774,15 @@ class Manager(object):
                             Utils.ok("[%s] current found" % bank.name)
                         for prod in bank.bank['production']:
                             if bank.bank['current'] == prod['session']:
+                                # bank / release / creation / size / remote server
+                                file_line = FILE_PATTERN % (bank.name, "Release " + prod['release'],
+                                                            Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                                                            str(prod['size']) if 'size' in prod and prod['size'] else "NA",
+                                                            bank.config.get('server'))
                                 if Manager.simulate:
-                                    print("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
-                                          % (bank.name,
-                                          "Release " + prod['release'],
-                                          Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
-                                          str(prod['size']) if 'size' in prod and prod['size'] else "NA",
-                                    bank.config.get('server')))
+                                    print(file_line)
                                 else:
-                                    # bank / release / creation / size / remote server
-                                    fv.write("%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
-                                             % (bank.name,
-                                             "Release " + prod['release'],
-                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
-                                             str(prod['size']) if 'size' in prod and prod['size'] else "NA",
-                                             bank.config.get('server')))
+                                    fv.write(file_line)
         except OSError as e:
             Utils.error("Can't access file: %s" % str(e))
         except IOError as e:

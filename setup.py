@@ -2,14 +2,14 @@ from distutils.core import setup
 
 config = {
     'name': 'biomaj-manager',
-    'version': '1.0.0',
+    'version': '1.0.1',
     'packages': ['biomajmanager'],
     'scripts': ['bin/biomaj-manager.py'],
     'url': 'https://github.com/horkko/biomaj-manager',
     'license': '',
     'install_requires': ['biomaj'],
     'include_package_data': True,
-    'author' :'tuco',
+    'author' :'Emmanuel Quevillon',
     'author_email' :'horkko@gmail.com',
     'description' :'BioMAJ3 toolbox'
 }

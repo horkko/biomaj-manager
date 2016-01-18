@@ -3,15 +3,19 @@ from __future__ import print_function
 from biomajmanager.utils import Utils
 from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
-
+import os
 
 class Plugins(object):
 
-    def __init__(self, manager=None):
+    CATEGORY = 'MANAGER'
+
+    def __init__(self, manager=None, name=None):
         """
         Create the plugin object
         :param manager: Manager instance
         :type config: biomajmanager.manager
+        :param name: Name of the plugin to load. [DEFAULT: load all plugins]
+        :type name: String
         :return:
         """
         if not manager:
@@ -26,28 +30,28 @@ class Plugins(object):
         if not self.config.has_option('PLUGINS', 'plugins.list'):
             Utils.error("plugins.list is not defined!")
 
-        pm = PluginManager()
-        self.pm = pm
-        pm.setPluginPlaces([self.config.get('MANAGER', 'plugins.dir')])
-        # Set our Base plugin (BMPPlugin) as category of "Base"
-        # All inherited plugins will be then pushed in the same category
-        pm.setCategoriesFilter({"Base": BMPlugin})
+        if not os.path.isdir(self.config.get('MANAGER', 'plugins.dir')):
+            Utils.error("Can't find plugins.dir")
+        pm = PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
+                           categories_filter={Plugins.CATEGORY: BMPlugin})
         pm.collectPlugins()
+        self.pm = pm
         user_plugins = [ ]
 
         # Load user wanted plugin(s)
         for plugin in self.config.get('PLUGINS', 'plugins.list').split(','):
             plugin.strip()
             # We need to lower the plugin name
-            user_plugins.append(plugin.lower())
+            user_plugins.append(plugin)
 
         # This means that all plugins must inherits from BMPlugin
-        for pluginInfo in pm.getPluginsOfCategory("Base"):
+        for pluginInfo in pm.getPluginsOfCategory(Plugins.CATEGORY):
             Utils.verbose("[manager] plugin name => %s" % pluginInfo.name)
             if pluginInfo.name in user_plugins:
                 if not pluginInfo.is_activated:
+                    Utils.verbose("[manager] plugin %s activated" % pluginInfo.name)
                     pm.activatePluginByName(pluginInfo.name)
-                setattr(self, pluginInfo.name.lower(), pluginInfo.plugin_object)
+                setattr(self, pluginInfo.name, pluginInfo.plugin_object)
                 pluginInfo.plugin_object.set_config(self.config)
                 pluginInfo.plugin_object.set_manager(self.manager)
 

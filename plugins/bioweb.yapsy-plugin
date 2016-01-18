@@ -1,6 +1,6 @@
 [Core]
 Name = bioweb
-Module = Bioweb
+Module = bioweb
 
 [Documentation]
 Author = Emmanuel Quevillon
