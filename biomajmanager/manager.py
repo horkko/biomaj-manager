@@ -275,7 +275,9 @@ class Manager(object):
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
         for bank in banks:
-            banks_list.append(bank['name'])
+            # Avoid document without bank name
+            if 'name' in bank:
+                banks_list.append(bank['name'])
         return banks_list
 
     @bank_required
@@ -447,9 +449,8 @@ class Manager(object):
         Request the database to check if some session(s) are pending to complete
         :return: Dict {'release'=release, 'session_id': id} or None
         """
-        pending = None
+        pending = []
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
-            pending = []
             has_pending = self.bank.bank['pending']
             for k,v in has_pending.items():
                 pending.append({'release': k, 'session_id': v })

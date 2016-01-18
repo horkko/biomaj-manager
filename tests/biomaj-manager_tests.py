@@ -578,7 +578,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
 
     def tearDown(self):
         pass
-        #self.utils.clean()
+        self.utils.clean()
 
     @attr('plugins')
     def test_PluginsLoaded(self):
