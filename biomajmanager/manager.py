@@ -487,6 +487,12 @@ class Manager(object):
                    sess = session
         return sess
 
+    def get_verbose(self):
+        """
+        Get the value of the verbose mode
+        """
+        return Manager.verbose
+
     @bank_required
     def has_current_link(self, link=None):
         """
@@ -799,6 +805,16 @@ class Manager(object):
         bank = Bank(name=name, no_log=True)
         self.bank = bank
         return True
+
+    def set_verbose(self, value):
+        """
+        Set/Unset verbose mode
+        :paran value: Value to set
+        :type value: Boolean
+        :return: Boolean
+        """
+        Manager.verbose = value
+        return Manager.verbose
 
     @bank_required
     def show_pending_session(self, show=False, fmt="psql"):
