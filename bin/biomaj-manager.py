@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 from future import standard_library
+from pprint import pprint
 standard_library.install_aliases()
 
 import argparse
@@ -111,7 +112,8 @@ def main():
         if options.oformat and options.oformat == 'json':
             print(json.dumps([h for hist in history for h in hist]))
         else:
-            print([h for hist in history for h in hist])
+            #pprint([h for hist in history for h in hist])
+            pprint(history)
         sys.exit(0)
 
     if options.info:
@@ -162,15 +164,18 @@ def main():
             writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
             writer.write(file='pending' + '.' + options.oformat)
         else:
-            for pend in pending:
-                release = pend['release']
-                id = pend['session_id']
-                date = Utils.time2datefmt(id, Manager.DATE_FMT)
-                info = []
-                info.append(["Release", "Run time"])
-                info.append([str(release), str(date)])
-                print("[%s] Pending session" % manager.bank.name)
-                print(tabulate(info, headers="firstrow", tablefmt='psql'))
+            if pending:
+                for pend in pending:
+                    release = pend['release']
+                    id = pend['session_id']
+                    date = Utils.time2datefmt(id, Manager.DATE_FMT)
+                    info = []
+                    info.append(["Release", "Run time"])
+                    info.append([str(release), str(date)])
+                    print("[%s] Pending session" % manager.bank.name)
+                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+            else:
+                print("[%s] No pending session" % manager.bank.name)
         sys.exit(0)
 
     if options.save_versions:
