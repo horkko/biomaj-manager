@@ -201,9 +201,12 @@ def main():
         sys.exit(0)
 
     if options.test:
-        manager = Manager(bank=options.bank)
-        manager.load_plugins()
-        manager.plugins.bioweb._init_db()
+        #manager = Manager()
+        #manager.load_plugins()
+        #manager.set_verbose(False)
+        #manager.plugins.bioweb.update_db_with_data({'name':'taxodb2'},{'exchange':{'type':'mailer','status':'crap'}},
+        #                                           collection='banks')
+        print("No tests defined")
         sys.exit(0)
 
     if options.to_mongo:
