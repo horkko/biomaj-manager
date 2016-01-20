@@ -283,6 +283,8 @@ class TestBiomajManagerNews(unittest.TestCase):
     def tearDown(self):
         self.utils.clean()
 
+    @attr('manager')
+    @attr('manager.news')
     def test_NewsDirNotADirectory(self):
         """
         Check the dir given is not a directory
@@ -294,6 +296,8 @@ class TestBiomajManagerNews(unittest.TestCase):
             sys.stderr = open(os.devnull, 'w')
             News(news_dir=dir)
 
+    @attr('manager')
+    @attr('manager.news')
     def test_FileNewsContentEqual(self):
         """
         Check the content of 2 generated news files are identical
@@ -567,6 +571,27 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertEqual(release, manager.current_release())
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerLaunchCommandOK(self):
+        """
+        Check a command started is OK
+        :return:
+        """
+        manager = Manager()
+        self.assertTrue(manager._run_command(exe='ls', args=['/tmp'], quiet=True))
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerLaunchCommandError(self):
+        """
+        Check a wrong return launched command
+        :return:
+        """
+        manager = Manager()
+        with self.assertRaises(SystemExit):
+            manager._run_command(exe='ls', args=['/notfound'], quiet=True)
 
 class TestBiomajManagerPlugins(unittest.TestCase):
 

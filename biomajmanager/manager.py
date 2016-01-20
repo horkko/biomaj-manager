@@ -3,8 +3,11 @@ from __future__ import print_function
 from datetime import datetime
 import re
 import os
+import select
 import string
+import subprocess
 import sys
+import time
 
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
@@ -730,6 +733,22 @@ class Manager(object):
         return history
 
     @user_granted
+    def restart_stopped_jobs(self):
+        """
+        Restart jobs stopped by calling 'stop_running_jobs'
+        :return:
+        """
+        if not self.config.has_option('MANAGER', 'jobs.restart.exe'):
+            Utils.warn("[jobs.restart] jobs.restart.exe not set in configuration file. Action aborted.")
+            return False
+
+        script = self.config.get('MANAGER', 'jobs.restart.exe')
+        if not os.path.exists(script):
+            Utils.error("[jobs.restart] script (%s) not found! Action aborted." % script)
+        args = self.config.get('MANAGER', 'jobs.restart.args')
+        return self._run_command(exe=script, args=[args])
+
+    @user_granted
     def save_banks_version(self, file=None):
         """
         Save versions of bank when switching bank version (publish)
@@ -788,7 +807,7 @@ class Manager(object):
         """
         if not bank or bank is None:
             return False
-        if bank is Bank:
+        if bank is Bank and isinstance(bank, biomaj.bank):
             self.bank = bank
             return True
         return False
@@ -849,6 +868,23 @@ class Manager(object):
             self.bank = None
         return banks
 
+    @user_granted
+    def stop_running_jobs(self):
+        """
+        Stop running jobs using bank(s). This calls an external script which must be set
+        in the manager.properties configuration file.
+        :return: Boolean
+        """
+        if not self.config.has_option('MANAGER', 'jobs.stop.exe'):
+            Utils.warn("[jobs.stop] jobs.stops.exe not set in configuration file. Action aborted.")
+            return False
+
+        script = self.config.get('MANAGER', 'jobs.stop.exe')
+        if not os.path.exists(script):
+            Utils.error("[jobs.stop] script (%s) not found! Action aborted." % script)
+        args = self.config.get('MANAGER', 'jobs.stop.args')
+        return self._run_command(exe=script, args=[args])
+
     @bank_required
     def update_ready(self):
         """
@@ -905,7 +941,7 @@ class Manager(object):
             logname = os.getenv('LOGNAME')
         elif 'USER' in os.environ:
             logname = os.getenv('USER')
-        current_user = os.getlogin() or logname
+        current_user = logname or os.getlogin()
         if not current_user:
             Utils.error("Can't find current user name")
 
@@ -947,3 +983,63 @@ class Manager(object):
             return session
         else:
             Utils.error("No session found in bank %s" % str(self.bank.name))
+
+    def _run_command(self, exe=None, args=None, quiet=False):
+        """
+        Just run a system command using subprocess. STDOUT and STDERR are redirected to /dev/null (os.devnull)
+        :param exe: Executable to launch
+        :type exe: String
+        :param args: List of arguments
+        :type args: List
+        :param quiet: Quiet stdout, don't print on stdout
+        :type quiet: Boolean
+        :return: Boolean
+        """
+
+        stdout = stderr = None
+        proc = None
+        # Sleep time while waiting for process to terminate
+        sleep = float(5)
+
+        if exe is None:
+            Utils.error("Can't run command, no exe provided")
+        # if quiet:
+        #     stdout = open(os.devnull, 'wb')
+        #     stderr = open(os.devnull, 'wb')
+        # else:
+        #     stdout = subprocess.PIPE
+        #     stderr = subprocess.PIPE
+        stdout = subprocess.PIPE
+        stderr = subprocess.PIPE
+        if self.config.has_option('MANAGER', 'jobs.sleep.time'):
+            sleep = float(self.config.get('MANAGER', 'jobs.sleep.time'))
+        command = [exe] + args
+        try:
+            proc = subprocess.Popen(command, stdout=stdout, stderr=stderr)
+            inputs = [proc.stdout, proc.stderr]
+            while proc.poll() is None:
+                readable, writable, exceptional = select.select(inputs, [], [], 1)
+                while readable and inputs:
+                    for flow in readable:
+                        data = flow.read()
+                        if not data:
+                            # the flow ready in reading  which has no data
+                            # is a closed flow
+                            # thus we must stop it to watch it
+                            inputs.remove(flow)
+                        if flow is proc.stdout and data:
+                            if not quiet:
+                                Utils.ok("[STDOUT] %s" % data)
+                        if flow is proc.stderr and data:
+                            if not quiet:
+                                Utils.warn("[STDERR] %s" % data)
+                    readable, writable, exceptional = select.select(inputs, [], [], 1)
+                time.sleep(sleep)
+            if proc.returncode != 0:
+                Utils.error("[run command] command %s FAILED!" % command)
+        except subprocess.CalledProcessError as err:
+            Utils.error("[run command] Error: %s" % str(err))
+        except OSError as err:
+            Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
+
+        return True
