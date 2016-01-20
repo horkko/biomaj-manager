@@ -110,7 +110,7 @@ import sys
 
 from biomajmanager.plugins import BMPlugin
 
-class YouPlgin(BMPlugin):
+class YouPlugin(BMPlugin):
     """
     My first Biomaj Manager plugin
     """
