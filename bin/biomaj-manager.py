@@ -206,10 +206,12 @@ def main():
         sys.exit(0)
 
     if options.test:
-        #manager = Manager(bank=options.bank)
-        #manager.load_plugins()
-        #manager.plugins.bioweb._init_db()
-        print("No test defined")
+        manager = Manager(bank=options.bank)
+        manager.load_plugins()
+        manager.plugins.bioweb.update_db_with_data({'name': manager.bank.name},
+                                                   {'exchange': {'type': 'mailer', 'status':'crap'}},
+                                                   collection='banks')
+        #print("No test defined")
         sys.exit(0)
 
     if options.to_mongo:

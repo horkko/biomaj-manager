@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 import ssl
+import pymongo
 from biomajmanager.plugins import BMPlugin
 from biomajmanager.utils import Utils
-from pymongo import MongoClient
 from pymongo.errors import InvalidName, ConnectionFailure, InvalidURI, OperationFailure
 
 
@@ -153,25 +153,29 @@ class Bioweb(BMPlugin):
 
         return True
 
-    def update_db_with_data(self, filter, data, col=None):
+    def update_db_with_data(self, filter, data, collection=None):
         """
         Method used to update the Bioweb mongo database
         :param filter: Query that match the document
         :type filter: Dict
         :param data: Original data to update
         :type data: Dict
-        :param col: Collection name
-        :type col: String
+        :param collection: Collection name
+        :type collection: String
         :return: Boolean
         """
 
-        if not col:
+        if not collection:
             Utils.error("A collection name is required")
         if not Bioweb.CONNECTED:
             self._init_db()
 
-        res = self.getCollection(col).update_one(filter, {'$set': data})
-        Utils.ok("%s document(s) matched, %s document(s) updated" % (str(res.matched_count), str(res.modified_count)))
+        if (pymongo.version_tuple)[0] > 2:
+            res = self.getCollection(collection).update_one(filter, {'$set': data})
+            Utils.ok("%s document(s) matched, %s document(s) updated" % (str(res.matched_count), str(res.modified_count)))
+        else:
+            res = self.getCollection(collection).update(filter, {'$set': data})
+            Utils.ok(res)
 
     """
     Private methods
@@ -196,7 +200,7 @@ class Bioweb(BMPlugin):
                 mongo_options['ssl'] = True
                 mongo_options['ssl_cert_reqs'] = ssl.CERT_NONE
             # Specific SSL agrs for bioweb-prod
-            self.mongo_client = MongoClient(host=mongo_host, port=mongo_port, **mongo_options)
+            self.mongo_client = pymongo.MongoClient(host=mongo_host, port=mongo_port, **mongo_options)
             dbname = self.config.get(self.get_name(), 'bioweb.mongo.db')
             self.dbname = self.mongo_client[dbname]
             self.collections = {}
@@ -207,20 +211,20 @@ class Bioweb(BMPlugin):
             for collection in self.config.get(self.get_name(), 'bioweb.mongo.collections').strip().split(','):
                 self.collections[collection] = self.dbname[collection]
 
-        except ConnectionFailure as err:
+        except pymongo.ConnectionFailure as err:
             raise Exception("[ConnectionFailure] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
-        except InvalidURI as err:
+        except pymongo.InvalidURI as err:
             raise Exception("[InvalidURI] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
-        except OperationFailure as err:
+        except pymongo.OperationFailure as err:
             raise Exception("Operation failed: %s" % str(err))
-        except InvalidName as err:
+        except pymongo.InvalidName as err:
             raise Exception("Error getting collection: %s" % str(err))
         except Exception as err:
             raise Exception("Error while setting Mongo configuration: %s" % str(err))
 
         Bioweb.CONNECTED = True
 
-    def _update_biowebdb(self, data=None, collection='catalog', params=None, upsert=True):
+    def _update_mongodb(self, data=None, collection='catalog', params=None, upsert=True):
         """
         Function that really update the Mongodb collection ('catalog')
         It does an upsert to update the collection
@@ -254,11 +258,17 @@ class Bioweb(BMPlugin):
         for item in data:
             if '_id' in item:
                 search_params['_id'] = item['_id']
-            res = self.getCollection(collection).update_one(search_params, {'$set': item},
+            if (pymongo.version_tuple)[0] > 2:
+                res = self.getCollection(collection).update_one(search_params, {'$set': item},
+                                                                upsert=upsert)
+                matched += res.matched_count
+                modified += res.modified_count
+                if res.upserted_id:
+                    upserted += 1
+                Utils.ok("[%s] Document(s) modification(s):\n\tMatched %d\n\tUpdated %d\n\tInserted %d" %
+                         (self.manager.bank.name, matched, modified, upserted))
+            else:
+                res = self.getCollection(collection).update(search_params, {'$set': item},
                                                             upsert=upsert)
-            matched += res.matched_count
-            modified += res.modified_count
-            if res.upserted_id:
-                upserted += 1
-        Utils.ok("[%s] Document(s) modification(s):\n\tMatched %d\n\tUpdated %d\n\tInserted %d" % (self.manager.bank.name, matched, modified, upserted))
+                Utils.ok(res)
         return True
