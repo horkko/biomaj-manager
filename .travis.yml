@@ -11,7 +11,7 @@ branches:
 # command to install dependencies
 
 install:
-  - "pip install mysql-connector-python-rf"
+  - "pip install --egg mysql-connector-python-rf"
   - "pip instal Yapsy"
   - "pip install Jinja2"
   - "pip install biomaj"
