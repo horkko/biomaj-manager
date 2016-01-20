@@ -4,7 +4,6 @@ from datetime import datetime
 import re
 import os
 import select
-import string
 import subprocess
 import sys
 import time
@@ -238,8 +237,8 @@ class Manager(object):
         formats = []
         if flat:
             formats = {}
-        if self.get_bank_packages(): #bank.config.get('db.packages'):
-            packages = self.get_bank_packages() #self.bank.config.get('db.packages').replace('\\', '').replace('\n','').split(',')
+        if self.get_bank_packages():
+            packages = self.get_bank_packages()
             for package in packages:
                 (_, name, version) = package.split('@')
                 # formats = {}
@@ -369,25 +368,25 @@ class Manager(object):
 
         if self.bank.config.get(ndbs):
             dbs['nuc'] = {'dbs': []}
-            for sec in string.split(self.bank.config.get(ndbs), ','):
+            for sec in self.bank.config.get(ndbs).split(','):
                 dbs['nuc']['dbs'].append(sec)
         if self.bank.config.get(pdbs):
             dbs['pro'] = {'dbs': []}
-            for sec in string.split(self.bank.config.get(pdbs), ','):
+            for sec in self.bank.config.get(pdbs).split(','):
                 dbs['pro']['dbs'].append(sec)
         if self.bank.config.get(nsec):
             if 'nuc' in dbs:
                 dbs['nuc']['secs'] = []
             else:
                 dbs['nuc': {'dbs': []}]
-            for sec in string.split(self.bank.config.get(nsec), ','):
+            for sec in self.bank.config.get(nsec).split(','):
                 dbs['nuc']['secs'].append(sec)
         if self.bank.config.get(psec):
             if 'pro' in dbs:
                 dbs['pro']['secs'] = []
             else:
                 dbs['pro'] = {'secs': []}
-            for sec in string.split(self.bank.config.get(psec), ','):
+            for sec in self.bank.config.get(psec).split(','):
                 dbs['pro']['secs'].append(sec)
 
         if dbs.keys():
@@ -432,16 +431,16 @@ class Manager(object):
         dbs = []
 
         if self.bank.config.get(ndbs):
-            for sec in string.split(self.bank.config.get(ndbs), ','):
+            for sec in self.bank.config.get(ndbs).split(','):
                 dbs.append(sec)
         if self.bank.config.get(pdbs):
-            for sec in string.split(self.bank.config.get(pdbs), ','):
+            for sec in self.bank.config.get(pdbs).split(','):
                 dbs.append(sec)
         if self.bank.config.get(nsec):
-            for sec in string.split(self.bank.config.get(nsec), ','):
+            for sec in self.bank.config.get(nsec).split(','):
                 dbs.append(sec.replace('\\','').replace('\n',''))
         if self.bank.config.get(psec):
-            for sec in string.split(self.bank.config.get(psec), ','):
+            for sec in self.bank.config.get(psec).split(','):
                 dbs.append(sec.replace('\\','').replcae('\n',''))
 
         return dbs
@@ -556,7 +555,7 @@ class Manager(object):
         history = []
 
         description = self.bank.config.get('db.fullname').strip()
-        packages = self.get_bank_packages() #self.bank.config.get('db.packages').replace('\\', '').strip().split(',')
+        packages = self.get_bank_packages()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
 
@@ -1036,7 +1035,7 @@ class Manager(object):
                     readable, writable, exceptional = select.select(inputs, [], [], 1)
                 time.sleep(sleep)
             if proc.returncode != 0:
-                Utils.error("[run command] command %s FAILED!" % command)
+                Utils.error("[run command] command %s FAILED with exit code %d!" % (command, proc.returncode))
         except subprocess.CalledProcessError as err:
             Utils.error("[run command] Error: %s" % str(err))
         except OSError as err:
