@@ -196,7 +196,9 @@ def main():
         if manager.can_switch():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
-            #manager.bank.publish()
+            manager.stop_running_jobs()
+            # manager.bank.publish()
+            manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
             manager.load_plugins()
             if not manager.plugins.bioweb.update_bioweb():
@@ -207,10 +209,8 @@ def main():
 
     if options.test:
         manager = Manager(bank=options.bank)
-        manager.load_plugins()
-        manager.plugins.bioweb.update_db_with_data({'name': manager.bank.name},
-                                                   {'exchange': {'type': 'mailer', 'status':'crap'}},
-                                                   collection='banks')
+        if manager.stop_running_jobs():
+            Utils.ok("Jobs stopped OK!")
         #print("No test defined")
         sys.exit(0)
 

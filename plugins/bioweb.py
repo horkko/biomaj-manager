@@ -4,7 +4,6 @@ import ssl
 import pymongo
 from biomajmanager.plugins import BMPlugin
 from biomajmanager.utils import Utils
-from pymongo.errors import InvalidName, ConnectionFailure, InvalidURI, OperationFailure
 
 
 class Bioweb(BMPlugin):
@@ -66,7 +65,7 @@ class Bioweb(BMPlugin):
             data['operation'] = "databank update"
             data['type'] = Bioweb.COLLECTION_TYPE
             data['name'] = self.manager.bank.name
-            return self._update_biowebdb(data=[data], collection='news')
+            return self._update_mongodb(data=[data], collection='news')
         Utils.warn("Can't set new %s bank version, not published yet" % self.manager.bank.name)
         return False
 
@@ -77,7 +76,7 @@ class Bioweb(BMPlugin):
         """
 
         history = self.manager.mongo_history()
-        if not self._update_biowebdb(data=history):
+        if not self._update_mongodb(data=history):
             Utils.error("Can't update bioweb.catalog")
 
         return True
@@ -137,7 +136,7 @@ class Bioweb(BMPlugin):
                                 'description': description,
                                 'status': status,
                                 })
-            if not self._update_biowebdb(data=history):
+            if not self._update_mongodb(data=history):
                 Utils.error("Can't update bioweb.catalog")
         except mysql.connector.ProgrammingError as error:
             Utils.error("[Syntax Error] %s" % str(error))
@@ -171,11 +170,11 @@ class Bioweb(BMPlugin):
             self._init_db()
 
         if (pymongo.version_tuple)[0] > 2:
-            res = self.getCollection(collection).update_one(filter, {'$set': data})
-            Utils.ok("%s document(s) matched, %s document(s) updated" % (str(res.matched_count), str(res.modified_count)))
+            res = self.getCollection(collection).update_one(filter, {'$set': data}, upsert=True)
         else:
-            res = self.getCollection(collection).update(filter, {'$set': data})
-            Utils.ok(res)
+            res = self.getCollection(collection).update(filter, {'$set': data}, upsert=True)
+        self._update_documents_counts(res)
+        self._print_updated_documents()
 
     """
     Private methods
@@ -204,6 +203,9 @@ class Bioweb(BMPlugin):
             dbname = self.config.get(self.get_name(), 'bioweb.mongo.db')
             self.dbname = self.mongo_client[dbname]
             self.collections = {}
+            
+            # Keep trace of updated documents
+            self.doc_matched = self.doc_modified = self.doc_upserted = 0
 
             if not self.config.has_option(self.get_name(), 'bioweb.mongo.collections'):
                 Utils.error("No collection(s) set for bioweb database")
@@ -213,6 +215,8 @@ class Bioweb(BMPlugin):
 
         except pymongo.ConnectionFailure as err:
             raise Exception("[ConnectionFailure] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
+        except pymongo.InvalidName as err:
+            raise Exception("Error getting collection: %s" % str(err))
         except pymongo.InvalidURI as err:
             raise Exception("[InvalidURI] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
         except pymongo.OperationFailure as err:
@@ -260,15 +264,54 @@ class Bioweb(BMPlugin):
                 search_params['_id'] = item['_id']
             if (pymongo.version_tuple)[0] > 2:
                 res = self.getCollection(collection).update_one(search_params, {'$set': item},
-                                                                upsert=upsert)
-                matched += res.matched_count
-                modified += res.modified_count
-                if res.upserted_id:
-                    upserted += 1
-                Utils.ok("[%s] Document(s) modification(s):\n\tMatched %d\n\tUpdated %d\n\tInserted %d" %
-                         (self.manager.bank.name, matched, modified, upserted))
             else:
                 res = self.getCollection(collection).update(search_params, {'$set': item},
                                                             upsert=upsert)
-                Utils.ok(res)
+            self._update_documents_count(res)
+        self._print_updated_documents()
+        return True
+
+    def _update_documents_counts(self, res):
+        """
+        Update internal counter about matched/modified/upserted documents during an update
+        :param res: Result return by an update
+        :type res: Depending on pymongo version (3.2=UpdateResult, 2.x=Dict)
+        :return: Boolean
+        """
+        if not res:
+            return False
+
+        if (pymongo.version_tuple)[0] > 2:
+            self.doc_matched += res.matched_count
+            self.doc_modified += res.modified_count
+            if res.upserted_id:
+                self.doc_upserted += 1
+        else:
+            if res['updatedExisting']:
+                self.doc_matched += 1
+            self.doc_modified += res['nModified']
+            if 'upserted' in res:
+                self.doc_upserted += 1
+
+        return True
+
+    def _print_updated_documents(self):
+        """
+        Print a small report of action(s) done duinrg the update
+        :param matched: Number of documents matched based on filtering query
+        :type matched: Int
+        :param modified: Number of documents updated during update
+        :type modified: Int
+        :param upserted: Number of new documents created (using 'upsert') during update
+        :type upserted: Int
+        :return: Boolean
+        """
+        if not self.get_manager().get_verbose():
+            return True
+        bank = ""
+        if self.manager.bank:
+            bank = "[%s] " % self.manager.bank.name
+        Utils.ok("%sDocument(s) modification(s):\n\tMatched %d\n\tUpdated %d\n\tInserted %d"
+                 % (bank, self.doc_matched, self.doc_modified, self.doc_upserted))
+        self.doc_matched = self.doc_modified = self.doc_upserted = 0
         return True
