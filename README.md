@@ -118,6 +118,11 @@ class YouPlugin(BMPlugin):
 
 ```
 
+Tests
+=====
+
+You can run tests by typing `nosetests`
+
 Status
 ======
 [![Build Status](https://travis-ci.org/horkko/biomajmanager.svg?branch=master)](https://travis-ci.org/horkko/biomajmanager)
