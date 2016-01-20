@@ -208,10 +208,12 @@ def main():
         sys.exit(0)
 
     if options.test:
-        #manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank)
+        if manager.stop_running_jobs():
+            Utils.ok("Jobs stopped OK!")
         #manager.load_plugins()
         #manager.plugins.bioweb._init_db()
-        print("No test defined")
+        #print("No test defined")
         sys.exit(0)
 
     if options.to_mongo:

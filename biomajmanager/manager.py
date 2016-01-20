@@ -3,9 +3,11 @@ from __future__ import print_function
 from datetime import datetime
 import re
 import os
+import select
 import string
 import subprocess
 import sys
+import time
 
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
@@ -736,9 +738,9 @@ class Manager(object):
 
         script = self.config.get('MANAGER', 'jobs.restart.exe')
         if not os.path.exists(script):
-            Utils.warn("[jobs.restart] script (%s) not found! Action aborted." % script)
+            Utils.error("[jobs.restart] script (%s) not found! Action aborted." % script)
         args = self.config.get('MANAGER', 'jobs.restart.args')
-        return self._run_command(exe=script, args=args)
+        return self._run_command(exe=script, args=[args])
 
     @user_granted
     def save_banks_version(self, file=None):
@@ -863,9 +865,9 @@ class Manager(object):
 
         script = self.config.get('MANAGER', 'jobs.stop.exe')
         if not os.path.exists(script):
-            Utils.warn("[jobs.stop] script (%s) not found! Action aborted." % script)
+            Utils.error("[jobs.stop] script (%s) not found! Action aborted." % script)
         args = self.config.get('MANAGER', 'jobs.stop.args')
-        return self._run_command(exe=script, args=args)
+        return self._run_command(exe=script, args=[args])
 
     @bank_required
     def update_ready(self):
@@ -923,7 +925,7 @@ class Manager(object):
             logname = os.getenv('LOGNAME')
         elif 'USER' in os.environ:
             logname = os.getenv('USER')
-        current_user = os.getlogin() or logname
+        current_user = logname or os.getlogin()
         if not current_user:
             Utils.error("Can't find current user name")
 
@@ -968,29 +970,60 @@ class Manager(object):
 
     def _run_command(self, exe=None, args=None, quiet=False):
         """
-        Just run a system command using subprocess
+        Just run a system command using subprocess. STDOUT and STDERR are redirected to /dev/null (os.devnull)
         :param exe: Executable to launch
         :type exe: String
         :param args: List of arguments
         :type args: List
         :param quiet: Quiet stdout, don't print on stdout
         :type quiet: Boolean
-        :return: Boolean, raises: OSError, ValueError
+        :return: Boolean
         """
 
         stdout = stderr = None
+        proc = None
+        # Sleep time while waiting for process to terminate
+        sleep = float(5)
+
         if exe is None:
             Utils.error("Can't run command, no exe provided")
-        if quiet:
-            stdout = open(os.devnull, 'wb')
-            stderr = open(os.devnull, 'wb')
+        # if quiet:
+        #     stdout = open(os.devnull, 'wb')
+        #     stderr = open(os.devnull, 'wb')
+        # else:
+        #     stdout = subprocess.PIPE
+        #     stderr = subprocess.PIPE
+        stdout = subprocess.PIPE
+        stderr = subprocess.PIPE
+        if self.config.has_option('MANAGER', 'jobs.sleep.time'):
+            sleep = float(self.config.get('MANAGER', 'jobs.sleep.time'))
+        command = [exe] + args
         try:
-            retcode = subprocess.check_call([exe] + args, stdout=stdout, stderr=stderr)
+            proc = subprocess.Popen(command, stdout=stdout, stderr=stderr)
+            inputs = [proc.stdout, proc.stderr]
+            while proc.poll() is None:
+                readable, writable, exceptional = select.select(inputs, [], [], 1)
+                while readable and inputs:
+                    for flow in readable:
+                        data = flow.read()
+                        if not data:
+                            # the flow ready in reading  which has no data
+                            # is a closed flow
+                            # thus we must stop it to watch it
+                            inputs.remove(flow)
+                        if flow is proc.stdout and data:
+                            if not quiet:
+                                Utils.ok("[STDOUT] %s" % data)
+                        if flow is proc.stderr and data:
+                            if not quiet:
+                                Utils.warn("[STDERR] %s" % data)
+                    readable, writable, exceptional = select.select(inputs, [], [], 1)
+                time.sleep(sleep)
+            if proc.returncode != 0:
+                Utils.error("[run command] command %s FAILED!" % command)
         except subprocess.CalledProcessError as err:
             Utils.error("[run command] Error: %s" % str(err))
         except OSError as err:
             Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
-        finally:
-            stdout.close()
-            stderr.close()
+
         return True
