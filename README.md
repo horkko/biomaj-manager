@@ -29,7 +29,7 @@ root.dir=/path/to/config/directory
 template.dir=%(root.dir)s/templates
 news.dir=%(root.dir)s/news
 production.dir=%(root.dir)s/production
-plugins.dir=/Users/tuco/src/workspace/biomaj-manager-github/biomaj-manager/plugins
+plugins.dir=%(root.dir)s/plugins
 ```
 
 Usage
