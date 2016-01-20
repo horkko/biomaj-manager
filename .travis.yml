@@ -11,7 +11,10 @@ branches:
 # command to install dependencies
 
 install:
-  - "pip install -r requirements.txt"
+  - "pip install mysql-connector-python-rf"
+  - "pip instal Yapsy"
+  - "pip install Jinja2"
+  - "pip install biomaj"
   - "python setup.py -q install"
 # command to run tests
 script: nosetests --with-coverage
