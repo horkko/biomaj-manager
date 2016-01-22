@@ -126,4 +126,4 @@ You can run tests by typing `nosetests`
 Status
 ======
 [![Build Status](https://travis-ci.org/horkko/biomajmanager.svg?branch=master)](https://travis-ci.org/horkko/biomajmanager)
-
+[![Coverage Status](https://coveralls.io/repos/github/horkko/biomajmanager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomajmanager?branch=master)
