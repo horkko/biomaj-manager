@@ -2,9 +2,9 @@ biomaj-manager
 ==============
 
 This project intends to be a contrib around BioMAJ3 (https://github.com/genouest/biomaj).
-It is a tool box like extending BioMAJ3 by adding some methods helping you to have some
-more information about your bank like pending bank(s), information about a bank, history
-of a bank (a.k.a. updated releases) plus some more.
+It is a kind of swiss knife extending BioMAJ3 by adding some methods helping you to have
+extra information about your banks like pending bank(s), information about a bank, history
+of a banks (updated releases) plus some more.
 
 Installation
 ============

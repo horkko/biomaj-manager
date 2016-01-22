@@ -97,7 +97,7 @@ class Links(object):
         Create a symbolink link between 'source' and 'target' for a directory
         :param source: Source directory to link
         :type source: String
-        :param target: Destination directory name (relative to config param 'production_dir')
+        :param target: Destination directory name (relative to config param 'production.dir')
         :type target: String
         :param hard: Create hard link instead of symlink
         :type hard: Boolean (default False)
@@ -156,7 +156,7 @@ class Links(object):
             if not no_ext:
                 tlink = os.path.join(self.target, file)
                 links.append((slink, tlink))
-                if self.manager.verbose:
+                if Manager.verbose:
                     print("[_generate_files_link] [no_ext=%s] append slink %s" % (str(no_ext), slink))
                     print("[_generate_files_link] [no_ext=%s] append tlink %s" % (str(no_ext), tlink))
 
