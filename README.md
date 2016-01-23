@@ -127,3 +127,4 @@ Status
 ======
 [![Build Status](https://travis-ci.org/horkko/biomajmanager.svg?branch=master)](https://travis-ci.org/horkko/biomajmanager)
 [![Coverage Status](https://coveralls.io/repos/github/horkko/biomajmanager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomajmanager?branch=master)
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomajmanager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
