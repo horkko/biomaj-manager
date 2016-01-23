@@ -15,6 +15,6 @@ install:
   - "python setup.py -q install"
 # command to run tests
 script:
-	nosetests --with-coverage --cover-package=biomajmanager
+  nosetests --with-coverage --cover-package=biomajmanager
 after_success:
-        coveralls
+  coveralls
