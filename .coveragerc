@@ -1,0 +1,6 @@
+[run]
+source = biomajmanager,biomajmanager.links,biomajmanager.news,biomajmanager.manager,biomajmanager.utils,biomajmanager.plugins,biomajmanager.writer
+[report]
+omit = 
+    */python?.?/*
+    */site-packages/nose/*
