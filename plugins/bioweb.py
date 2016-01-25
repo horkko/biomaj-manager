@@ -258,12 +258,12 @@ class Bioweb(BMPlugin):
         if params is not None:
             search_params.update(params)
 
-        matched = modified = upserted = 0
         for item in data:
             if '_id' in item:
                 search_params['_id'] = item['_id']
             if (pymongo.version_tuple)[0] > 2:
                 res = self.getCollection(collection).update_one(search_params, {'$set': item},
+                                                                upsert=upsert)
             else:
                 res = self.getCollection(collection).update(search_params, {'$set': item},
                                                             upsert=upsert)
