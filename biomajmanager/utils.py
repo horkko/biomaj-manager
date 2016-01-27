@@ -1,4 +1,5 @@
 from __future__ import print_function
+import pytz
 import os
 import sys
 from time import time, tzname
@@ -58,7 +59,10 @@ class Utils(object):
         :return: List of directories
         :rtype: List
         """
-        if not os.path.exists(path) and os.path.isdir(path):
+        if path is None:
+            Utils.error("Path is required")
+
+        if not os.path.exists(path) and not os.path.isdir(path):
             Utils.error("%s does not exists" % str(path))
 
         dirs = []
@@ -91,8 +95,6 @@ class Utils(object):
         """
         Convert a locatime datetime object to UTC
         """
-        import pytz
-
         if not isinstance(value, datetime):
             Utils.error("datetime object required! %s" % value)
         time_zone = tzname[0]
@@ -108,7 +110,8 @@ class Utils(object):
         :type msg: String
         :return:
         """
-        print("[OK] %s" % str(msg))
+        if msg:
+            print("[OK] %s" % str(msg))
 
     @staticmethod
     def reset_timer():
@@ -142,8 +145,6 @@ class Utils(object):
         :param id: Timestamp to convert
         :return: datetime object
         """
-        if not id:
-            Utils.error("timestamp required")
         return datetime.fromtimestamp(id)
 
     @staticmethod
@@ -154,11 +155,6 @@ class Utils(object):
         :param fmt: Date format to follow for conversion
         :return: date (String)
         """
-        if not id:
-            Utils.error("timestamp required")
-        if not fmt:
-            Utils.error("date time format requried")
-
         return datetime.fromtimestamp(id).strftime(fmt)
 
     @staticmethod

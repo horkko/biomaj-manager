@@ -54,26 +54,13 @@ class Manager(object):
             self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
             if self.config.has_option('GENERAL', 'data.dir'):
                 self.bank_prod = self.config.get('GENERAL', 'data.dir')
-        except Exception as e:
+        except (Exception, SystemExit) as e:
             Utils.error(str(e))
 
         if bank is not None:
             self.bank = Bank(name=bank, no_log=True)
             if self.bank.config.get('data.dir'):
                 self.bank_prod = self.bank.config.get('data.dir')
-
-            """
-            # Check if manager.properties is here and put it into global_conf
-            # We look for a manager.properties file at the same place as global.properties
-            if not self.config:
-                conf_dir = self.bank.config.get('conf.dir')
-                conf_dir = os.path.dirname(conf_dir)
-                manager_conf = os.path.sep.join([conf_dir, 'manager.properties'])
-                if os.path.isfile(manager_conf):
-                    self.bank.config.global_config.read(manager_conf)
-                else:
-                    Utils.error("Can't find 'manager.properties': %s" % manager_conf)
-            """
 
     @staticmethod
     def load_config(cfg=None, global_cfg=None):
@@ -102,7 +89,7 @@ class Manager(object):
         if not cfg:
             cfg = os.path.join(conf_dir, 'manager.properties')
         if not os.path.isfile(cfg):
-            print("Can't find config file %s" % cfg)
+            Utils.error("Can't find config file %s" % cfg)
 
         Utils.verbose("[manager] Reading manager configuration file")
         BiomajConfig.global_config.read(cfg)
@@ -115,7 +102,6 @@ class Manager(object):
         :return:
         """
         props = self.bank.get_properties()
-        print(props)
         print("*** Bank %s ***" % self.bank.name)
         Utils.title('Properties')
         print("- Visibility : %s" % props['visibility'])
@@ -161,10 +147,6 @@ class Manager(object):
         if self.bank.is_locked():
             print("[%s] Can't switch, bank is being updated" % self.bank.name, file=sys.stderr)
             return False
-        # Is there a bank already in production (published) ?
-        #if not os.path.islink(self.get_current_link()): # and not os.path.islink(self.get_future_link()):
-        #    print("[%s] Can't switch, bank has no 'current' link" % self.bank.name)
-        #    return False
         # If there is no published bank yet, ask the user to do it first. Can't switch to new release version
         # if no bank is published yet
         if not self.bank_is_published():
@@ -174,7 +156,6 @@ class Manager(object):
         # Bank construction failed?
         if self.last_session_failed():
             # A message should be printed from the function
-            #print("[%s] Can't switch, last session failed" % self.bank.name)
             return False
 
         if not self.update_ready():
@@ -187,14 +168,14 @@ class Manager(object):
         """
         Search the current available release ('online')
         :return: Release number if available or 'NA'
-        :rtype: String
+        :rtype: String or None
         """
         if self._current_release:
             return self._current_release
-        current = 'NA'
+        current = None
+        release = None
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
-            release = None
             session = self.get_session_from_id(self.bank.bank['current'])
             if 'release' in session and session['release']:
                 release = session['release']
@@ -206,7 +187,6 @@ class Manager(object):
         # completed, workflow(s) over
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
             production = self.bank.bank['production'][-1]
-            release = None
             if 'release' in production and production['release']:
                 release = production['release']
             elif 'remoterelease'in production and production['remoterelease']:
@@ -215,8 +195,11 @@ class Manager(object):
                 current = release
         else:
             Utils.error("Can't get current release, no production available nor bank published")
-        self._current_release = current
-        return str(current)
+        if current:
+            self._current_release = current
+            return str(current)
+        else:
+            return current
 
     @bank_required
     def formats(self, flat=False):
@@ -252,12 +235,6 @@ class Manager(object):
                 else:
                     formats.append(package)
         return formats
-        #path = os.path.join(self.bank.config.get('data.dir'), self.bank.name, release)
-        #if not os.path.exists(path):
-        #    Utils.error("Can't get format(s) from '%s', directory not found" % path)
-        #if flat:
-        #    return ','.join(os.listdir(path))
-        #return os.listdir(path)
 
     @bank_required
     def formats_as_string(self):
@@ -271,9 +248,12 @@ class Manager(object):
         :rtype: List of string
         """
         if MongoConnector.db is None:
-            BiomajConfig.load_config()
-            MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
-                           BiomajConfig.global_config.get('GENERAL','db.name'))
+            try:
+                BiomajConfig.load_config()
+                MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
+                               BiomajConfig.global_config.get('GENERAL','db.name'))
+            except Exception as err:
+                Utils.error("Can't get bank list: %s" % str(err))
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
         for bank in banks:
@@ -318,29 +298,42 @@ class Manager(object):
         """
 
         release = self.current_release()
-        prod = self.bank.get_production(release)
-        if 'data_dir' in prod and 'prod_dir' in prod:
-            return os.path.join(prod['data_dir'], self.bank.name, prod['prod_dir'])
-        Utils.error("Can't get current production directory, element(s) missing")
+        if release:
+            prod = self.bank.get_production(release)
+            if not prod:
+                Utils.error("Can't find production for release %s" % str(release))
+            elif 'data_dir' in prod and 'prod_dir' in prod:
+                return os.path.join(prod['data_dir'], self.bank.name, prod['prod_dir'])
+            else:
+                Utils.error("Can't get current production directory, 'prod_dir' or 'data_dir' missing in production document field")
+        else:
+            Utils.error("Can't get current production directory: 'current_release' not available")
 
-    def get_config_regex(self, section='GENERAL', regex=None, want_values=True):
+    def get_config_regex(self, section='GENERAL', regex=None, with_values=True):
         """
-
+        Pick up values from the configuration file based on a regular expression.
+        By default it returns the corresponding list of values found. If with_values
+        set to False, it returns only the keys.
         :param section: Section to read, default 'GENERAL'
         :type section: Str
         :param regex: Regex to search the key with
         :type regex: String
+        :param with_values: Returns values instead of keys
+        :type with_values: Boolean, default True
         :return: List of values found
         """
+        if not regex:
+            Utils.error("Regular expression required to get config regex")
         pattern = re.compile(regex)
         keys = dict(self.config.items(section))
         values = []
         for key in keys:
             if re.search(pattern, key):
-                if want_values:
-                    values.append(self.config.get(section, key))
-                else:
-                    values.append(key)
+                if self.config.has_option(section, key):
+                    if with_values:
+                        values.append(self.config.get(section, key))
+                    else:
+                        values.append(key)
         return values
 
     @bank_required
@@ -369,33 +362,28 @@ class Manager(object):
         if self.bank.config.get(ndbs):
             dbs['nuc'] = {'dbs': []}
             for sec in self.bank.config.get(ndbs).split(','):
-                dbs['nuc']['dbs'].append(sec)
+                if sec and sec != '':
+                    dbs['nuc']['dbs'].append(sec)
         if self.bank.config.get(pdbs):
             dbs['pro'] = {'dbs': []}
             for sec in self.bank.config.get(pdbs).split(','):
-                dbs['pro']['dbs'].append(sec)
+                if sec and sec != '':
+                    dbs['pro']['dbs'].append(sec)
         if self.bank.config.get(nsec):
-            if 'nuc' in dbs:
-                dbs['nuc']['secs'] = []
-            else:
-                dbs['nuc': {'dbs': []}]
+            if not 'nuc' in dbs:
+                dbs['nuc'] = {}
+            dbs['nuc']['secs'] = []
             for sec in self.bank.config.get(nsec).split(','):
-                dbs['nuc']['secs'].append(sec)
+                if sec and sec != '':
+                    dbs['nuc']['secs'].append(sec)
         if self.bank.config.get(psec):
-            if 'pro' in dbs:
-                dbs['pro']['secs'] = []
-            else:
-                dbs['pro'] = {'secs': []}
+            if not 'pro' in dbs:
+                dbs['pro'] = {}
+            dbs['pro']['secs'] = []
             for sec in self.bank.config.get(psec).split(','):
-                dbs['pro']['secs'].append(sec)
+                if sec and sec != '':
+                    dbs['pro']['secs'].append(sec)
 
-        if dbs.keys():
-            if not len(self.available_releases):
-                self.db._get_releases(self)
-            dbs['inf'] = {'desc': self.bank.config.get('db.fullname')
-                          ,'vers': self.available_releases[0].release if len(self.available_releases) else ""
-                          }
-            dbs['tool'] = tool
         return dbs
 
     @bank_required
@@ -521,12 +509,12 @@ class Manager(object):
         return os.path.islink(link)
 
     @bank_required
-    def has_formats(self, fmt=format):
+    def has_formats(self, fmt=None):
         """
-            Checks wether the bank supports 'format' or not
-            :param fmt: Format to check
-            :type fmt: String
-            :return: Boolean
+        Checks wether the bank supports 'format' or not
+        :param fmt: Format to check
+        :type fmt: String
+        :return: Boolean
         """
         if not fmt:
             Utils.error("Format is required")
@@ -558,43 +546,51 @@ class Manager(object):
         packages = self.get_bank_packages()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
+        status = 'unknown'
 
-        for prod in productions:
-            history.append({
-            # Convert the time stamp from time() to a date
-                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
-                'id': prod['session'],
-                'removed': None,
-                'status': 'available',
-                'name': self.bank.name,
-                'path': os.path.join(prod['data_dir'], self.bank.name, prod['dir_version'], prod['prod_dir']),
-                'release': prod['remoterelease'],
-                'freeze': prod['freeze'],
-                'bank_type': bank_type,
-                'bank_format': bank_format,
-                'description': description,
-                'packageVersions': packages,
+        if productions is not None:
+            for prod in productions:
+                if 'current' in self.bank.bank:
+                    if 'session' in prod and prod['session'] == self.bank.bank['current']:
+                        status = 'online'
+                    else:
+                        status = 'deprecated'
+                history.append({
+                # Convert the time stamp from time() to a date
+                                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                                'id': prod['session'],
+                                'removed': None,
+                                'status': status,
+                                'name': self.bank.name,
+                                'path': os.path.join(prod['data_dir'], self.bank.name, prod['dir_version'], prod['prod_dir']),
+                                'release': prod['remoterelease'],
+                                'freeze': prod['freeze'],
+                                'bank_type': bank_type,
+                                'bank_format': bank_format,
+                                'description': description,
+                                'packageVersions': packages,
+                                })
 
-            })
-
-        for sess in sessions:
-            # Don't repeat production item stored in sessions
-            if sess['id'] in map(lambda d: d['id'], history):
-                continue
-            dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
-            status = 'available' if os.path.isdir(dir) else 'deleted'
-            history.append({
-                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
-                    'id': sess['id'],
-                    'removed': True,
-                    'status': status,
-                    'name': self.bank.name,
-                    'path': dir,
-                    'bank_type': bank_type,
-                    'bank_format': bank_format,
-                    'description': description,
-                    'packageVersions': packages,
-                })
+        if sessions is not None:
+            for sess in sessions:
+                # Don't repeat production item stored in sessions
+                if 'id' in sess:
+                    if sess['id'] in map(lambda d: d['id'], history):
+                        continue
+                    dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
+                    status = 'available' if os.path.isdir(dir) else 'deleted'
+                    history.append({
+                                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
+                                    'id': sess['id'],
+                                    'removed': True,
+                                    'status': status,
+                                    'name': self.bank.name,
+                                    'path': dir,
+                                    'bank_type': bank_type,
+                                    'bank_format': bank_format,
+                                    'description': description,
+                                    'packageVersions': packages,
+                                    })
         return history
 
     @bank_required
@@ -607,7 +603,6 @@ class Manager(object):
         """
         has_failed = False
         update_id = None
-        # pending_ids = None
 
         # We have to be careful as pending session have over.status to false
         pending = self.get_pending_sessions()
@@ -628,8 +623,9 @@ class Manager(object):
             for session in self.bank.bank['sessions']:
                 if update_id and session['id'] == update_id:
                     # If session terminated OK, status.over should be True
-                    has_failed = not session['status']['over']
-                    break
+                    if 'status' in session and 'over' in session['status']:
+                        has_failed = not session['status']['over']
+                        break
         return has_failed
 
     def list_plugins(self):
@@ -653,14 +649,9 @@ class Manager(object):
         return
 
     @bank_required
-    def mongo_history(self, bank=None):
+    def mongo_history(self):
         """
         Get the releases history of a bank from the database and build a Mongo like document in json
-
-        :param name: Name of the bank
-        :type name: String
-        :param idbank: Bank id (primary key)
-        :tpye idbank: Integer
         :return: history + extra info to be included into bioweb (Institut Pasteur only)
         """
 
@@ -682,53 +673,55 @@ class Manager(object):
         bank_format = self.bank.config.get('db.formats').split(',')
         status = 'unknown'
 
-        for prod in productions:
-            if 'current' in self.bank.bank:
-                if prod['session'] == self.bank.bank['current']:
-                    status = 'online'
-                else:
-                    status = 'deprecated'
-            history.append({'_id': '@'.join(['bank',
-                                             self.bank.name,
-                                             prod['remoterelease'],
-                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT)]),
-                             'type': 'bank',
-                             'name': self.bank.name,
-                             'version': prod['remoterelease'],
-                             'publication_date': Utils.time2date(prod['session']),
-                             'removal_date': None,
-                             'bank_type': bank_type,
-                             'bank_format': bank_format,
-                             'packageVersions': packages,
-                             'description': description,
-                             'status': status
-                            })
+        if productions is not None:
+            for prod in productions:
+                if 'current' in self.bank.bank:
+                    if prod['session'] == self.bank.bank['current']:
+                        status = 'online'
+                    else:
+                        status = 'deprecated'
+                history.append({'_id': '@'.join(['bank',
+                                                 self.bank.name,
+                                                 prod['remoterelease'],
+                                                 Utils.time2datefmt(prod['session'], Manager.DATE_FMT)]),
+                                'type': 'bank',
+                                'name': self.bank.name,
+                                'version': prod['remoterelease'],
+                                'publication_date': Utils.time2date(prod['session']),
+                                'removal_date': None,
+                                'bank_type': bank_type,
+                                'bank_format': bank_format,
+                                'packageVersions': packages,
+                                'description': description,
+                                'status': status
+                                })
 
-        for sess in sessions:
-            # Don't repeat production item stored in sessions
-            new_id = '@'.join(['bank',
-                               self.bank.name,
-                               sess['remoterelease'],
-                               Utils.time2datefmt(sess['id'], Manager.DATE_FMT)])
-            if new_id in map(lambda d: d['_id'], history):
-                continue
+        if sessions is not None:
+            for sess in sessions:
+                # Don't repeat production item stored in sessions
+                new_id = '@'.join(['bank',
+                                   self.bank.name,
+                                   sess['remoterelease'],
+                                   Utils.time2datefmt(sess['id'], Manager.DATE_FMT)])
+                if new_id in map(lambda d: d['_id'], history):
+                    continue
 
-            history.append({'_id': '@'.join(['bank',
-                                             self.bank.name,
-                                             sess['remoterelease'],
-                                             Utils.time2datefmt(sess['id'], Manager.DATE_FMT)]),
-                            'type': 'bank',
-                            'name': self.bank.name,
-                            'version': sess['remoterelease'],
-                            'publication_date': Utils.time2date(sess['last_update_time']),
-                            'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
-                                                                  else None,
-                            'bank_type': bank_type,
-                            'bank_formats': bank_format,
-                            'packageVersions': packages,
-                            'description': description,
-                            'status': 'deleted'
-                            })
+                history.append({'_id': '@'.join(['bank',
+                                                 self.bank.name,
+                                                 sess['remoterelease'],
+                                                 Utils.time2datefmt(sess['id'], Manager.DATE_FMT)]),
+                                'type': 'bank',
+                                'name': self.bank.name,
+                                'version': sess['remoterelease'],
+                                'publication_date': Utils.time2date(sess['last_update_time']),
+                                'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
+                                                                      else None,
+                                'bank_type': bank_type,
+                                'bank_formats': bank_format,
+                                'packageVersions': packages,
+                                'description': description,
+                                'status': 'deleted'
+                                })
         return history
 
     @user_granted
@@ -756,6 +749,7 @@ class Manager(object):
         :raise: Exception
         """
 
+        fv = None
         if not file:
             file = os.path.join(self.bank_prod,
                                 'doc',
@@ -794,11 +788,10 @@ class Manager(object):
             Utils.error("Can't access file: %s" % str(e))
         except IOError as e:
             Utils.error("Can't write to file %s: %s" % (file, str(e)))
-        finally:
-            fv.close()
+        fv.close()
         return 0
 
-    def set_bank(self, bank):
+    def set_bank(self, bank=None):
         """
         Set a bank for the current Manager
         :param bank: biomaj.bank.Bank
@@ -806,7 +799,7 @@ class Manager(object):
         """
         if not bank or bank is None:
             return False
-        if bank is Bank and isinstance(bank, biomaj.bank):
+        if isinstance(bank, Bank):
             self.bank = bank
             return True
         return False
@@ -822,8 +815,7 @@ class Manager(object):
         if not name or name is None:
             return False
         bank = Bank(name=name, no_log=True)
-        self.bank = bank
-        return True
+        return self.set_bank(bank=bank)
 
     def set_verbose(self, value):
         """
@@ -832,7 +824,10 @@ class Manager(object):
         :type value: Boolean
         :return: Boolean
         """
-        Manager.verbose = value
+        if value:
+            Manager.verbose = True
+        else:
+            Manager.verbose = False
         return Manager.verbose
 
     @bank_required
@@ -859,7 +854,7 @@ class Manager(object):
                 banks[self.bank.name] = self.bank
             return banks
 
-        banks = self.get_bank_list()
+        banks = Manager.get_bank_list()
         for bank in banks:
             self.bank = Bank(name=bank, no_log=True)
             if self.can_switch():
@@ -897,7 +892,7 @@ class Manager(object):
         ready = False
 
         if not 'last_update_session' in self.bank.bank:
-            Utils.errors("No last session recorded")
+            Utils.error("No last session recorded")
         last_update_id = self.bank.bank['last_update_session']
 
         # We're ok there's already a published release
