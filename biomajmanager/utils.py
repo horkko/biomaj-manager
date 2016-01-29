@@ -1,10 +1,9 @@
 from __future__ import print_function
-import pytz
 import os
 import sys
 from time import time, tzname
 from datetime import datetime
-# from biomajmanager.manager import Manager
+
 
 class Utils(object):
 

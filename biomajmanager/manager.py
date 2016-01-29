@@ -191,8 +191,6 @@ class Manager(object):
                 release = production['remoterelease']
             if release:
                 current = release
-        else:
-            Utils.error("Can't get current release, no production available nor bank published")
         if current:
             self._current_release = current
             return str(current)
@@ -201,7 +199,6 @@ class Manager(object):
 
     @bank_required
     def formats(self, flat=False):
-    #def formats(self, release='current', flat=False):
         """
         Check the "supported formats" for a specific bank.
         This is done simply by getting the variable 'db.packages' from the bank
@@ -211,9 +208,9 @@ class Manager(object):
         :type flat: Boolean
         :return: List of supported format(s) as:
                 if flat is True:
-                { 'bank_name': {'tool1': [list of version], 'tool2': [list of version] ...} }
+                { 'tool1': [list of version], 'tool2': [list of version] ...}
                 if flat is False
-                {'bank_name': ['tool1@version', 'tool1@version', 'tool2@version' ....] }
+                ['tool1@version', 'tool1@version', 'tool2@version' ....]
         """
         formats = []
         if flat:
@@ -222,16 +219,12 @@ class Manager(object):
             packages = self.get_bank_packages()
             for package in packages:
                 (_, name, version) = package.split('@')
-                # formats = {}
-                # {'cfamiliaris': {'GenomeAnalysisTK': ['2.4.9'], 'picars-tools': ['1.94'],
-                # 'bowtie': ['0.12.7'], 'samtools': ['0.1.19'], 'bwa': ['0.5.9', '0.6.2', '0.7.4'],
-                # 'fasta': ['3.6'], 'blast': ['2.2.26'], 'soap': ['2.21'], 'bowtie2': ['2.1.0']}}
                 if flat:
-                    if not name in formats:
+                    if name not in formats:
                         formats[name] = []
                     formats[name].append(version)
                 else:
-                    formats.append(package)
+                    formats.append("@".join([name, version]))
         return formats
 
     @bank_required
@@ -246,12 +239,18 @@ class Manager(object):
         :rtype: List of string
         """
         if MongoConnector.db is None:
+            from pymongo.errors import ConnectionFailure
+            # Don't read config again
+            if BiomajConfig.global_config is None:
+                try:
+                    BiomajConfig.load_config()
+                except Exception as err:
+                    Utils.error("Problem loading biomaj configuration: %s" % str(err))
             try:
-                BiomajConfig.load_config()
                 MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
                                BiomajConfig.global_config.get('GENERAL','db.name'))
-            except Exception as err:
-                Utils.error("Can't get bank list: %s" % str(err))
+            except ConnectionFailure as err:
+                Utils.error("Can't connect to MongoDB: %s" % str(err))
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
         for bank in banks:
@@ -268,12 +267,13 @@ class Manager(object):
         :rtype: List of string 'pack@<pack_name>@<pack_version>'
         """
         # Check db.packages is set for the current bank
-        packages = None
+        packages = []
         if not self.bank.config.get('db.packages'):
             Utils.warn("[%s] db.packages not set!" % self.bank.name)
         else:
-            packages = map((lambda p: 'pack@' + p), self.bank.config.get('db.packages')
-                                                     .replace('\\', '').replace('\n', '').strip().split(','))
+            packs = self.bank.config.get('db.packages').replace('\\', '').replace('\n', '').strip().split(',')
+            for pack in packs:
+                packages.append('pack@' + pack)
         return packages
 
     @bank_required
@@ -318,12 +318,13 @@ class Manager(object):
         :type regex: String
         :param with_values: Returns values instead of keys
         :type with_values: Boolean, default True
-        :return: List of values found
+        :return: Sorted List of values found
         """
         if not regex:
             Utils.error("Regular expression required to get config regex")
         pattern = re.compile(regex)
         keys = dict(self.config.items(section))
+        keys = sorted(keys)
         values = []
         for key in keys:
             if re.search(pattern, key):
@@ -544,51 +545,48 @@ class Manager(object):
         packages = self.get_bank_packages()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
-        status = 'unknown'
+        status = 'unpublished'
 
-        if productions is not None:
-            for prod in productions:
-                if 'current' in self.bank.bank:
-                    if 'session' in prod and prod['session'] == self.bank.bank['current']:
-                        status = 'online'
-                    else:
-                        status = 'deprecated'
-                history.append({
+        for prod in productions:
+            if 'current' in self.bank.bank:
+                if 'session' in prod and prod['session'] == self.bank.bank['current']:
+                    status = 'online'
+                else:
+                    status = 'deprecated'
+            history.append({
                 # Convert the time stamp from time() to a date
-                                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
-                                'id': prod['session'],
-                                'removed': None,
-                                'status': status,
-                                'name': self.bank.name,
-                                'path': os.path.join(prod['data_dir'], self.bank.name, prod['dir_version'], prod['prod_dir']),
-                                'release': prod['remoterelease'],
-                                'freeze': prod['freeze'],
-                                'bank_type': bank_type,
-                                'bank_format': bank_format,
-                                'description': description,
-                                'packageVersions': packages,
-                                })
+                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                'id': prod['session'],
+                'removed': None,
+                'status': status,
+                'name': self.bank.name,
+                'path': os.path.join(prod['data_dir'], str(prod['dir_version']), str(prod['prod_dir'])),
+                'release': prod['remoterelease'],
+                'freeze': prod['freeze'],
+                'bank_type': bank_type,
+                'bank_format': bank_format,
+                'description': description,
+                'packageVersions': packages,
+            })
 
-        if sessions is not None:
-            for sess in sessions:
-                # Don't repeat production item stored in sessions
-                if 'id' in sess:
-                    if sess['id'] in map(lambda d: d['id'], history):
-                        continue
-                    dir = os.path.join(sess['data_dir'], self.bank.name, sess['dir_version'], sess['prod_dir'])
-                    status = 'available' if os.path.isdir(dir) else 'deleted'
-                    history.append({
-                                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
-                                    'id': sess['id'],
-                                    'removed': True,
-                                    'status': status,
-                                    'name': self.bank.name,
-                                    'path': dir,
-                                    'bank_type': bank_type,
-                                    'bank_format': bank_format,
-                                    'description': description,
-                                    'packageVersions': packages,
-                                    })
+        for sess in sessions:
+            # Don't repeat production item stored in sessions
+            if 'id' in sess:
+                if sess['id'] in map(lambda d: d['id'], history):
+                    continue
+                dir = os.path.join(sess['data_dir'], str(sess['dir_version']), str(sess['prod_dir']))
+                history.append({
+                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
+                    'id': sess['id'],
+                    'removed': True,
+                    'status': 'deleted',
+                    'name': self.bank.name,
+                    'path': dir,
+                    'bank_type': bank_type,
+                    'bank_format': bank_format,
+                    'description': description,
+                    'packageVersions': packages,
+                })
         return history
 
     @bank_required
@@ -669,57 +667,56 @@ class Manager(object):
         description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
-        status = 'unknown'
+        status = 'unpublished'
 
-        if productions is not None:
-            for prod in productions:
-                if 'current' in self.bank.bank:
-                    if prod['session'] == self.bank.bank['current']:
-                        status = 'online'
-                    else:
-                        status = 'deprecated'
-                history.append({'_id': '@'.join(['bank',
-                                                 self.bank.name,
-                                                 prod['remoterelease'],
-                                                 Utils.time2datefmt(prod['session'], Manager.DATE_FMT)]),
-                                'type': 'bank',
-                                'name': self.bank.name,
-                                'version': prod['remoterelease'],
-                                'publication_date': Utils.time2date(prod['session']),
-                                'removal_date': None,
-                                'bank_type': bank_type,
-                                'bank_format': bank_format,
-                                'packageVersions': packages,
-                                'description': description,
-                                'status': status
-                                })
+        for prod in productions:
+            if 'current' in self.bank.bank:
+                if prod['session'] == self.bank.bank['current']:
+                    status = 'online'
+                else:
+                    status = 'deprecated'
+            history.append({'_id': '@'.join(['bank',
+                                             self.bank.name,
+                                             str(prod['remoterelease']),
+                                             str(Utils.time2datefmt(prod['session'], Manager.DATE_FMT))]),
+                            'type': 'bank',
+                            'name': self.bank.name,
+                            'version': str(prod['remoterelease']),
+                            'publication_date': str(Utils.time2date(prod['session'])),
+                            'removal_date': None,
+                            'bank_type': bank_type,
+                            'bank_format': bank_format,
+                            'packageVersions': packages,
+                            'description': description,
+                            'status': status
+                            })
 
-        if sessions is not None:
-            for sess in sessions:
-                # Don't repeat production item stored in sessions
-                new_id = '@'.join(['bank',
-                                   self.bank.name,
-                                   sess['remoterelease'],
-                                   Utils.time2datefmt(sess['id'], Manager.DATE_FMT)])
-                if new_id in map(lambda d: d['_id'], history):
-                    continue
+        for sess in sessions:
+            # Don't repeat production item stored in sessions
+            new_id = '@'.join(['bank',
+                               self.bank.name,
+                               str(sess['remoterelease']),
+                               str(Utils.time2datefmt(sess['id'], Manager.DATE_FMT))])
+            if new_id in map(lambda d: d['_id'], history):
+                continue
 
-                history.append({'_id': '@'.join(['bank',
-                                                 self.bank.name,
-                                                 sess['remoterelease'],
-                                                 Utils.time2datefmt(sess['id'], Manager.DATE_FMT)]),
-                                'type': 'bank',
-                                'name': self.bank.name,
-                                'version': sess['remoterelease'],
-                                'publication_date': Utils.time2date(sess['last_update_time']),
-                                'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and sess['status']['remove_release'] == True
-                                                                      else None,
-                                'bank_type': bank_type,
-                                'bank_formats': bank_format,
-                                'packageVersions': packages,
-                                'description': description,
-                                'status': 'deleted'
-                                })
+            history.append({'_id': '@'.join(['bank',
+                                             self.bank.name,
+                                             str(sess['remoterelease']),
+                                             str(Utils.time2datefmt(sess['id'], Manager.DATE_FMT))]),
+                            'type': 'bank',
+                            'name': self.bank.name,
+                            'version': str(sess['remoterelease']),
+                            'publication_date': str(Utils.time2date(sess['last_update_time'])),
+                            'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and
+                                                                     sess['status']['remove_release'] is True
+                            else None,
+                            'bank_type': bank_type,
+                            'bank_formats': bank_format,
+                            'packageVersions': packages,
+                            'description': description,
+                            'status': 'deleted'
+                            })
         return history
 
     @user_granted
@@ -810,7 +807,7 @@ class Manager(object):
         :return: Boolean
         """
 
-        if not name or name is None:
+        if not name:
             return False
         bank = Bank(name=name, no_log=True)
         return self.set_bank(bank=bank)
@@ -1019,10 +1016,10 @@ class Manager(object):
                             # is a closed flow
                             # thus we must stop it to watch it
                             inputs.remove(flow)
-                        if flow is proc.stdout and data:
+                        elif flow is proc.stdout:
                             if not quiet:
                                 Utils.ok("[STDOUT] %s" % data)
-                        if flow is proc.stderr and data:
+                        elif flow is proc.stderr:
                             if not quiet:
                                 Utils.warn("[STDERR] %s" % data)
                     readable, writable, exceptional = select.select(inputs, [], [], 1)
