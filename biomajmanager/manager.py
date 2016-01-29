@@ -54,8 +54,8 @@ class Manager(object):
             self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
             if self.config.has_option('GENERAL', 'data.dir'):
                 self.bank_prod = self.config.get('GENERAL', 'data.dir')
-        except (Exception, SystemExit) as e:
-            Utils.error(str(e))
+        except Exception as e:
+            Utils.error("Can't load configuration file. Exit with code %s" % str(e))
 
         if bank is not None:
             self.bank = Bank(name=bank, no_log=True)
@@ -84,8 +84,6 @@ class Manager(object):
             Utils.error("Error while loading biomaj config: %s" % str(err))
 
         conf_dir = os.path.dirname(BiomajConfig.config_file)
-        if not os.path.isdir(conf_dir):
-            Utils.error("Can't find config directory '%s'" % conf_dir)
         if not cfg:
             cfg = os.path.join(conf_dir, 'manager.properties')
         if not os.path.isfile(cfg):
@@ -913,8 +911,8 @@ class Manager(object):
                 if last_update_id == production['session']:
                     session = self.get_session_from_id(last_update_id)
                     if session:
-                        if 'over' in session['status'] and session['status']['over']:
-                            ready = True
+                        if 'over' in session['status']: # and session['status']['over']:
+                            ready = session['status']['over']
 
         return ready
 

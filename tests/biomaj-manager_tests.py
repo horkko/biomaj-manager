@@ -195,6 +195,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.utils.clean()
 
     @attr('utils')
+    @attr('utils.deepestdirs')
     def test_deepest_dir_ErrorNoPath(self):
         """
         Check methods checks are OK
@@ -204,6 +205,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
             Utils.get_deepest_dirs()
 
     @attr('utils')
+    @attr('utils.deepestdirs')
     def test_deepest_dir_ErrorPathNotExists(self):
         """
         Check methods checks are OK
@@ -213,6 +215,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
             Utils.get_deepest_dirs(path='/not_found')
 
     @attr('utils')
+    @attr('utils.deepestdir')
     def test_deepest_dir(self):
         """
         Check we get the right deepest dir from a complete path
@@ -226,6 +229,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
+    @attr('utils.deepestdir')
     def test_deepest_dir_full(self):
         """
         Check we get the right full deepest dir
@@ -239,6 +243,25 @@ class TestBiomajManagerUtils(unittest.TestCase):
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
+    @attr('utils.deepestdir')
+    def test_deepest_dir(self):
+        """
+        Check we get the right list of deepest dir
+        :return:
+        """
+        dir = os.path.join(self.utils.tmp_dir, 'a', 'b')
+        dir1 = os.path.join(dir, 'c')
+        dir2 = os.path.join(dir, 'd')
+        for d in [dir1, dir2]:
+            if not os.path.exists(d):
+                os.makedirs(d)
+        deepest = Utils.get_deepest_dir(dir)
+        self.assertEqual(len(deepest), 1)
+        self.assertEqual(deepest[0], 'c')
+        shutil.rmtree(self.utils.tmp_dir)
+
+    @attr('utils')
+    @attr('utils.deepestdirs')
     def test_deepest_dirs(self):
         """
         Check we get the right list of deepest dir
@@ -258,6 +281,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
+    @attr('utils.deepestdirs')
     def test_deepest_dirs_full(self):
         """
         Check we get the right list of deepest dir
@@ -330,24 +354,24 @@ class TestBiomajManagerUtils(unittest.TestCase):
         Utils.start_timer()
         self.assertIsInstance(Utils.elapsed_time(), float)
 
-    @attr('utils')
-    def test_local2utc(self):
-        """
-        Check local2utc returns the right time according to local time
-        :return:
-        """
-        now = datetime.now()
-        utc_now = Utils.local2utc(now)
-        self.assertEquals(utc_now.hour + 1, now.hour)
-
-    @attr('utils')
-    def test_local2utc_WrongArgsType(self):
-        """
-        We check the args instance checking throws an error
-        :return:
-        """
-        with self.assertRaises(SystemExit):
-            Utils.local2utc(int(2))
+    # @attr('utils')
+    # def test_local2utc(self):
+    #     """
+    #     Check local2utc returns the right time according to local time
+    #     :return:
+    #     """
+    #     now = datetime.now()
+    #     utc_now = Utils.local2utc(now)
+    #     self.assertEquals(utc_now.hour + 1, now.hour)
+    #
+    # @attr('utils')
+    # def test_local2utc_WrongArgsType(self):
+    #     """
+    #     We check the args instance checking throws an error
+    #     :return:
+    #     """
+    #     with self.assertRaises(SystemExit):
+    #         Utils.local2utc(int(2))
 
     @attr('utils')
     def test_time2date_NoArgs(self):
@@ -547,24 +571,27 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.clean()
 
     @attr('manager')
+    @attr('manager.loadconfig')
     def test_ManagerNoConfigRaisesException(self):
         """
         Check an exception is raised while config loading
         :return:
         """
         with self.assertRaises(SystemExit):
-            manager = Manager(cfg="/no_manager_cfg", global_cfg="/no_global_cfg")
+            Manager(cfg="/no_manager_cfg", global_cfg="/no_global_cfg")
 
     @attr('manager')
+    @attr('manager.loadconfig')
     def test_ManagerGlobalConfigException(self):
         """
         Check an exception is raised config loading
         :return:
         """
         with self.assertRaises(SystemExit):
-            manager = Manager(global_cfg="/no_global_cfg")
+            Manager(global_cfg="/no_global_cfg")
 
     @attr('manager')
+    @attr('manager.loadconfig')
     def test_ConfigNoManagerSection(self):
         """
         Check we don't have a 'MANAGER' section in our config
@@ -576,6 +603,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertFalse(cfg.has_section('MANAGER'))
 
     @attr('manager')
+    @attr('manager.loadconfig')
     def test_ManagerLoadConfig(self):
         """
         Check we can load any configuration file on demand
@@ -586,6 +614,28 @@ class TestBioMajManagerManager(unittest.TestCase):
             cfg = Manager.load_config(cfg=os.path.join(self.utils.test_dir, file))
             self.assertTrue(cfg.has_section('MANAGER'))
             self.assertEqual(cfg.get('MANAGER', 'file.name'), file)
+
+    @attr('manager')
+    @attr('manager.loadconfig')
+    def test_ManagerLoadConfigNOTOK(self):
+        """
+        Check we throw an error when no 'manager.properties' found
+        :return:
+        """
+        os.remove(os.path.join(self.utils.conf_dir, 'manager.properties'))
+        with self.assertRaises(SystemExit):
+            Manager.load_config(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
+
+    @attr('manager')
+    @attr('manager.loadconfig')
+    def test_ManagerLoadConfigNOTOK(self):
+        """
+        Check we throw an error when no 'manager.properties' found
+        :return:
+        """
+        os.remove(os.path.join(self.utils.conf_dir, 'manager.properties'))
+        with self.assertRaises(SystemExit):
+            Manager(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
 
     @attr('manager')
     def test_ManagerBankPublishedTrue(self):
@@ -822,6 +872,18 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.get_list_sections()
         self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.currentrelease')
+    def test_ManagerGetCurrentRelease_CurrentSet(self):
+        """
+
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager._current_release = str(54)
+        self.assertEqual(str(54), manager.current_release())
 
     @attr('manager')
     @attr('manager.currentrelease')
@@ -1192,6 +1254,23 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         # To be sure we set 'current' from MongoDB to null
         manager.bank.bank['current'] = None
+        self.assertFalse(manager.can_switch())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.switch')
+    def test_ManagerBankSwitch_BankUpdateNotReady(self):
+        """
+        Check manager.can_switch returns False because last session failed
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        # We set 'current' field to avoid to return False with 'bank_is_published'
+        now = time.time()
+        # To be sure we set 'current' from MongoDB to null
+        manager.bank.bank['current'] = now
+        manager.bank.bank['last_update_session'] = now
         self.assertFalse(manager.can_switch())
         self.utils.drop_db()
 
