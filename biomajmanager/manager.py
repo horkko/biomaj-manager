@@ -237,30 +237,31 @@ class Manager(object):
         Get the list of bank available from the database
         :return: List of bank name
         :rtype: List of string
+                Thorws SystemExit exception
         """
-        banks_list = []
         # Don't read config again
         if BiomajConfig.global_config is None:
             try:
                 BiomajConfig.load_config()
             except Exception as err:
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
-        if MongoConnector.db is None:
-            from pymongo.errors import PyMongoError
-            try:
+        try:
+            banks_list = []
+            if MongoConnector.db is None:
+                from pymongo.errors import PyMongoError
                 # We  surrounded this block of code with a try/except because there's a behavior
                 # difference between pymongo 2.7 and 3.2. 2.7 immediately raised exception if it
                 # cannot connect, 3.2 waits for a database access to connect to the server
                 MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),
                                BiomajConfig.global_config.get('GENERAL', 'db.name'))
-                banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
+            banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
+            for bank in banks:
                 # Avoid document without bank name
-                for bank in banks:
-                    if 'name' in bank:
-                        banks_list.append(bank['name'])
-            except PyMongoError as err:
-                Utils.error("Can't connect to MongoDB: %s" % str(err))
-        return banks_list
+                if 'name' in bank:
+                    banks_list.append(bank['name'])
+            return banks_list
+        except PyMongoError as err:
+            Utils.error("Can't connect to MongoDB: %s" % str(err))
 
     @bank_required
     def get_bank_packages(self):
