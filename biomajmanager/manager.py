@@ -54,7 +54,7 @@ class Manager(object):
             self.config = Manager.load_config(cfg=cfg, global_cfg=global_cfg)
             if self.config.has_option('GENERAL', 'data.dir'):
                 self.bank_prod = self.config.get('GENERAL', 'data.dir')
-        except Exception as e:
+        except (Exception, SystemExit) as e:
             Utils.error("Can't load configuration file. Exit with code %s" % str(e))
 
         if bank is not None:
@@ -238,19 +238,20 @@ class Manager(object):
         :return: List of bank name
         :rtype: List of string
         """
+        # Don't read config again
+        if BiomajConfig.global_config is None:
+            try:
+                BiomajConfig.load_config()
+            except Exception as err:
+                Utils.error("Problem loading biomaj configuration: %s" % str(err))
         if MongoConnector.db is None:
-            from pymongo.errors import ConnectionFailure
-            # Don't read config again
-            if BiomajConfig.global_config is None:
-                try:
-                    BiomajConfig.load_config()
-                except Exception as err:
-                    Utils.error("Problem loading biomaj configuration: %s" % str(err))
+            from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
             try:
                 MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
                                BiomajConfig.global_config.get('GENERAL','db.name'))
-            except ConnectionFailure as err:
+            except (ServerSelectionTimeoutError, PyMongoError) as err:
                 Utils.error("Can't connect to MongoDB: %s" % str(err))
+
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
         for bank in banks:

@@ -627,17 +627,7 @@ class TestBioMajManagerManager(unittest.TestCase):
             Manager.load_config(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
 
     @attr('manager')
-    @attr('manager.loadconfig')
-    def test_ManagerLoadConfigNOTOK(self):
-        """
-        Check we throw an error when no 'manager.properties' found
-        :return:
-        """
-        os.remove(os.path.join(self.utils.conf_dir, 'manager.properties'))
-        with self.assertRaises(SystemExit):
-            Manager(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
-
-    @attr('manager')
+    @attr('manager.bankpublished')
     def test_ManagerBankPublishedTrue(self):
         """
         Check a bank is published or not (True)
@@ -652,6 +642,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.bankpublished')
     def test_ManagerBankPublishedFalse(self):
         """
         Check a bank is published or not (False)
@@ -666,6 +657,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedFalseNoPendingFalse(self):
         """
         Check we have a failed session and no pending session(s)
@@ -683,6 +675,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedTrueNoPendingTrue(self):
         """
         Check we have a failed session and no pending session(s)
@@ -702,6 +695,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedTrueNoPendingFalse(self):
         """
         Check we have a failed session and no pending session(s)
@@ -785,6 +779,21 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.formats')
+    def test_ManagerBankFormatsAsStringOK(self):
+        """
+        Check if the bank has a specific format returned as string (True)
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        returned = manager.formats_as_string()
+        expected = {'blast': ['2.2.26'], 'fasta': ['3.6']}
+        self.assertDictEqual(returned, expected)
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.getsessionfromid')
     def test_ManagerGetSessionFromIDNotNone(self):
         """
         Check we retrieve the right session id (Not None)
@@ -800,6 +809,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getsessionfromid')
     def test_ManagerGetSessionFromIDNone(self):
         """
         Check we retrieve the right session id (None)
@@ -815,6 +825,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseNotNone(self):
         """
         Check we get a the published release (NotNone)
@@ -834,6 +845,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseNone(self):
         """
         Check we get a the published release (None)
@@ -1087,10 +1099,11 @@ class TestBioMajManagerManager(unittest.TestCase):
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         self.utils.copy_file(file='minium.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        manager2 = Manager(bank='minium')
+        # Create 2 entries into the database
+        Manager(bank='alu')
+        Manager(bank='minium')
         manual_list = ['alu', 'minium']
-        bank_list = manager.get_bank_list()
+        bank_list = Manager.get_bank_list()
         self.assertListEqual(bank_list, manual_list)
         self.utils.drop_db()
 
@@ -1111,22 +1124,25 @@ class TestBioMajManagerManager(unittest.TestCase):
             Manager.get_bank_list()
         self.utils.drop_db()
 
-    @attr('manager')
+    @attr('manager.1')
     @attr('manager.banklist')
     def test_ManagerGetBankListMongoConnectorNOTOK(self):
         """
-        Check bank list throws ConnectionFailure exception
+        Check bank list throws ServerSelectionTimeoutError ConnectionFailure exception
         :return:
         """
         from biomaj.mongo_connector import MongoConnector
+        from pymongo.errors import PyMongoError
         from biomaj.config import BiomajConfig
         # Unset MongoConnector and env BIOMAJ_CONF to force config relaod and Mongo reconnect
         config_file = 'global-wrongMongoURL.properties'
         self.utils.copy_file(file=config_file, todir=self.utils.conf_dir)
         MongoConnector.db = None
-        BiomajConfig.load_config(config_file=os.path.join(self.utils.conf_dir, 'global-wrongMongoURL.properties'))
-        with self.assertRaises(SystemExit):
+        BiomajConfig.load_config(config_file=os.path.join(self.utils.conf_dir, config_file))
+        with self.assertRaises(PyMongoError):
             Manager.get_bank_list()
+        MongoConnector.db = None
+        BiomajConfig.global_config = None
         self.utils.drop_db()
 
     @attr('manager')
@@ -1520,8 +1536,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         # We set 'current' field to avoid to return False with 'bank_is_published'
         now = time.time()
         # setting current to None means no current bank published.
-        manager.bank.bank['current'] = None
-        returned = manager.show_need_update()
+        alu.bank.bank['current'] = None
+        returned = alu.show_need_update()
         self.assertDictEqual(returned, {})
 
     @attr('manager')
