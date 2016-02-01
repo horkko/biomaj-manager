@@ -245,7 +245,8 @@ class Manager(object):
             except Exception as err:
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
         if MongoConnector.db is None:
-            from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
+            from pymongo.errors import PyMongoError
+            from pymongo.errors import ServerSelectionTimeoutError
             try:
                 MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
                                BiomajConfig.global_config.get('GENERAL','db.name'))
