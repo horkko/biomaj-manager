@@ -256,8 +256,9 @@ class Manager(object):
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
         # Avoid document without bank name
-        if 'name' in banks:
-            banks_list.append(banks['name'])
+        for bank in banks:
+            if 'name' in bank:
+                banks_list.append(bank['name'])
         return banks_list
 
     @bank_required
