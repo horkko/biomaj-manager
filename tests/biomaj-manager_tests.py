@@ -495,7 +495,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        sections = manager.get_dict_sections('blast2')
+        sections = manager.get_dict_sections('golden')
         expected = {'nuc': {'dbs': ['alunuc']}, 'pro': {'dbs': ['alupro']}}
         self.assertDictContainsSubset(expected, sections)
         self.utils.drop_db()
@@ -802,7 +802,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
                 'sessions': [{'id': 1, 'status': { 'over': True}},
-                             {'id': 2, 'status': { 'over': True}},]}
+                             {'id': 2, 'status': { 'over': True}}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertIsNotNone(manager.get_session_from_id(1))
@@ -818,10 +818,27 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
                 'sessions': [{'id': 1, 'status': { 'over': True}},
-                             {'id': 2, 'status': { 'over': True}},]}
+                             {'id': 2, 'status': { 'over': True}}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertIsNone(manager.get_session_from_id(3))
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.getsessionfromid')
+    def test_ManagerGetSessionFromIDNone(self):
+        """
+        Check method raises exception
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        data = {'name': 'alu',
+                'sessions': [{'id': 1, 'status': { 'over': True}},
+                             {'id': 2, 'status': { 'over': True}}]}
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        with self.assertRaises(SystemExit):
+            manager.get_session_from_id(None)
         self.utils.drop_db()
 
     @attr('manager')
@@ -864,6 +881,25 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getpublishedrelease')
+    def test_ManagerGetPublishedReleaseRaisesOK(self):
+        """
+        Check method raises an exception
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = 'R54'
+        data = {'name': 'alu', 'current': now,
+                'sessions': [{'id': 1 }, {'id': now }]
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        with self.assertRaises(SystemExit):
+            manager.get_published_release()
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetDictSections(self):
         """
@@ -873,7 +909,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         dsections = manager.get_dict_sections(tool='blast2')
-        expected = {'pro': {'dbs': ['alupro']}, 'nuc': {'dbs': ['alunuc']}}
+        expected = {'pro': {'dbs': ['alupro'], 'secs': ['alupro1', 'alupro2']},
+                    'nuc': {'dbs': ['alunuc'], 'secs': ['alunuc1', 'alunuc2']}}
         self.assertDictContainsSubset(expected, dsections)
         self.utils.drop_db()
 
@@ -881,7 +918,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.sections')
     def test_ManagerGetListSections(self):
         """
-        Check we get rigth sections for bank
+        Check we get rigth sections tool bank name for bank
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
@@ -889,6 +926,22 @@ class TestBioMajManagerManager(unittest.TestCase):
         lsections = manager.get_list_sections(tool='golden')
         self.assertListEqual(lsections, ['alunuc', 'alupro'])
         self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.sections')
+    def test_ManagerGetListSections(self):
+        """
+        Check we get rigth sections bank and subsection for bank
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        lsections = manager.get_list_sections(tool='blast2')
+        Utils.warn(lsections)
+        self.assertListEqual(lsections, ['alunuc', 'alupro','alunuc1','alunuc2', 'alupro1', 'alupro2'])
+        self.utils.drop_db()
+
+
 
     @attr('manager')
     @attr('manager.sections')
@@ -1010,10 +1063,63 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.futurelink')
+    def test_ManagerGetFutureLinkNOTOK(self):
+        """
+        Check get_future_link throws exception
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.get_future_link()
+        self.assertNotEqual(cur_link, '/wrong_future_link')
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.futurelink')
+    def test_ManagerGetFutureLinkOK(self):
+        """
+        Check get_future_link throws exception
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.get_future_link()
+        self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'future_release'))
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hascurrentlink')
+    def test_ManagerHasCurrentLinkOK(self):
+        """
+        Check has_current_link returns current link
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.has_current_link()
+        self.assertNotEqual(cur_link, manager.get_current_link())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hascurrentlink')
+    def test_ManagerHasCurrentLinkIsLinkOKK(self):
+        """
+        Check has_current_link returns current link
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        os.symlink(os.path.join(self.utils.data_dir),'test_link')
+        cur_link = manager.has_current_link(link=os.path.join(self.utils.data_dir,'test_link'))
+        self.assertNotEqual(os.path.join(self.utils.data_dir,'test_link'), cur_link)
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_Raises(self):
         """
-        Check method returns good value for production directory
+        Check method raises "Can't get current production directory: 'current_release' ..."
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
@@ -1025,12 +1131,15 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_RaisesNoCurrentRelease(self):
         """
-        Check method returns good value for production directory
+        Check method raises "Can't get current production directory: 'current_release' ..."
+        release ok, prod not ok
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
         manager = Manager(bank='alu')
-        manager.bank.bank['current'] = None
+        manager.bank.bank['current'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'release': '54'})
         manager.bank.bank['production'] = []
         with self.assertRaises(SystemExit):
             manager.get_current_proddir()
@@ -1039,7 +1148,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_OK(self):
         """
-        Check method returns good value for production directory
+        Check method returns path to production dir
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
@@ -1058,7 +1167,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_RaisesNoProd(self):
         """
-        Check method returns good value for production directory
+        Check method raises "Can't get current production directory, 'prod_dir' or 'data_dir' missing ..."
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
@@ -1066,7 +1175,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         prod_dir = 'alu_54'
         manager = Manager(bank='alu')
         manager.bank.bank['current'] = now
-        manager.bank.bank['sessions'].append({'id': now, 'release': '54'})
+        manager.bank.bank['sessions'].append({'id': now, 'release': prod_dir})
+        manager.bank.bank['production'].append({'session': now, 'release': prod_dir, 'data_dir': self.utils.data_dir})
         with self.assertRaises(SystemExit):
             manager.get_current_proddir()
 

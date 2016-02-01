@@ -175,9 +175,9 @@ class Manager(object):
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
             session = self.get_session_from_id(self.bank.bank['current'])
-            if 'release' in session and session['release']:
+            if session and 'release' in session and session['release']:
                 release = session['release']
-            elif 'remoterelease' in session and session['remoterelease']:
+            elif session and 'remoterelease' in session and session['remoterelease']:
                 release = session['remoterelease']
             if release:
                 current = release
@@ -429,10 +429,10 @@ class Manager(object):
                 dbs.append(sec)
         if self.bank.config.get(nsec):
             for sec in self.bank.config.get(nsec).split(','):
-                dbs.append(sec.replace('\\','').replace('\n',''))
+                dbs.append(sec.replace('\\', '').replace('\n', ''))
         if self.bank.config.get(psec):
             for sec in self.bank.config.get(psec).split(','):
-                dbs.append(sec.replace('\\','').replcae('\n',''))
+                dbs.append(sec.replace('\\', '').replace('\n', ''))
 
         return dbs
 
