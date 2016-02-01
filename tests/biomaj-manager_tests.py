@@ -1124,7 +1124,7 @@ class TestBioMajManagerManager(unittest.TestCase):
             Manager.get_bank_list()
         self.utils.drop_db()
 
-    @attr('manager')
+    @attr('manager.1')
     @attr('manager.banklist')
     def test_ManagerGetBankListMongoConnectorNOTOK(self):
         """

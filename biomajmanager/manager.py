@@ -239,6 +239,7 @@ class Manager(object):
         :rtype: List of string
         """
         # Don't read config again
+        banks = None
         if BiomajConfig.global_config is None:
             try:
                 BiomajConfig.load_config()
@@ -250,11 +251,12 @@ class Manager(object):
                 MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
                                BiomajConfig.global_config.get('GENERAL','db.name'))
             except PyMongoError as err:
+                Utils.warn(str(err))
                 Utils.error("Can't connect to MongoDB: %s" % str(err))
 
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
-        for bank in banks:
+        ``
             # Avoid document without bank name
             if 'name' in bank:
                 banks_list.append(bank['name'])
