@@ -248,10 +248,11 @@ class Manager(object):
             from pymongo.errors import PyMongoError
             import traceback
             try:
-                MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
-                               BiomajConfig.global_config.get('GENERAL','db.name'))
+                MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),
+                               BiomajConfig.global_config.get('GENERAL', 'db.name'))
             except PyMongoError as err:
-                traceback.print_tb()
+                _, _, ex = sys.exc_info()
+                traceback.print_tb(ex)
                 Utils.error("Can't connect to MongoDB: %s" % str(err))
 
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
