@@ -12,6 +12,7 @@ branches:
 
 install:
   - "pip install --egg -r requirements.txt"
+  - "pi pinstall pymongo==3.2"
   - "python setup.py -q install"
 # command to run tests
 script:
