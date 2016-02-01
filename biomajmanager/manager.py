@@ -238,6 +238,7 @@ class Manager(object):
         :return: List of bank name
         :rtype: List of string
         """
+        banks_list = []
         # Don't read config again
         if BiomajConfig.global_config is None:
             try:
@@ -246,21 +247,19 @@ class Manager(object):
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
         if MongoConnector.db is None:
             from pymongo.errors import PyMongoError
-            import traceback
             try:
+                # We  surrounded this block of code with a try/except because there's a behavior
+                # difference between pymongo 2.7 and 3.2. 2.7 immediately raised exception if it
+                # cannot connect, 3.2 waits for a database access to connect to the server
                 MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),
                                BiomajConfig.global_config.get('GENERAL', 'db.name'))
+                banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
+                # Avoid document without bank name
+                for bank in banks:
+                    if 'name' in bank:
+                        banks_list.append(bank['name'])
             except PyMongoError as err:
-                _, _, ex = sys.exc_info()
-                traceback.print_tb(ex)
                 Utils.error("Can't connect to MongoDB: %s" % str(err))
-
-        banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
-        banks_list = []
-        # Avoid document without bank name
-        for bank in banks:
-            if 'name' in bank:
-                banks_list.append(bank['name'])
         return banks_list
 
     @bank_required
