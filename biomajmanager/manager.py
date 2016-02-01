@@ -239,7 +239,6 @@ class Manager(object):
         :rtype: List of string
         """
         # Don't read config again
-        banks = None
         if BiomajConfig.global_config is None:
             try:
                 BiomajConfig.load_config()
@@ -256,10 +255,9 @@ class Manager(object):
 
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
         banks_list = []
-        ``
-            # Avoid document without bank name
-            if 'name' in bank:
-                banks_list.append(bank['name'])
+        # Avoid document without bank name
+        if 'name' in bank:
+            banks_list.append(bank['name'])
         return banks_list
 
     @bank_required
