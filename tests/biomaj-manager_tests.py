@@ -1132,14 +1132,13 @@ class TestBioMajManagerManager(unittest.TestCase):
         :return:
         """
         from biomaj.mongo_connector import MongoConnector
-        from pymongo.errors import PyMongoError
         from biomaj.config import BiomajConfig
         # Unset MongoConnector and env BIOMAJ_CONF to force config relaod and Mongo reconnect
         config_file = 'global-wrongMongoURL.properties'
         self.utils.copy_file(file=config_file, todir=self.utils.conf_dir)
         MongoConnector.db = None
         BiomajConfig.load_config(config_file=os.path.join(self.utils.conf_dir, config_file))
-        with self.assertRaises(PyMongoError):
+        with self.assertRaises(SystemExit):
             Manager.get_bank_list()
         MongoConnector.db = None
         BiomajConfig.global_config = None
