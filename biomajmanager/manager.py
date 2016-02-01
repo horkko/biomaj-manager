@@ -246,11 +246,12 @@ class Manager(object):
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
         if MongoConnector.db is None:
             from pymongo.errors import PyMongoError
+            import traceback
             try:
                 MongoConnector(BiomajConfig.global_config.get('GENERAL','db.url'),
                                BiomajConfig.global_config.get('GENERAL','db.name'))
             except PyMongoError as err:
-                Utils.warn(str(err))
+                traceback.print_tb()
                 Utils.error("Can't connect to MongoDB: %s" % str(err))
 
         banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
