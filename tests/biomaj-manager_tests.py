@@ -842,6 +842,44 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getpendingsessions')
+    def test_ManagerGetPendingSessionsOK(self):
+        """
+        Check method returns correct pending session
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        expected = {54: now, 55: now+1}
+        manager.bank.bank['pending'] = expected
+        returned_list = manager.get_pending_sessions()
+        returned = {}
+        for item in returned_list:
+            returned[item['release']] = item['session_id']
+        self.assertDictEqual(expected, returned)
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.showpendingsessions')
+    def test_ManagerShowPendingSessionsOK(self):
+        """
+        Check method returns correct pending session
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        expected = {54: now, 55: now+1}
+        manager.bank.bank['pending'] = expected
+        returned_list = manager.show_pending_sessions()
+        returned = {}
+        for item in returned_list:
+            returned[item['release']] = item['session_id']
+        self.assertDictEqual(expected, returned)
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseNotNone(self):
         """
@@ -937,7 +975,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         lsections = manager.get_list_sections(tool='blast2')
-        Utils.warn(lsections)
         self.assertListEqual(lsections, ['alunuc', 'alupro','alunuc1','alunuc2', 'alupro1', 'alupro2'])
         self.utils.drop_db()
 
@@ -1035,6 +1072,15 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank = data
         self.assertEqual(release, manager.current_release())
         self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.currentuser')
+    def test_ManagerCurrentUserTestUSEROK(self):
+        """
+        Check we can get USER from environ with LOGNAME unset
+        :return:
+        """
+        pass
 
     @attr('manager')
     @attr('manager.currentlink')
@@ -1550,13 +1596,15 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsNotOK(self):
         """
-        Test exceptions
+        Check method throw exception, can't create directory
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        manager.bank.bank['properties']['owner'] = manager.config.get('GENERAL', 'admin')
+        os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
-            manager.save_banks_version(file='/root/saved_versions.txt')
+            manager.save_banks_version(file='/not_found/saved_versions.txt')
         # Reset to the right user name as previously
         self.utils.drop_db()
 
@@ -1575,15 +1623,21 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.bankversions')
-    def test_ManagerSaveBankVersionsNoFileOK(self):
+    def test_ManagerSaveBankVersionsManagerVerboseOK(self):
         """
         Test exceptions
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
         manager = Manager(bank='alu')
+        manager.set_verbose(True)
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now})
+        # We set the production
         self.assertEqual(manager.save_banks_version(), 0)
         # Reset to the right user name as previously
+        manager.set_verbose(False)
         self.utils.drop_db()
 
     @attr('manager')
@@ -1695,22 +1749,45 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.showneedupdate')
-    def test_ManagerShowNeedUpdate_CanSwitch(self):
+    def test_ManagerShowNeedUpdate_CanSwitchOneBank(self):
         """
-        Check method returns empty dict because bank cannot switch
+        Check method returns dict because bank can switch
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        # We created these 2 managers to set 2 banks in db
+        alu = Manager(bank='alu')
+        # We set 'current' field to avoid to return False with 'bank_is_published'
+        now = time.time()
+        # setting current to None means no current bank published.
+        alu.bank.bank['current'] = now
+        alu.bank.bank['last_update_session'] = now + 1
+        returned = alu.show_need_update()
+        self.assertDictEqual(returned, {'alu': alu.bank})
+
+    @attr('manager')
+    @attr('manager.showneedupdate')
+    def test_ManagerShowNeedUpdate_CanSwitchTwoBank(self):
+        """
+        Check method returns dict because bank can switch
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         self.utils.copy_file(file='minium.properties', todir=self.utils.conf_dir)
+        now = time.time()
         # We created these 2 managers to set 2 banks in db
         alu = Manager(bank='alu')
         minium = Manager(bank='minium')
-        # We set 'current' field to avoid to return False with 'bank_is_published'
-        now = time.time()
-        # setting current to None means no current bank published.
-        alu.bank.bank['current'] = None
-        returned = alu.show_need_update()
-        self.assertDictEqual(returned, {})
+        # We update the bank in db to mimic bank ready to switch
+        alu.bank.banks.update({'name': 'alu'}, {'$set': {'current': now}})
+        alu.bank.banks.update({'name': 'alu'}, {'$set': {'last_update_session': now + 1}})
+        minium.bank.banks.update({'name': 'minium'}, {'$set': {'current': now}})
+        minium.bank.banks.update({'name': 'minium'}, {'$set': {'last_update_session': now + 1}})
+        # We reload the banks
+        manager = Manager()
+        returned = manager.show_need_update()
+        self.assertEqual(len(returned.items()), 2)
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.switch')
@@ -1776,6 +1853,66 @@ class TestBioMajManagerManager(unittest.TestCase):
         # To be sure we set 'current' from MongoDB to null
         manager.bank.bank['last_update_session'] = now + 1
         self.assertTrue(manager.can_switch())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyRaisesErrorOK(self):
+        """
+        Check the method raises exception
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        with self.assertRaises(SystemExit):
+            manager.update_ready()
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithCurrentTrue(self):
+        """
+        Check the method returns True
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['last_update_session'] = now + 1
+        self.assertTrue(manager.update_ready())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithCurrentFalse(self):
+        """
+        Check the method returns False
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['last_update_session'] = now
+        self.assertFalse(manager.update_ready())
+        self.utils.drop_db()
+
+    @attr('manager.1')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithProductionTrue(self):
+        """
+        Check the method returns False
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        del(manager.bank.bank['current'])
+        manager.bank.bank['last_update_session'] = now
+        manager.bank.bank['production'].append({'session': now})
+        manager.bank.bank['sessions'].append({'id': now, 'status': {'over': True}})
+        self.assertTrue(manager.update_ready())
         self.utils.drop_db()
 
     @attr('manager')

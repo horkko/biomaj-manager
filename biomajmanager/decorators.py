@@ -37,7 +37,6 @@ def user_granted(func):
         """
 
         self = args[0]
-        admin = None
         admin = self.config.get('GENERAL', 'admin')
         if self.bank:
             props = self.bank.get_properties()

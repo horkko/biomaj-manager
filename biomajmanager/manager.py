@@ -93,36 +93,36 @@ class Manager(object):
         BiomajConfig.global_config.read(cfg)
         return BiomajConfig.global_config
 
-    @bank_required
-    def bank_info(self):
-        """
-        Prints some information about the bank
-        :return:
-        """
-        props = self.bank.get_properties()
-        print("*** Bank %s ***" % self.bank.name)
-        Utils.title('Properties')
-        print("- Visibility : %s" % props['visibility'])
-        print("- Type(s) : %s" % ','.join(props['type']))
-        print("- Owner : %s" % props['owner'])
-        Utils.title('Releases')
-        print("- Current release: %s" % str(self.current_release()))
-        if 'production' in self.bank.bank:
-            Utils.title('Production')
-            for production in self.bank.bank['production']:
-                print("- Release %s (freeze:%s, size:%s, prod_dir:%s)" % (production['remoterelease'],
-                                                                          str(production['freeze']),
-                                                                          str(production['size']),
-                                                                          str(production['prod_dir'])))
-        pending = self.get_pending_sessions()
-        if pending:
-            for pend in pending:
-                release = pend['release']
-                session = pend['session_id']
-                if session:
-                    Utils.title('Pending')
-                    print("- Release %s (Last run %s)" %
-                          (str(release), Utils.time2datefmt(session['id'], Manager.DATE_FMT)))
+    # @bank_required
+    # def bank_info(self):
+    #     """
+    #     Prints some information about the bank
+    #     :return:
+    #     """
+    #     props = self.bank.get_properties()
+    #     print("*** Bank %s ***" % self.bank.name)
+    #     Utils.title('Properties')
+    #     print("- Visibility : %s" % props['visibility'])
+    #     print("- Type(s) : %s" % ','.join(props['type']))
+    #     print("- Owner : %s" % props['owner'])
+    #     Utils.title('Releases')
+    #     print("- Current release: %s" % str(self.current_release()))
+    #     if 'production' in self.bank.bank:
+    #         Utils.title('Production')
+    #         for production in self.bank.bank['production']:
+    #             print("- Release %s (freeze:%s, size:%s, prod_dir:%s)" % (production['remoterelease'],
+    #                                                                       str(production['freeze']),
+    #                                                                       str(production['size']),
+    #                                                                       str(production['prod_dir'])))
+    #     pending = self.get_pending_sessions()
+    #     if pending:
+    #         for pend in pending:
+    #             release = pend['release']
+    #             session = pend['session_id']
+    #             if session:
+    #                 Utils.title('Pending')
+    #                 print("- Release %s (Last run %s)" %
+    #                       (str(release), Utils.time2datefmt(session['id'], Manager.DATE_FMT)))
 
     @bank_required
     def bank_is_published(self):
@@ -439,14 +439,14 @@ class Manager(object):
     @bank_required
     def get_pending_sessions(self):
         """
-        Request the database to check if some session(s) are pending to complete
-        :return: Dict {'release'=release, 'session_id': id} or None
+        Request the database to check if some session(s) is/are pending to complete
+        :return: List of Dict {'release'=release, 'session_id': id} or empty list
         """
         pending = []
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
             has_pending = self.bank.bank['pending']
-            for k,v in has_pending.items():
-                pending.append({'release': k, 'session_id': v })
+            for k, v in has_pending.items():
+                pending.append({'release': k, 'session_id': v})
 
         return pending
 
@@ -831,7 +831,7 @@ class Manager(object):
         return Manager.verbose
 
     @bank_required
-    def show_pending_session(self, show=False, fmt="psql"):
+    def show_pending_sessions(self, show=False, fmt="psql"):
         """
         Check if some session are pending
         :param show: Print the results
@@ -854,8 +854,8 @@ class Manager(object):
                 banks[self.bank.name] = self.bank
             return banks
 
-        banks = Manager.get_bank_list()
-        for bank in banks:
+        banks_list = Manager.get_bank_list()
+        for bank in banks_list:
             self.bank = Bank(name=bank, no_log=True)
             if self.can_switch():
                 banks[self.bank.name] = self.bank
@@ -913,9 +913,9 @@ class Manager(object):
                 if last_update_id == production['session']:
                     session = self.get_session_from_id(last_update_id)
                     if session:
-                        if 'over' in session['status']: # and session['status']['over']:
+                        if 'over' in session['status']:
+                            Utils.warn("Here we are")
                             ready = session['status']['over']
-
         return ready
 
     """
