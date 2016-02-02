@@ -1090,30 +1090,59 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.hascurrentlink')
-    def test_ManagerHasCurrentLinkOK(self):
+    def test_ManagerHasCurrentLinkFalse(self):
         """
-        Check has_current_link returns current link
+        Check has_current_link returns False
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        cur_link = manager.has_current_link()
-        self.assertNotEqual(cur_link, manager.get_current_link())
+        self.assertFalse(manager.has_current_link())
         self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.hascurrentlink')
-    def test_ManagerHasCurrentLinkIsLinkOKK(self):
+    def test_ManagerHasCurrentLinkIsLinkTrue(self):
         """
-        Check has_current_link returns current link
+        Check has_current_link returns True
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        os.symlink(os.path.join(self.utils.data_dir),'test_link')
-        cur_link = manager.has_current_link(link=os.path.join(self.utils.data_dir,'test_link'))
-        self.assertNotEqual(os.path.join(self.utils.data_dir,'test_link'), cur_link)
+        link = os.path.join(self.utils.data_dir)
+        os.symlink(os.path.join(link), 'test_link')
+        self.assertTrue(manager.has_current_link(link='test_link'))
+        os.remove('test_link')
         self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hasfuturelink')
+    def test_ManagerHasFutureLinkFalse(self):
+        """
+        Check has_future_link returns False
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertFalse(manager.has_future_link())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hasfuturelink')
+    def test_ManagerHasFutureLinkIsLinkOK(self):
+        """
+        Check has_future_link returns future link
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        link = os.path.join(self.utils.data_dir)
+        os.symlink(os.path.join(link), 'future_link')
+        self.assertTrue(manager.has_future_link(link='future_link'))
+        os.remove('future_link')
+        self.utils.drop_db()
+
+
 
     @attr('manager')
     @attr('manager.currentproddir')
@@ -1517,19 +1546,43 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[1]['status'], 'deleted')
         self.utils.drop_db()
 
-
-
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsNotOK(self):
         """
-        Test excpetions
+        Test exceptions
         :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
             manager.save_banks_version(file='/root/saved_versions.txt')
+        # Reset to the right user name as previously
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.bankversions')
+    def test_ManagerSaveBankVersionsNoFileOK(self):
+        """
+        Test exceptions
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertEqual(manager.save_banks_version(), 0)
+        # Reset to the right user name as previously
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.bankversions')
+    def test_ManagerSaveBankVersionsNoFileOK(self):
+        """
+        Test exceptions
+        :return:
+        """
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertEqual(manager.save_banks_version(), 0)
         # Reset to the right user name as previously
         self.utils.drop_db()
 
@@ -1555,11 +1608,21 @@ class TestBioMajManagerManager(unittest.TestCase):
         :return:
         """
         manager = Manager()
+        self.assertFalse(manager.set_bank())
+
+    @attr('manager')
+    @attr('manager.setbank')
+    def test_ManagerSetBankWrongInstanceOK(self):
+        """
+        Check method checks are not ok
+        :return:
+        """
+        manager = Manager()
         self.assertFalse(manager.set_bank(bank=Manager()))
 
     @attr('manager')
     @attr('manager.setbank')
-    def test_ManagerSetBankFromNameOK(self):
+    def test_ManagerSetBankFromNameFalse(self):
         """
         Check method checks are not ok
         :return:
@@ -1743,6 +1806,58 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.command')
+    def test_ManagerCommandRestartJobsScriptOK(self):
+        """
+        Check restart jobs runs OK
+        :return:
+        """
+        manager = Manager()
+        # Grant usage for current user
+        os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
+        self.assertTrue(manager.restart_stopped_jobs())
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerCommandRestartJobsScriptDoesNotExists(self):
+        """
+        Check restart jobs runs OK
+        :return:
+        """
+        manager = Manager()
+        # Grant usage for current user
+        os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
+        manager.config.set('MANAGER', 'jobs.restart.exe', '/nobin/cmd')
+        with self.assertRaises(SystemExit):
+            manager.restart_stopped_jobs()
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerCommandStopJobsScriptOK(self):
+        """
+        Check restart jobs runs OK
+        :return:
+        """
+        manager = Manager()
+        # Grant usage for current user
+        os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
+        self.assertTrue(manager.stop_running_jobs())
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerCommandStopScriptDoesNotExists(self):
+        """
+        Check restart jobs runs OK
+        :return:
+        """
+        manager = Manager()
+        # Grant usage for current user
+        os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
+        manager.config.set('MANAGER', 'jobs.stop.exe', '/nobin/cmd')
+        with self.assertRaises(SystemExit):
+            manager.stop_running_jobs()
+
+    @attr('manager')
+    @attr('manager.command')
     def test_ManagerLaunchCommandOK(self):
         """
         Check a command started is OK
@@ -1782,7 +1897,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """
         from biomajmanager.plugins import Plugins
         with self.assertRaises(SystemExit):
-            plugin = Plugins()
+            Plugins()
 
     @attr('plugins')
     def test_PluginsLoadedOK_AsStandAlone(self):
@@ -1805,6 +1920,17 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         manager.load_plugins()
         self.assertEqual(manager.plugins.myplugin.get_name(), 'myplugin')
         self.assertEqual(manager.plugins.anotherplugin.get_name(), 'anotherplugin')
+
+    @attr('plugins')
+    def test_PluginsListPlugins(self):
+        """
+        Check method returns right list of configured plugins from file
+        :return:
+        """
+        manager = Manager()
+        returned = manager.list_plugins()
+        expected = ['myplugin', 'anotherplugin']
+        self.assertListEqual(expected, returned)
 
     @attr('plugins')
     def test_PluginsLoadingNoSection(self):

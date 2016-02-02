@@ -495,7 +495,7 @@ class Manager(object):
         :type: String
         :return: Boolean
         """
-        if not link:
+        if link is None:
             link = self.get_current_link()
         return os.path.islink(link)
 
@@ -507,7 +507,7 @@ class Manager(object):
         :type: String
         :return: Boolean
         """
-        if not link:
+        if link is None:
             link = self.get_future_link()
         return os.path.islink(link)
 
@@ -632,21 +632,22 @@ class Manager(object):
         """
         Read plugins set from the config manager.properties
         :return: List of plugins name
-        :rtype: List
+        :rtype: List of plugins
         """
+        plugins_list = []
         if self.config.has_section('PLUGINS'):
             plugins = self.config.get('PLUGINS', 'plugins.list')
             for plugin in plugins.split(','):
-                Utils.ok("Plugin is %s\n-------------" % plugin)
-                for key in self.get_config_regex(regex='^' + plugin.lower(), section=plugin, want_values=False):
-                    print("%s=%s" % (key, self.config.get(plugin, key)))
+                plugins_list.append(plugin)
+        return plugins_list
 
     def load_plugins(self):
         """
         Load all the plugins and activate them from manager.properties (plugins.list property)
+        :returns: biomajmanager.plugins.Plugin instance
         """
         self.plugins = Plugins(manager=self)
-        return
+        return self.plugins
 
     @bank_required
     def mongo_history(self):
@@ -803,7 +804,7 @@ class Manager(object):
             return True
         return False
 
-    def set_bank_from_name(self, name):
+    def set_bank_from_name(self, name=None):
         """
         Set a bank from a bank name
         :param name: Name of the bank to set
@@ -811,7 +812,7 @@ class Manager(object):
         :return: Boolean
         """
 
-        if not name:
+        if not name or name is None:
             return False
         bank = Bank(name=name, no_log=True)
         return self.set_bank(bank=bank)
