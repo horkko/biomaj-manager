@@ -157,17 +157,6 @@ class Utils(object):
         return datetime.fromtimestamp(id).strftime(fmt)
 
     @staticmethod
-    def title(msg):
-        '''
-        Prints a small title banner (message + underlined message)
-        :param msg:
-        :return:
-        '''
-        title = "* " + str(msg) + " *"
-        print(title)
-        print('-' * len(title))
-
-    @staticmethod
     def user():
         '''
         Return the current user running or using the script. Taken from os.env

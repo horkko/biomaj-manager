@@ -24,6 +24,7 @@ class Manager(object):
     verbose = False
     # Default date format string
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
+    SAVE_BANK_LINE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
 
     def __init__(self, bank=None, cfg=None, global_cfg=None):
         """
@@ -92,6 +93,14 @@ class Manager(object):
         Utils.verbose("[manager] Reading manager configuration file")
         BiomajConfig.global_config.read(cfg)
         return BiomajConfig.global_config
+
+    @bank_required
+    def bank_info(self):
+        """
+        Prints some information about the bank
+        :return:
+        """
+        return self.bank.get_bank_release_info(full=True)
 
     # @bank_required
     # def bank_info(self):
@@ -481,9 +490,17 @@ class Manager(object):
                    sess = session
         return sess
 
+    def get_simulate(self):
+        """
+        Get the value of the simulate mode
+        :return: Boolean
+        """
+        return Manager.simulate
+
     def get_verbose(self):
         """
         Get the value of the verbose mode
+        :return: Boolean
         """
         return Manager.verbose
 
@@ -764,15 +781,12 @@ class Manager(object):
                 Utils.error("Can't create destination directory %s: %s" % (directory, str(err)))
 
         try:
-            os.path.exists(file)
             banks = Manager.get_bank_list()
-            FILE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
+            FILE_PATTERN = Manager.SAVE_BANK_LINE_PATTERN
             with open(file, mode='w') as fv:
                 for bank in banks:
                     bank = Bank(name=bank, no_log=True)
                     if 'current' in bank.bank and bank.bank['current'] and 'production' in bank.bank:
-                        if Manager.verbose:
-                            Utils.ok("[%s] current found" % bank.name)
                         for prod in bank.bank['production']:
                             if bank.bank['current'] == prod['session']:
                                 # bank / release / creation / size / remote server
@@ -784,11 +798,8 @@ class Manager(object):
                                     print(file_line)
                                 else:
                                     fv.write(file_line)
-        except OSError as e:
+        except Exception as e:
             Utils.error("Can't access file: %s" % str(e))
-        except IOError as e:
-            Utils.error("Can't write to file %s: %s" % (file, str(e)))
-        fv.close()
         return 0
 
     def set_bank(self, bank=None):
@@ -816,6 +827,19 @@ class Manager(object):
             return False
         bank = Bank(name=name, no_log=True)
         return self.set_bank(bank=bank)
+
+    def set_simulate(self, value):
+        """
+        Set/Unset simulate mode
+        :param value: Value to set
+        :type value: Boolean
+        :return: Boolean
+        """
+        if value:
+            Manager.simulate = True
+        else:
+            Manager.simulate = False
+        return Manager.simulate
 
     def set_verbose(self, value):
         """
@@ -914,7 +938,6 @@ class Manager(object):
                     session = self.get_session_from_id(last_update_id)
                     if session:
                         if 'over' in session['status']:
-                            Utils.warn("Here we are")
                             ready = session['status']['over']
         return ready
 
@@ -925,9 +948,9 @@ class Manager(object):
     def _current_user(self):
         """
         Determine user running the actual manager. We search for login name
-        then enviroment 'LOGNAME' variable
+        in enviroment 'LOGNAME' and 'USER' variable
 
-        :return: String
+        :return: String or None
         """
         logname = None
 
@@ -935,34 +958,33 @@ class Manager(object):
             logname = os.getenv('LOGNAME')
         elif 'USER' in os.environ:
             logname = os.getenv('USER')
-        current_user = logname or os.getlogin()
-        if not current_user:
-            Utils.error("Can't find current user name")
+        return logname
+        #current_user = logname
+        #if not current_user:
+        #    Utils.error("Can't find current user name")
+        #return current_user
 
-        return current_user
-
-    def _get_formats_for_release(self, path):
+    def _get_formats_for_release(self, path=None):
         """
             Get all the formats supported for a bank (path).
             :param path: Path of the release to search in
             :type path: String (path)
             :return: List of formats
         """
-
+        formats = []
         if not path:
             Utils.error("A path is required")
         if not os.path.exists(path):
             Utils.warn("Path %s does not exist" % path)
-            return []
-        formats = []
+            return formats
 
-        for dir, dirs, filenames in os.walk(path):
+        for dir, dirs, files in os.walk(path):
             if dir == path or not len(dirs):
                 continue
-            if dir == 'flat' or dir == 'uncompressed':
+            if dir == 'flat':
                 continue
             for d in dirs:
-                formats.append('@'.join(['prog', os.path.basename(dir), d or '-']))
+                formats.append('@'.join(['pack', os.path.basename(dir), d or '-']))
         return formats
 
     @bank_required
@@ -990,7 +1012,6 @@ class Manager(object):
         :return: Boolean
         """
 
-        stdout = stderr = None
         proc = None
         # Sleep time while waiting for process to terminate
         sleep = float(5)
@@ -1031,8 +1052,6 @@ class Manager(object):
                 time.sleep(sleep)
             if proc.returncode != 0:
                 Utils.error("[run command] command %s FAILED with exit code %d!" % (command, proc.returncode))
-        except subprocess.CalledProcessError as err:
-            Utils.error("[run command] Error: %s" % str(err))
         except OSError as err:
             Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
 

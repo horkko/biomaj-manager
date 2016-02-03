@@ -14,30 +14,34 @@ class News(object):
     def __init__(self, news_dir=None, config=None, max_news=None):
         '''
 
-        :param news_dir:
-        :param config:
-        :param max_new:
+        :param news_dir: Path to directory containing templates
+        :type news_dir: String
+        :param config: Configuration object
+        :type config: ConfigParser object
+        :param max_news: Number of news to get when displaying then
+        :type max_news: int (default 5)
         :return:
         '''
 
         self.news_dir = None
+        self.max_news = News.MAX_NEWS
+        self.data = None
+
         if max_news:
             self.max_news = max_news
-        else:
-            self.max_news = News.MAX_NEWS
 
         if news_dir is not None:
             if not os.path.isdir(news_dir):
-                Utils.error("News dir %s is not a directory" % news_dir)
+                Utils.error("News dir %s is not a directory." % news_dir)
             self.news_dir = news_dir
+
         if config is not None:
             if not config.has_section('MANAGER'):
-                Utils.error("Configuration has no 'MANAGER' section")
+                Utils.error("Configuration has no 'MANAGER' section.")
+            elif not config.has_option('MANAGER', 'news.dir'):
+                Utils.error("Configuration has no 'news.dir' key.")
             else:
                 self.news_dir = config.get('MANAGER', 'news.dir')
-
-        self.data = None
-
 
     def get_news(self, news_dir=None):
         '''
@@ -51,6 +55,8 @@ class News(object):
                 Utils.error("News dir %s is not a directory" % news_dir)
             else:
                 self.news_dir = news_dir
+        if not self.news_dir:
+            Utils.error("Can't get news, no 'news.dir' defined.")
 
         news_data = []
         item = 0
