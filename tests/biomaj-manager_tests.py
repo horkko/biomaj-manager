@@ -14,6 +14,7 @@ from datetime import datetime
 from biomajmanager.utils import Utils
 from biomajmanager.news import News
 from biomajmanager.manager import Manager
+from biomajmanager.writer import Writer
 
 
 __author__ = 'tuco'
@@ -426,6 +427,82 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.assertNotEqual(Utils.user(), user)
 
 
+class TestBiomajManagerWriter(unittest.TestCase):
+
+    def setUp(self):
+        self.utils = UtilsForTests()
+        # Maker out test global.properties set as env var
+        os.environ['BIOMAJ_CONF'] = self.utils.global_properties
+
+    def tearDown(self):
+        self.utils.clean()
+
+    @attr('writer')
+    @attr('writer.init')
+    def test_WriterInitNoArgsThrowsException(self):
+        """
+        Check init throws exception with no args
+        :return:
+        """
+        with self.assertRaises(SystemExit):
+            Writer()
+
+    @attr('writer')
+    @attr('writer.init')
+    def test_WriterInitOKWithTemplateDirOK(self):
+        """
+        Check object init is OK
+        :return:
+        """
+        writer = Writer(template_dir="/tmp")
+        self.assertIsNone(writer.data)
+
+    @attr('writer')
+    @attr('writer.init')
+    def test_WriterInitOKWithTemplateDirNotOK(self):
+        """
+        Check object init with false template_dir throws exception
+        :return:
+        """
+        with self.assertRaises(SystemExit):
+            Writer(template_dir="/not_found")
+
+    @attr('writer')
+    @attr('writer.init')
+    def test_WriterInitConfigTemplateDirOK(self):
+        """
+        Check object init with config set correct tempalte_dir
+        :return:
+        """
+        manager = Manager()
+        writer = Writer(config=manager.config)
+        self.assertEqual(manager.config.get('MANAGER', 'template.dir'), writer.template_dir)
+
+    @attr('writer')
+    @attr('writer.init')
+    def test_WriterInitOKWithConfigNoSection(self):
+        """
+        Check object with config without section throws exception
+        :return:
+        """
+        manager = Manager()
+        manager.config.remove_section('MANAGER')
+        with self.assertRaises(SystemExit):
+            Writer(template_dir="/tmp", config=manager.config)
+
+    @attr('writer')
+    @attr('writer.init')
+    def test_WriterInitOKWithConfigNoOption(self):
+        """
+        Check object with config without section throws exception
+        :return:
+        """
+        manager = Manager()
+        manager.config.remove_option('MANAGER', 'template.dir')
+        with self.assertRaises(SystemExit):
+            Writer(template_dir="/tmp", config=manager.config)
+
+
 class TestBiomajManagerNews(unittest.TestCase):
 
     def setUp(self):
@@ -489,9 +566,10 @@ class TestBiomajManagerNews(unittest.TestCase):
         Check get_news set correct thing
         :return:
         """
+        self.utils.copy_news_files()
         news = News()
-        news.get_news(news_dir="/tmp")
-        self.assertEqual(news.news_dir, "/tmp")
+        news.get_news(news_dir=self.utils.news_dir)
+        self.assertEqual(news.news_dir, self.utils.news_dir)
 
     @attr('manager')
     @attr('manager.news')
