@@ -1,0 +1,12 @@
+doc-warnings: yes
+test-warnings: yes
+strictness: high
+pep8:
+    disable:
+        - E501
+python-targets:
+    - 2
+    - 3
+ignore-paths:
+    - plugins
+    - cover
