@@ -11,10 +11,11 @@ import unittest
 from pymongo import MongoClient
 from datetime import datetime
 
-from biomajmanager.utils import Utils
-from biomajmanager.news import News
+from biomajmanager.links import Links
 from biomajmanager.manager import Manager
+from biomajmanager.news import News
 from biomajmanager.writer import Writer
+from biomajmanager.utils import Utils
 
 
 __author__ = 'tuco'
@@ -32,6 +33,7 @@ class UtilsForTests(object):
         '''
         self.global_properties = None
         self.manager_properties = None
+        self.manager = None
         self.db_test = 'bm_db_test'
         self.col_test = 'bm_col_test'
         self.test_dir = tempfile.mkdtemp('biomaj-manager_tests')
@@ -113,6 +115,16 @@ class UtilsForTests(object):
         for file in os.listdir(dsrc):
             shutil.copyfile(os.path.join(dsrc, file),
                             os.path.join(self.plugins_dir, file))
+
+    def copy_templates(self):
+        """
+        Copy templates from test directory to 'templates' testing directory
+        :return:
+        """
+        dsrc = 'tests/templates'
+        for file in os.listdir(dsrc):
+            shutil.copyfile(os.path.join(dsrc, file),
+                            os.path.join(self.template_dir, file))
 
     def clean(self):
         '''
@@ -431,6 +443,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
 
     def setUp(self):
         self.utils = UtilsForTests()
+        self.utils.copy_templates()
         # Maker out test global.properties set as env var
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
@@ -454,8 +467,8 @@ class TestBiomajManagerWriter(unittest.TestCase):
         Check object init is OK
         :return:
         """
-        writer = Writer(template_dir="/tmp")
-        self.assertIsNone(writer.data)
+        writer = Writer(template_dir=self.utils.template_dir)
+        self.assertIsNone(writer.output)
 
     @attr('writer')
     @attr('writer.init')
@@ -488,7 +501,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
         manager = Manager()
         manager.config.remove_section('MANAGER')
         with self.assertRaises(SystemExit):
-            Writer(template_dir="/tmp", config=manager.config)
+            Writer(template_dir=self.utils.template_dir, config=manager.config)
 
     @attr('writer')
     @attr('writer.init')
@@ -500,8 +513,139 @@ class TestBiomajManagerWriter(unittest.TestCase):
         manager = Manager()
         manager.config.remove_option('MANAGER', 'template.dir')
         with self.assertRaises(SystemExit):
-            Writer(template_dir="/tmp", config=manager.config)
+            Writer(template_dir=self.utils.template_dir, config=manager.config)
 
+    @attr('writer')
+    @attr('writer.write')
+    def test_WriterWriteNoFileThrowsException(self):
+        """
+        Chekc method throws exception if not 'file' args passed
+        :return:
+        """
+        writer = Writer(template_dir=self.utils.template_dir)
+        with self.assertRaises(SystemExit):
+            writer.write()
+
+    @attr('writer')
+    @attr('writer.write')
+    def test_WriterWriteWrongTemplateFileThrowsException(self):
+        """
+        Check the method throws exception while template file does not exists
+        :return:
+        """
+        writer = Writer(template_dir=self.utils.template_dir)
+        with self.assertRaises(SystemExit):
+            writer.write(file="doesnotexist.txt")
+
+    @attr('writer')
+    @attr('writer.write')
+    def test_WriterWriteTemplateFileOKTemplateSyntaxError(self):
+        """
+        Check the method throws exception while template file does not exists
+        :return:
+        """
+        writer = Writer(template_dir=self.utils.template_dir)
+        with self.assertRaises(SystemExit):
+            writer.write(file="wrong_syntax.txt")
+
+    @attr('writer')
+    @attr('writer.write')
+    def test_WriterWrtieTemplateFileOKOutputIsNoneOK(self):
+        """
+        Check method prints OK on STDOUT
+        :return:
+        """
+        writer = Writer(template_dir=self.utils.template_dir)
+        data = {'test': 'working test!'}
+        self.assertTrue(writer.write(file="test.txt", data=data))
+
+    @attr('writer')
+    @attr('writer.write')
+    def test_WriterWriteTemplateFileOKContentOK(self):
+        """
+        Check the output file written has right content
+        :return:
+        """
+        output = os.path.join(self.utils.template_dir, "output.txt")
+        data = {'test': 'working test!'}
+        writer = Writer(template_dir=self.utils.template_dir, output=output)
+        self.assertTrue(writer.write(file="test.txt", data=data))
+        with open(output, 'r') as of:
+            self.assertEqual("This is just a working test!", of.readline().strip())
+        os.remove(output)
+
+    @attr('writer')
+    @attr('writer.write')
+    def test_WriterWriteTemplateFileOKOutputThrows(self):
+        """
+        Check the output file is wrong and method throws exception
+        :return:
+        """
+        output = os.path.join(self.utils.template_dir, "unkown_directory", "output.txt")
+        data = {'test': 'working test!'}
+        writer = Writer(template_dir=self.utils.template_dir, output=output)
+        with self.assertRaises(SystemExit):
+            writer.write(file="test.txt", data=data)
+
+
+class TestBiomajManagerLinks(unittest.TestCase):
+
+    def setUp(self):
+        self.utils = UtilsForTests()
+        os.environ['BIOMAJ_CONF'] = self.utils.global_properties
+        # Links need to have a production dir ready, so we do it
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager._current_release = '54'
+        manager.bank.bank['production'].append({'release': '54', 'data_dir': self.utils.data_dir,
+                                                'prod_dir': 'alu_54'})
+        self.utils.manager = manager
+
+    def tearDown(self):
+        self.utils.clean()
+        # As we created an entry in the database ('alu'), we clean the database
+        self.utils.drop_db()
+
+    @attr('links')
+    @attr('links.init')
+    def test_LinksInitOK(self):
+        """
+        Check init Links instance is OK
+        :return:
+        """
+        links = Links(manager=self.utils.manager)
+        self.assertEqual(links.created_links, 0)
+
+    @attr('links')
+    @attr('links.init')
+    def test_LinksInitNoManagerThrowsException(self):
+        """
+        Check init instance wihtout manager throws exception
+        :return:
+        """
+        with self.assertRaises(SystemExit):
+            Links()
+
+    @attr('links')
+    @attr('links.init')
+    def test_LinksInitWrongManagerInstanceThrows(self):
+        """
+        Check init thorws exception is manager args is not instance of Manager
+        :return:
+        """
+        with self.assertRaises(SystemExit):
+            Links(manager=self.utils)
+
+    @attr('links')
+    @attr('links.init')
+    def test_LinksInitNoCurrentProdDirThrows(self):
+        """
+        Checl init throws exception when no production dir ready
+        :return:
+        """
+        self.utils.manager.bank.bank['production'].pop()
+        with self.assertRaises(SystemExit):
+            Links(manager=self.utils.manager)
 
 class TestBiomajManagerNews(unittest.TestCase):
 
@@ -1485,8 +1629,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         :return:
         """
         Manager.verbose = True
-        manager = Manager()
-        self.assertTrue(manager.get_verbose())
+        self.assertTrue(Manager.get_verbose())
 
     @attr('manager')
     @attr('manager.getverbose')
@@ -1496,8 +1639,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         :return:
         """
         Manager.verbose = False
-        manager = Manager()
-        self.assertFalse(manager.get_verbose())
+        self.assertFalse(Manager.get_verbose())
 
     @attr('manager')
     @attr('manager.getsimulate')
@@ -1507,8 +1649,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         :return:
         """
         Manager.simulate = True
-        manager = Manager()
-        self.assertTrue(manager.get_simulate())
+        self.assertTrue(Manager.get_simulate())
 
     @attr('manager')
     @attr('manager.getsimulate')
@@ -1518,8 +1659,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         :return:
         """
         Manager.simulate = False
-        manager = Manager()
-        self.assertFalse(manager.get_simulate())
+        self.assertFalse(Manager.get_simulate())
 
     @attr('manager')
     @attr('manager.banklist')
@@ -2005,7 +2145,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
                                                     '$push': {'production': {'session': now, 'release': '54','size': '100Mo'}}})
         # Set verbose mode
-        manager.set_verbose(True)
+        Manager.set_verbose(True)
         self.assertEqual(manager.save_banks_version(), 0)
         # Unset verbose mode
         manager.set_bank(False)
@@ -2074,8 +2214,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         Check set verbose set the correct boolean
         :return:
         """
-        manager = Manager()
-        self.assertTrue(manager.set_verbose("OK"))
+        self.assertTrue(Manager.set_verbose("OK"))
 
     @attr('manager')
     @attr('manager.setverbose')
@@ -2084,8 +2223,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         Check set verbose set the correct boolean
         :return:
         """
-        manager = Manager()
-        self.assertFalse(manager.set_verbose(""))
+        self.assertFalse(Manager.set_verbose(""))
 
     @attr('manager')
     @attr('manager.setsimulate')
@@ -2094,8 +2232,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         Check set simulate set the correct boolean
         :return:
         """
-        manager = Manager()
-        self.assertTrue(manager.set_simulate("OK"))
+        self.assertTrue(Manager.set_simulate("OK"))
 
     @attr('manager')
     @attr('manager.setsimulate')
@@ -2104,8 +2241,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         Check set simulate set the correct boolean
         :return:
         """
-        manager = Manager()
-        self.assertFalse(manager.set_simulate(""))
+        self.assertFalse(Manager.set_simulate(""))
 
     @attr('manager')
     @attr('manager.switch')

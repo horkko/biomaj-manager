@@ -490,14 +490,16 @@ class Manager(object):
                    sess = session
         return sess
 
-    def get_simulate(self):
+    @staticmethod
+    def get_simulate():
         """
         Get the value of the simulate mode
         :return: Boolean
         """
         return Manager.simulate
 
-    def get_verbose(self):
+    @staticmethod
+    def get_verbose():
         """
         Get the value of the verbose mode
         :return: Boolean
@@ -828,7 +830,8 @@ class Manager(object):
         bank = Bank(name=name, no_log=True)
         return self.set_bank(bank=bank)
 
-    def set_simulate(self, value):
+    @staticmethod
+    def set_simulate(value):
         """
         Set/Unset simulate mode
         :param value: Value to set
@@ -841,7 +844,8 @@ class Manager(object):
             Manager.simulate = False
         return Manager.simulate
 
-    def set_verbose(self, value):
+    @staticmethod
+    def set_verbose(value):
         """
         Set/Unset verbose mode
         :paran value: Value to set

@@ -8,7 +8,7 @@ import sys
 
 class Writer(object):
 
-    def __init__(self, template_dir=None, format='txt', config=None, output=None, data=None):
+    def __init__(self, template_dir=None, format='txt', config=None, output=None):
         '''
         Create Writer object
         :param template_dir: Root directory where to find templates
@@ -22,7 +22,6 @@ class Writer(object):
         :return:
         '''
 
-        self.data = None
         self.env = None
         self.format = None
         self.output = None
@@ -45,16 +44,17 @@ class Writer(object):
         self.env = Environment(loader=FileSystemLoader(self.template_dir))
         self.format = format
         self.output = output
-        self.data = data
 
     def write(self, file=None, data=None):
         '''
         Print template 'data' to stdout using template file 'file'
-        :param data: Template data
-        :type dadta: Dictionary
+        data args can be left None, this way method can be used to render file
+        from scratch
         :param file: Template file name
         :type file: String
-        :return:
+        :param data: Template data
+        :type data: Dictionary
+        :return: True, throws on error
         '''
         if file is None:
             Utils.error("A template name is required")
@@ -65,12 +65,12 @@ class Writer(object):
         except TemplateSyntaxError as err:
             Utils.error("Syntax error found in template '%s', line %d: %s" % (err.name, err.lineno, err.message))
 
-
         if self.output is None:
             self.output = sys.stdout
-        if data is None:
-            data = self.data
-        try:
-            print(template.render(data), file=self.output)
-        except TemplateError as err:
-            Utils.error("Rendering template '%s' encountered error: %s" % (file, str(err)))
+        else:
+            try:
+                with open(self.output, "w") as ofile:
+                    print(template.render(data), file=ofile)
+            except (IOError, TemplateError) as err:
+                Utils.error("Rendering template '%s' encountered error: %s" % (file, str(err)))
+        return True

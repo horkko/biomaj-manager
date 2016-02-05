@@ -2,44 +2,46 @@ from __future__ import print_function
 from biomajmanager.utils import Utils
 from biomajmanager.manager import Manager
 import os
-__author__ = 'horkko'
+__author__ = 'tuco'
 
 
 
 class Links(object):
-    '''
-
-    '''
+    """
+    Class to manager symbolic links for a bank based on supported formats
+    """
 
     def __init__(self, manager=None):
-        '''
-
+        """
+        Init class
         :param manager: Biomaj Manager instance
         :return:
-        '''
+        """
 
         self.source = None
         self.target = None
 
         if not manager:
             Utils.error("A manager is required")
+        if not isinstance(manager, Manager):
+            Utils.error("A Manager instance is required")
         self.manager = manager
-        if not isinstance(self.manager, Manager):
-            Utils.error("A biomajmanager.manager.Manager instance is required")
-
-        self.curr_bank_dir = self.manager.get_current_proddir()
+        try:
+            self.curr_bank_dir = self.manager.get_current_proddir()
+        except SystemExit as err:
+            Utils.error("Can't create Links instance: Can't get production dir for bank")
         self.created_links = 0
 
     def add_link(self, inc=1):
-        '''
+        """
         Increase link created number
         :param inc: Incremental value, default 1
         :type inc: Integer
-        :return:
-        '''
-
+        :return: Number of links "virtually" created
+        :rtype: Int
+        """
         self.created_links += inc
-        return
+        return self.created_links
 
     def check_links(self):
         """
@@ -48,8 +50,8 @@ class Links(object):
         :return: Number of links "virtually" created
         :rtype: Int
         """
-        Manager.simulate = True
-        Manager.verbose = False
+        Manager.set_simulate(True)
+        Manager.set_verbose(False)
         self.do_links()
         return self.created_links
 
@@ -118,11 +120,11 @@ class Links(object):
 
         self._make_links(links=[(slink, tlink)], hard=hard)
 
-        if Manager.simulate:
+        if Manager.get_simulate():
             if msg:
                 print(msg)
             else:
-                if Manager.verbose:
+                if Manager.get_verbose():
                     print("%s -> %s directory link done" % (self.target, self.source))
         return self.created_links
 
@@ -156,7 +158,7 @@ class Links(object):
             if not no_ext:
                 tlink = os.path.join(self.target, file)
                 links.append((slink, tlink))
-                if Manager.verbose:
+                if Manager.get_verbose():
                     print("[_generate_files_link] [no_ext=%s] append slink %s" % (str(no_ext), slink))
                     print("[_generate_files_link] [no_ext=%s] append tlink %s" % (str(no_ext), tlink))
 
@@ -165,7 +167,7 @@ class Links(object):
                 new_file = os.path.splitext(os.path.basename(file))[0]
                 tlink = os.path.join(self.target, new_file)
                 links.append((slink, tlink))
-                if Manager.verbose:
+                if Manager.get_verbose():
                     print("[_generate_files_link] [rm_ext=%s] [no_ext=%s] append slink %s" % (str(remove_ext), str(no_ext), slink))
                     print("[_generate_files_link] [rm_ext=%s] [no_ext=%s] append tlink %s" % (str(remove_ext), str(no_ext), tlink))
 
@@ -175,7 +177,7 @@ class Links(object):
             if msg:
                 print(msg)
             else:
-                if Manager.verbose:
+                if Manager.get_verbose():
                     print("%s -> %s file link done" % (self.target, self.source))
         return self.created_links
 
@@ -195,11 +197,11 @@ class Links(object):
 
         for slink, tlink in links:
             if not os.path.exists(tlink) and not os.path.islink(tlink):
-                if Manager.simulate and Manager.verbose:
+                if Manager.get_simulate() and Manager.get_verbose():
                     print("Linking %s -> %s" % (tlink, os.path.relpath(slink, start=self.target)))
                 else:
                     try:
-                        if not Manager.simulate:
+                        if not Manager.get_simulate():
                             if hard:
                                 os.link(os.path.relpath(slink, start=self.target), tlink)
                             else:
@@ -252,11 +254,11 @@ class Links(object):
 
         # Check destination directory where to create link(s)
         if not os.path.exists(target) and not os.path.isdir(target):
-            if Manager.simulate and Manager.verbose:
+            if Manager.get_simulate() and Manager.get_verbose():
                 print("[%s] Creating directory %s" % (bank_name, target))
             else:
                 try:
-                    if not Manager.simulate:
+                    if not Manager.get_simulate():
                         os.makedirs(target)
                 except OSError as err:
                     Utils.error("[%s] Can't create dirs: %s" % (bank_name, str(err)))

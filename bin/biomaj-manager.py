@@ -161,8 +161,8 @@ def main():
         # Supoprt output to stdout
         pending = manager.get_pending_sessions()
         if options.oformat:
-            writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
-            writer.write(file='pending' + '.' + options.oformat)
+            writer = Writer(config=manager.config, format=options.oformat)
+            writer.write(file='pending' + '.' + options.oformat, data={'pending': pending})
         else:
             if pending:
                 for pend in pending:
