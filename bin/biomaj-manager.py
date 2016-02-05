@@ -99,20 +99,19 @@ def main():
         sys.exit(0)
 
     if options.history:
-        list = []
+        bank_list = []
         history = []
         if not options.bank:
-            list = Manager.get_bank_list()
+            bank_list = Manager.get_bank_list()
         else:
-            list.append(options.bank)
+            bank_list.append(options.bank)
 
-        for bank in list:
+        for bank in bank_list:
             manager = Manager(bank=bank)
             history.append(manager.mongo_history())
         if options.oformat and options.oformat == 'json':
             print(json.dumps([h for hist in history for h in hist]))
         else:
-            #pprint([h for hist in history for h in hist])
             pprint(history)
         sys.exit(0)
 
@@ -158,22 +157,22 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
 
-        # Supoprt output to stdout
+        # Support output to stdout
         pending = manager.get_pending_sessions()
         if options.oformat:
             writer = Writer(config=manager.config, format=options.oformat)
             writer.write(file='pending' + '.' + options.oformat, data={'pending': pending})
         else:
             if pending:
+                info = []
                 for pend in pending:
                     release = pend['release']
-                    id = pend['session_id']
-                    date = Utils.time2datefmt(id, Manager.DATE_FMT)
-                    info = []
+                    sess_id = pend['session_id']
+                    date = Utils.time2datefmt(sess_id, Manager.DATE_FMT)
                     info.append(["Release", "Run time"])
                     info.append([str(release), str(date)])
-                    print("[%s] Pending session" % manager.bank.name)
-                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+                print("[%s] Pending session" % manager.bank.name)
+                print(tabulate(info, headers="firstrow", tablefmt='psql'))
             else:
                 print("[%s] No pending session" % manager.bank.name)
         sys.exit(0)

@@ -5,7 +5,6 @@ import os
 __author__ = 'tuco'
 
 
-
 class Links(object):
     """
     Class to manager symbolic links for a bank based on supported formats
@@ -152,11 +151,11 @@ class Links(object):
         files = Utils.get_files(self.source)
         links = []
 
-        for file in files:
+        for ffile in files:
             # Source file link
-            slink = os.path.join(self.source, file)
+            slink = os.path.join(self.source, ffile)
             if not no_ext:
-                tlink = os.path.join(self.target, file)
+                tlink = os.path.join(self.target, ffile)
                 links.append((slink, tlink))
                 if Manager.get_verbose():
                     print("[_generate_files_link] [no_ext=%s] append slink %s" % (str(no_ext), slink))
@@ -164,7 +163,7 @@ class Links(object):
 
             # If asked to create another symbolic link without extension name
             if remove_ext or no_ext:
-                new_file = os.path.splitext(os.path.basename(file))[0]
+                new_file = os.path.splitext(os.path.basename(ffile))[0]
                 tlink = os.path.join(self.target, new_file)
                 links.append((slink, tlink))
                 if Manager.get_verbose():

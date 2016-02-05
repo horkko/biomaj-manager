@@ -620,7 +620,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     @attr('links.init')
     def test_LinksInitNoManagerThrowsException(self):
         """
-        Check init instance wihtout manager throws exception
+        Check init instance without manager throws exception
         :return:
         """
         with self.assertRaises(SystemExit):

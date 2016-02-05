@@ -5,6 +5,7 @@ from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
 import os
 
+
 class Plugins(object):
 
     CATEGORY = 'MANAGER'
@@ -36,7 +37,8 @@ class Plugins(object):
                            categories_filter={Plugins.CATEGORY: BMPlugin})
         pm.collectPlugins()
         self.pm = pm
-        user_plugins = [ ]
+        self.name = name
+        user_plugins = []
 
         # Load user wanted plugin(s)
         for plugin in self.config.get('PLUGINS', 'plugins.list').split(','):
