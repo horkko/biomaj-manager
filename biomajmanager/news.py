@@ -1,3 +1,4 @@
+""" Utilities to create some news for BioMAJ """
 from __future__ import print_function
 from stat import S_ISREG, ST_CTIME, ST_MODE
 from biomajmanager.utils import Utils
@@ -5,14 +6,14 @@ import os
 
 
 class News(object):
-    '''
 
-    '''
+    """ Class for creating news to be displayed for BioMAJ """
 
     MAX_NEWS = 5
 
     def __init__(self, news_dir=None, config=None, max_news=None):
-        '''
+        """
+        Initiate object building
 
         :param news_dir: Path to directory containing templates
         :type news_dir: String
@@ -21,7 +22,7 @@ class News(object):
         :param max_news: Number of news to get when displaying then
         :type max_news: int (default 5)
         :return:
-        '''
+        """
 
         self.news_dir = None
         self.max_news = News.MAX_NEWS
@@ -44,11 +45,12 @@ class News(object):
                 self.news_dir = config.get('MANAGER', 'news.dir')
 
     def get_news(self, news_dir=None):
-        '''
+        """
+        Get the news to be displayed from the specific news.dir directory
 
         :param news_dir:
         :return: news_files, list of news files found into 'news' directory
-        '''
+        """
 
         if news_dir is not None:
             if not os.path.isdir(news_dir):
@@ -67,13 +69,13 @@ class News(object):
         files = (os.path.join(self.news_dir, file) for file in os.listdir(self.news_dir))
         files = ((os.stat(path), path) for path in files)
         files = ((stat[ST_CTIME], path) for stat, path in files if S_ISREG(stat[ST_MODE]))
-        for time, file in sorted(files):
+        for _, file in sorted(files):
             with open(file) as new:
-                (type, date, title) = new.readline().strip().split(':')
+                (label, date, title) = new.readline().strip().split(':')
                 text = ''
                 for line in new.readlines():
                     text += line
-                news_data.append({'type': type, 'date': date, 'title': title, 'text': text, 'item': item})
+                news_data.append({'label': label, 'date': date, 'title': title, 'text': text, 'item': item})
                 item += 1
                 new.close()
 

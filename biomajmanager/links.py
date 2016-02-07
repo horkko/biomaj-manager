@@ -1,18 +1,20 @@
+""" Automatically create symbolic links from bank data dir to defined target """
 from __future__ import print_function
 from biomajmanager.utils import Utils
 from biomajmanager.manager import Manager
 import os
+
 __author__ = 'tuco'
 
 
 class Links(object):
-    """
-    Class to manager symbolic links for a bank based on supported formats
-    """
+
+    """ Class to manager symbolic links for a bank based on supported formats """
 
     def __init__(self, manager=None):
         """
         Init class
+
         :param manager: Biomaj Manager instance
         :return:
         """
@@ -27,13 +29,14 @@ class Links(object):
         self.manager = manager
         try:
             self.curr_bank_dir = self.manager.get_current_proddir()
-        except SystemExit as err:
+        except SystemExit:
             Utils.error("Can't create Links instance: Can't get production dir for bank")
         self.created_links = 0
 
     def add_link(self, inc=1):
         """
         Increase link created number
+
         :param inc: Incremental value, default 1
         :type inc: Integer
         :return: Number of links "virtually" created
@@ -46,6 +49,7 @@ class Links(object):
         """
         Check if some link(s) need to be (re)created. It uses do_links and set
         simulate and verbose mode to True
+
         :return: Number of links "virtually" created
         :rtype: Int
         """
@@ -54,48 +58,72 @@ class Links(object):
         self.do_links()
         return self.created_links
 
-    def do_links(self):
-        '''
+    def do_links(self, dirs={}, files={}):
+        """
         Create a list of links (Hard coded)
-        :TODO: Find a solution to make the list of link(s) configuratble
+
+        :TODO: Find a solution to make the list of link(s) configurable
+        :param dirs: Directory to symlink
+        :type dirs: Dict {'source1': ['target1', 'target2', ...], 'source2': [], ...}
+        :param files: Files to symlink
+        :type links: Dict {'source1': ['target1','target2', ...], 'source2': [], ...},
         :return: Number of created links
         :rtype: Integer
-        '''
+        """
 
         props = self.manager.bank.get_properties()
+        admin = None
         if 'owner' in props and props['owner']:
             admin = props['owner']
         if Utils.user() != admin:
-            Utils.error("[%s] You are not allowd to create link(s)" % Utils.user())
+            Utils.error("[%s] You are not allowed to create link(s)" % Utils.user())
 
+        # Our default internal use
+        # if not dirs.keys():
+        #     dirs = {
+        #         'bowtie': ['index/bowtie'], 'bwa': ['index/bwa'], 'gatk': ['index/gatk'], 'picard': ['index/picard'],
+        #         'samtools': ['index/samtools'], 'fusioncatcher': ['index/fusioncatcher'], 'soap': ['index/soap'],
+        #         'blast2': ['index/blast2'], 'blast+': ['index/blast+'], 'flat': ['ftp'], 'uncompressed': ['release']
+        #     }
+        # if not files.keys():
+        #     files = {
+        #         'golden': ['index/golden'], 'uncompressed': ['index/golden'], 'blast2': ['fasta', 'index/blast2'],
+        #         'hmmer': ['index/hmmer'], 'fasta': ['fasta'], 'bdb': ['index/bdb']
+        #     }
+        # for source, targets in dirs.iteritems():
+        #     for target in targets:
+        #         self._generate_dir_link(source=source, target=target)
+        # for source, targets in files.iteritems():
+        #     for target in targets:
+        #         self._generate_files_link(source=source, target=target)
         self._generate_dir_link(source='bowtie', target='index/bowtie')
         self._generate_dir_link(source='bwa', target='index/bwa')
         self._generate_dir_link(source='gatk', target='index/gatk')
         self._generate_dir_link(source='picard', target='index/picard')
         self._generate_dir_link(source='samtools', target='index/samtools')
-        self._generate_dir_link(source='bowtie', target='index/bowtie')
         self._generate_dir_link(source='fusioncatcher', target='index/fusioncatcher')
         self._generate_dir_link(source='soap', target='index/soap')
         self._generate_dir_link(source='blast2', target='index/blast2')
         self._generate_dir_link(source='blast+', target='index/blast+')
-        self._generate_files_link(source='blast2', target='fasta')
-        self._generate_files_link(source='blast2', target='index/blast2')
-        self._generate_files_link(source='hmmer', target='index/hmmer')
-        self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
-        # Golden
-        self._generate_files_link(source='golden', target='index/golden')
-        self._generate_files_link(source='uncompressed', target='index/golden')
         # Ftp
         self._generate_dir_link(source='flat', target='ftp')
         # Release
         self._generate_dir_link(source='uncompressed', target='release', fallback='flat')
+        # Golden
+        self._generate_files_link(source='golden', target='index/golden')
+        self._generate_files_link(source='uncompressed', target='index/golden')
+        self._generate_files_link(source='blast2', target='fasta')
+        self._generate_files_link(source='blast2', target='index/blast2')
+        self._generate_files_link(source='hmmer', target='index/hmmer')
+        self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
         self._generate_files_link(source='bdb', target='index/bdb', no_ext=True)
         return self.created_links
 
 
     def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, msg=None):
-        '''
-        Create a symbolink link between 'source' and 'target' for a directory
+        """
+        Create a symbolic link between 'source' and 'target' for a directory
+
         :param source: Source directory to link
         :type source: String
         :param target: Destination directory name (relative to config param 'production.dir')
@@ -108,7 +136,7 @@ class Links(object):
         :type msg: String
         :return: Number of link(s) created
         :rtype: Integer
-        '''
+        """
 
         if self._prepare_links(source=source, target=target, fallback=fallback):
             return 0
@@ -128,8 +156,9 @@ class Links(object):
         return self.created_links
 
     def _generate_files_link(self, source=None, target=None, msg=None, remove_ext=False, no_ext=False):
-        '''
+        """
         Links list of file from 'source' to 'target' directory
+
         :param source: Source directory to link
         :type source: String
         :param target: Destination directory name (relative to config param 'production_dir')
@@ -142,7 +171,7 @@ class Links(object):
         :type msg: String
         :return: Number of link(s) created
         :rtype: Integer
-        '''
+        """
 
         if self._prepare_links(source=source, target=target, use_deepest=True):
             return 0
@@ -183,6 +212,7 @@ class Links(object):
     def _make_links(self, links=None, hard=False):
         """
         Try to create the links (symbolic or hard)
+
         :param links:
         :type links: List of links to create
         :param hard: Create hard link
@@ -213,6 +243,7 @@ class Links(object):
     def _prepare_links(self, source=None, target=None, use_deepest=False, fallback=None):
         """
         Prepare stuff to create links
+
         :param source: Source path
         :type source: String
         :param target: Destination path
@@ -228,24 +259,25 @@ class Links(object):
             Utils.error("source required")
         if not target:
             Utils.error("target required")
+        if not self.manager.config.has_option('GENERAL', 'data.dir'):
+            Utils.error("'data.dir' not defined in global.properties or bank.properties")
+        if not self.manager.config.has_option('MANAGER', 'production.dir'):
+            Utils.error("'production.dir' not defined in manager.properties.")
 
         bank_name = self.manager.bank.name
+        current_release = self.manager.current_release()
         source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'),
                               bank_name,
-                              self.manager.current_release(),
+                              current_release,
                               source)
-        if not os.path.isdir(source):
-            if fallback:
-                print("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
-                source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'),
-                                      bank_name,
-                                      self.manager.current_release(),
-                                      fallback)
-            else:
-                if not os.path.isdir(source):
-                    Utils.warn("[%s] %s does not exists" % (bank_name, source))
-                    return 1
-                
+        if not os.path.isdir(source) and fallback is None:
+            Utils.warn("[%s] %s does not exists" % (bank_name, source))
+            return 1
+        elif fallback:
+            print("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
+            source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name,
+                                  current_release, fallback)
+
         if use_deepest:
             source = Utils.get_deepest_dir(source, full=use_deepest)
         target = os.path.join(self.manager.config.get('MANAGER', 'production.dir'),

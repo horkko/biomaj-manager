@@ -1,36 +1,33 @@
+""" Small testing script to test biomajmanager functionality """
 from __future__ import print_function
-from nose.tools import *
-from nose.plugins.attrib import attr
-
 import shutil
 import os
 import sys
 import tempfile
 import time
 import unittest
+from nose.plugins.attrib import attr
 from pymongo import MongoClient
 from datetime import datetime
-
 from biomajmanager.links import Links
 from biomajmanager.manager import Manager
 from biomajmanager.news import News
+from biomajmanager.plugins import Plugins
 from biomajmanager.writer import Writer
 from biomajmanager.utils import Utils
-
 
 __author__ = 'tuco'
 
 
 class UtilsForTests(object):
+
     """
     Copy properties files into a temporary directory and update properties
     to use a temp directory
     """
 
     def __init__(self):
-        '''
-        Setup the temp dirs and files.
-        '''
+        """ Setup the temp dirs and files. """
         self.global_properties = None
         self.manager_properties = None
         self.manager = None
@@ -64,10 +61,10 @@ class UtilsForTests(object):
         self.news_dir = os.path.join(self.test_dir, 'news')
         if not os.path.exists(self.news_dir):
             os.makedirs(self.news_dir)
-        self.prod_dir = os.path.join(self.test_dir,'production')
+        self.prod_dir = os.path.join(self.test_dir, 'production')
         if not os.path.exists(self.prod_dir):
             os.makedirs(self.prod_dir)
-        self.plugins_dir = os.path.join(self.test_dir,'plugins')
+        self.plugins_dir = os.path.join(self.test_dir, 'plugins')
         if not os.path.exists(self.plugins_dir):
             os.makedirs(self.plugins_dir)
         self.tmp_dir = os.path.join(self.test_dir, 'tmp')
@@ -86,6 +83,7 @@ class UtilsForTests(object):
     def copy_file(self, file=None, todir=None):
         """
         Copy a file from the test dir to temp test zone
+
         :param file: File to copy
         :param todir: Destinatin directory
         :return:
@@ -98,6 +96,7 @@ class UtilsForTests(object):
     def copy_news_files(self):
         """
         Copy news file from test directory to 'news' testing directory
+
         :return:
         """
         curdir = self.__get_curdir()
@@ -109,6 +108,7 @@ class UtilsForTests(object):
     def copy_plugins(self):
         """
         Copy plugins from test directory to 'plugins' testing directory
+
         :return:
         """
         dsrc = 'tests/plugins'
@@ -119,6 +119,7 @@ class UtilsForTests(object):
     def copy_templates(self):
         """
         Copy templates from test directory to 'templates' testing directory
+
         :return:
         """
         dsrc = 'tests/templates'
@@ -133,50 +134,36 @@ class UtilsForTests(object):
         shutil.rmtree(self.test_dir)
 
     def drop_db(self):
-         """
-         Drop the mongo database after using it and close the connection
-         :return:
-         """
-         self.mongo_client.drop_database(self.db_test)
-         self.mongo_client.close()
-
-    def print_err(self, msg):
-        """
-        Prints message on sys.stderr
-        :param msg:
-        :return:
-        """
-        print(msg, file=sys.stderr)
+        """ Drop the mongo database after using it and close the connection """
+        self.mongo_client.drop_database(self.db_test)
+        self.mongo_client.close()
 
     def __get_curdir(self):
-        """
-        Get the current directory
-        :return:
-        """
+        """ Get the current directory """
         return os.path.dirname(os.path.realpath(__file__))
 
     def __copy_test_manager_properties(self):
-
+        """ Copy manager.properties file to testing directory """
         self.manager_properties = os.path.join(self.conf_dir, 'manager.properties')
         curdir = self.__get_curdir()
         manager_template = os.path.join(curdir, 'manager.properties')
-        mout = open(self.manager_properties, 'w')
-        with open(manager_template, 'r') as min:
-            for line in min:
+        fout = open(self.manager_properties, 'w')
+        with open(manager_template, 'r') as fin:
+            for line in fin:
                 if line.startswith('template.dir'):
-                    mout.write("template.dir=%s\n" % self.template_dir)
+                    fout.write("template.dir=%s\n" % self.template_dir)
                 elif line.startswith('news.dir'):
-                    mout.write("news.dir=%s\n" % self.news_dir)
+                    fout.write("news.dir=%s\n" % self.news_dir)
                 elif line.startswith('production.dir'):
-                    mout.write("production.dir=%s\n" % self.prod_dir)
+                    fout.write("production.dir=%s\n" % self.prod_dir)
                 elif line.startswith('plugins.dir'):
-                    mout.write("plugins.dir=%s\n" % self.plugins_dir)
+                    fout.write("plugins.dir=%s\n" % self.plugins_dir)
                 else:
-                    mout.write(line)
-        mout.close()
+                    fout.write(line)
+        fout.close()
 
     def __copy_test_global_properties(self):
-
+        """ Copy global.properties file into testing directory """
         self.global_properties = os.path.join(self.conf_dir, 'global.properties')
         curdir = os.path.dirname(os.path.realpath(__file__))
         global_template = os.path.join(curdir, 'global.properties')
@@ -201,6 +188,8 @@ class UtilsForTests(object):
 
 class TestBiomajManagerUtils(unittest.TestCase):
 
+    """ Class for testing manager.utils class """
+
     def setUp(self):
         self.utils = UtilsForTests()
 
@@ -209,116 +198,93 @@ class TestBiomajManagerUtils(unittest.TestCase):
 
     @attr('utils')
     @attr('utils.deepestdirs')
-    def test_deepest_dir_ErrorNoPath(self):
-        """
-        Check methods checks are OK
-        :return:
-        """
+    def test_UtilsDeepestDirErrorNoPath(self):
+        """ Check methods checks are OK """
         with self.assertRaises(SystemExit):
             Utils.get_deepest_dirs()
 
     @attr('utils')
     @attr('utils.deepestdirs')
-    def test_deepest_dir_ErrorPathNotExists(self):
-        """
-        Check methods checks are OK
-        :return:
-        """
+    def test_DeepestDirErrorPathNotExists(self):
+        """ Check methods checks are OK """
         with self.assertRaises(SystemExit):
             Utils.get_deepest_dirs(path='/not_found')
 
     @attr('utils')
     @attr('utils.deepestdir')
-    def test_deepest_dir(self):
-        """
-        Check we get the right deepest dir from a complete path
-        :return:
-        """
-        dir = os.path.join(self.utils.tmp_dir, 'a', 'b', 'c')
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        deepest = Utils.get_deepest_dir(dir)
+    def test_DeepestDir(self):
+        """ Check we get the right deepest dir from a complete path """
+        tdir = os.path.join(self.utils.tmp_dir, 'a', 'b', 'c')
+        if not os.path.exists(tdir):
+            os.makedirs(tdir)
+        deepest = Utils.get_deepest_dir(tdir)
         self.assertEqual(deepest, 'c')
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
     @attr('utils.deepestdir')
-    def test_deepest_dir_full(self):
-        """
-        Check we get the right full deepest dir
-        :return:
-        """
-        dir = os.path.join(self.utils.tmp_dir, 'a', 'b', 'c', 'd')
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        deepest = Utils.get_deepest_dir(dir, full=True)
-        self.assertEqual(deepest, dir)
+    def test_DeepestDirFull(self):
+        """ Check we get the right full deepest dir """
+        tdir = os.path.join(self.utils.tmp_dir, 'a', 'b', 'c', 'd')
+        if not os.path.exists(tdir):
+            os.makedirs(tdir)
+        deepest = Utils.get_deepest_dir(tdir, full=True)
+        self.assertEqual(deepest, tdir)
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
     @attr('utils.deepestdir')
-    def test_deepest_dir(self):
-        """
-        Check we get the right list of deepest dir
-        :return:
-        """
-        dir = os.path.join(self.utils.tmp_dir, 'a', 'b')
-        dir1 = os.path.join(dir, 'c')
-        dir2 = os.path.join(dir, 'd')
-        for d in [dir1, dir2]:
-            if not os.path.exists(d):
-                os.makedirs(d)
-        deepest = Utils.get_deepest_dir(dir)
+    def test_DeepestDir(self):
+        """ Check we get the right list of deepest dir """
+        dir0 = os.path.join(self.utils.tmp_dir, 'a', 'b')
+        dir1 = os.path.join(dir0, 'c')
+        dir2 = os.path.join(dir0, 'd')
+        for od in [dir1, dir2]:
+            if not os.path.exists(od):
+                os.makedirs(od)
+        deepest = Utils.get_deepest_dir(dir0)
         self.assertEqual(len(deepest), 1)
         self.assertEqual(deepest[0], 'c')
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
     @attr('utils.deepestdirs')
-    def test_deepest_dirs(self):
-        """
-        Check we get the right list of deepest dir
-        :return:
-        """
-        dir = os.path.join(self.utils.tmp_dir, 'a', 'b')
-        dir1 = os.path.join(dir, 'c')
-        dir2 = os.path.join(dir, 'd')
-        for d in [dir1, dir2]:
-            if not os.path.exists(d):
-                os.makedirs(d)
-        deepest = Utils.get_deepest_dirs(dir)
-        c = deepest[0]
-        d = deepest[1]
-        self.assertEqual(c, 'c')
-        self.assertEqual(d, 'd')
+    def test_DeepestDirs(self):
+        """ Check we get the right list of deepest dir """
+        dir0 = os.path.join(self.utils.tmp_dir, 'a', 'b')
+        dir1 = os.path.join(dir0, 'c')
+        dir2 = os.path.join(dir0, 'd')
+        for od in [dir1, dir2]:
+            if not os.path.exists(od):
+                os.makedirs(od)
+        deepest = Utils.get_deepest_dirs(dir0)
+        c1 = deepest[0]
+        d1 = deepest[1]
+        self.assertEqual(c1, 'c')
+        self.assertEqual(d1, 'd')
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
     @attr('utils.deepestdirs')
-    def test_deepest_dirs_full(self):
-        """
-        Check we get the right list of deepest dir
-        :return:
-        """
-        dir = os.path.join(self.utils.tmp_dir, 'a', 'b')
-        dir1 = os.path.join(dir, 'c')
-        dir2 = os.path.join(dir, 'd')
-        for d in [dir1, dir2]:
-            if not os.path.exists(d):
-                os.makedirs(d)
-        deepest = Utils.get_deepest_dirs(dir, full=True)
-        c = deepest[0]
-        d = deepest[1]
-        self.assertEqual(c, dir1)
-        self.assertEqual(d, dir2)
+    def test_DeepestDirsFull(self):
+        """ Check we get the right list of deepest dir """
+        dir0 = os.path.join(self.utils.tmp_dir, 'a', 'b')
+        dir1 = os.path.join(dir0, 'c')
+        dir2 = os.path.join(dir0, 'd')
+        for od in [dir1, dir2]:
+            if not os.path.exists(od):
+                os.makedirs(od)
+        deepest = Utils.get_deepest_dirs(dir0, full=True)
+        c1 = deepest[0]
+        d1 = deepest[1]
+        self.assertEqual(c1, dir1)
+        self.assertEqual(d1, dir2)
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
-    def test_get_files(self):
-        """
-        Check we get the right file list from a directory
-        :return:
-        """
+    @attr('utils.getfiles')
+    def test_GetFiles(self):
+        """ Check we get the right file list from a directory """
         tmp_file1 = os.path.join(self.utils.tmp_dir, '1foobar.tmp')
         tmp_file2 = os.path.join(self.utils.tmp_dir, '2foobar.tmp')
         open(tmp_file1, mode='a').close()
@@ -331,38 +297,30 @@ class TestBiomajManagerUtils(unittest.TestCase):
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
-    def test_get_files_ErrorNoPath(self):
-        """
-        Check we get an error when omitting args
-        :return:
-        """
+    @attr('utils.getfiles')
+    def test_GetFilesErrorNoPath(self):
+        """ Check we get an error when omitting args """
         with self.assertRaises(SystemExit):
             Utils.get_files()
 
     @attr('utils')
-    def test_get_files_ErrorPathNotExists(self):
-        """
-        Check we get an error when omitting args
-        :return:
-        """
+    @attr('utils.getfiles')
+    def test_GetFilesErrorPathNotExists(self):
+        """ Check we get an error when omitting args """
         with self.assertRaises(SystemExit):
             Utils.get_files(path='/not_found')
 
     @attr('utils')
-    def test_elapsedTime_Error(self):
-        """
-        Check this method throw an error
-        :return:
-        """
+    @attr('utils.elapsedtime')
+    def test_ElapsedTimeError(self):
+        """ Check this method throw an error """
         with self.assertRaises(SystemExit):
             Utils.elapsed_time()
 
     @attr('utils')
-    def test_elapsedtime_NoTimerStop(self):
-        """
-        Check we go deeper in method setting time_stop to None
-        :return:
-        """
+    @attr('utils.elapsedtime')
+    def test_ElapsedtimeNoTimerStop(self):
+        """ Check we go deeper in method setting time_stop to None """
         Utils.timer_stop = None
         Utils.start_timer()
         self.assertIsInstance(Utils.elapsed_time(), float)
@@ -387,106 +345,85 @@ class TestBiomajManagerUtils(unittest.TestCase):
     #         Utils.local2utc(int(2))
 
     @attr('utils')
-    def test_time2date_NoArgs(self):
-        """
-        Check the method throws an error if no args given
-        :return:
-        """
+    @attr('utils.time2date')
+    def test_Time2dateNoArgs(self):
+        """ Check the method throws an error if no args given """
         with self.assertRaises(TypeError):
             Utils.time2date()
 
     @attr('utils')
-    def test_time2date_ReturnedOK(self):
-        """
-        Check value returned is right object
-        :return:
-        """
+    @attr('utils.time2date')
+    def test_Time2dateReturnedOK(self):
+        """ Check value returned is right object """
         self.assertIsInstance(Utils.time2date(time.time()), datetime)
 
     @attr('utils')
-    def test_time2datefmt_NoArgs(self):
-        """
-        Check the method throws an error if no args given
-        :return:
-        """
+    @attr('utils.time2datefmt')
+    def test_Time2datefmtNoArgs(self):
+        """ Check the method throws an error if no args given """
         with self.assertRaises(TypeError):
             Utils.time2datefmt()
 
     @attr('utils')
-    def test_time2datefmt_ReturnedOK(self):
-        """
-        Check value returned is right object
-        :return:
-        """
+    @attr('utils.time2datefmt')
+    def test_Time2datefmtReturnedOK(self):
+        """ Check value returned is right object """
         self.assertIsInstance(Utils.time2datefmt(time.time(), Manager.DATE_FMT), str)
 
     @attr('utils')
-    def test_userOK(self):
-        """
-        Check the testing user is ok
-        :return:
-        """
+    @attr('utils.user')
+    def test_UserOK(self):
+        """ Check the testing user is ok """
         user = os.getenv("USER")
         self.assertEqual(Utils.user(), user)
 
     @attr('utils')
+    @attr('utils.user')
     def test_userNOTOK(self):
-        """
-        Check the testing user is ok
-        :return:
-        """
+        """ Check the testing user is ok """
         user = "fakeUser"
         self.assertNotEqual(Utils.user(), user)
 
 
 class TestBiomajManagerWriter(unittest.TestCase):
+    """ Class for testing biomajmanager.writer class """
 
     def setUp(self):
+        """ Setup stuff """
         self.utils = UtilsForTests()
         self.utils.copy_templates()
         # Maker out test global.properties set as env var
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
     def tearDown(self):
+        """ Finish """
         self.utils.clean()
 
     @attr('writer')
     @attr('writer.init')
     def test_WriterInitNoArgsThrowsException(self):
-        """
-        Check init throws exception with no args
-        :return:
-        """
+        """ Check init throws exception with no args """
         with self.assertRaises(SystemExit):
             Writer()
 
     @attr('writer')
     @attr('writer.init')
     def test_WriterInitOKWithTemplateDirOK(self):
-        """
-        Check object init is OK
-        :return:
-        """
+        """ Check object init is OK """
         writer = Writer(template_dir=self.utils.template_dir)
         self.assertIsNone(writer.output)
 
     @attr('writer')
     @attr('writer.init')
     def test_WriterInitOKWithTemplateDirNotOK(self):
-        """
-        Check object init with false template_dir throws exception
-        :return:
-        """
+        """ Check object init with false template_dir throws exception """
         with self.assertRaises(SystemExit):
             Writer(template_dir="/not_found")
 
     @attr('writer')
     @attr('writer.init')
     def test_WriterInitConfigTemplateDirOK(self):
-        """
-        Check object init with config set correct tempalte_dir
-        :return:
-        """
+        """ Check object init with config set correct tempalte_dir """
         manager = Manager()
         writer = Writer(config=manager.config)
         self.assertEqual(manager.config.get('MANAGER', 'template.dir'), writer.template_dir)
@@ -494,10 +431,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.init')
     def test_WriterInitOKWithConfigNoSection(self):
-        """
-        Check object with config without section throws exception
-        :return:
-        """
+        """ Check object with config without section throws exception """
         manager = Manager()
         manager.config.remove_section('MANAGER')
         with self.assertRaises(SystemExit):
@@ -518,10 +452,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.write')
     def test_WriterWriteNoFileThrowsException(self):
-        """
-        Chekc method throws exception if not 'file' args passed
-        :return:
-        """
+        """ Check method throws exception if not 'file' args passed """
         writer = Writer(template_dir=self.utils.template_dir)
         with self.assertRaises(SystemExit):
             writer.write()
@@ -529,10 +460,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.write')
     def test_WriterWriteWrongTemplateFileThrowsException(self):
-        """
-        Check the method throws exception while template file does not exists
-        :return:
-        """
+        """ Check the method throws exception while template file does not exists """
         writer = Writer(template_dir=self.utils.template_dir)
         with self.assertRaises(SystemExit):
             writer.write(file="doesnotexist.txt")
@@ -540,10 +468,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.write')
     def test_WriterWriteTemplateFileOKTemplateSyntaxError(self):
-        """
-        Check the method throws exception while template file does not exists
-        :return:
-        """
+        """ Check the method throws exception while template file does not exists """
         writer = Writer(template_dir=self.utils.template_dir)
         with self.assertRaises(SystemExit):
             writer.write(file="wrong_syntax.txt")
@@ -551,10 +476,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.write')
     def test_WriterWrtieTemplateFileOKOutputIsNoneOK(self):
-        """
-        Check method prints OK on STDOUT
-        :return:
-        """
+        """ Check method prints OK on STDOUT """
         writer = Writer(template_dir=self.utils.template_dir)
         data = {'test': 'working test!'}
         self.assertTrue(writer.write(file="test.txt", data=data))
@@ -562,10 +484,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.write')
     def test_WriterWriteTemplateFileOKContentOK(self):
-        """
-        Check the output file written has right content
-        :return:
-        """
+        """ Check the output file written has right content """
         output = os.path.join(self.utils.template_dir, "output.txt")
         data = {'test': 'working test!'}
         writer = Writer(template_dir=self.utils.template_dir, output=output)
@@ -577,10 +496,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
     @attr('writer')
     @attr('writer.write')
     def test_WriterWriteTemplateFileOKOutputThrows(self):
-        """
-        Check the output file is wrong and method throws exception
-        :return:
-        """
+        """ Check the output file is wrong and method throws exception """
         output = os.path.join(self.utils.template_dir, "unkown_directory", "output.txt")
         data = {'test': 'working test!'}
         writer = Writer(template_dir=self.utils.template_dir, output=output)
@@ -590,7 +506,10 @@ class TestBiomajManagerWriter(unittest.TestCase):
 
 class TestBiomajManagerLinks(unittest.TestCase):
 
+    """ Class for testing biomajmanager.links """
+
     def setUp(self):
+        """ Setup stuff """
         self.utils = UtilsForTests()
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
         # Links need to have a production dir ready, so we do it
@@ -602,6 +521,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.manager = manager
 
     def tearDown(self):
+        """ Clean all """
         self.utils.clean()
         # As we created an entry in the database ('alu'), we clean the database
         self.utils.drop_db()
@@ -609,71 +529,128 @@ class TestBiomajManagerLinks(unittest.TestCase):
     @attr('links')
     @attr('links.init')
     def test_LinksInitOK(self):
-        """
-        Check init Links instance is OK
-        :return:
-        """
+        """ Check init Links instance is OK """
         links = Links(manager=self.utils.manager)
         self.assertEqual(links.created_links, 0)
 
     @attr('links')
     @attr('links.init')
     def test_LinksInitNoManagerThrowsException(self):
-        """
-        Check init instance without manager throws exception
-        :return:
-        """
+        """ Check init instance without manager throws exception """
         with self.assertRaises(SystemExit):
             Links()
 
     @attr('links')
     @attr('links.init')
     def test_LinksInitWrongManagerInstanceThrows(self):
-        """
-        Check init thorws exception is manager args is not instance of Manager
-        :return:
-        """
+        """ Check init thorws exception is manager args is not instance of Manager """
         with self.assertRaises(SystemExit):
             Links(manager=self.utils)
 
     @attr('links')
     @attr('links.init')
     def test_LinksInitNoCurrentProdDirThrows(self):
-        """
-        Checl init throws exception when no production dir ready
-        :return:
-        """
+        """ Check init throws exception when no production dir ready """
         self.utils.manager.bank.bank['production'].pop()
         with self.assertRaises(SystemExit):
             Links(manager=self.utils.manager)
 
+    @attr('links')
+    @attr('links.addlink')
+    def test_LinkAddLinkAddOneOK(self):
+        """ Check method increase by 1 ok """
+        link = Links(manager=self.utils.manager)
+        link.add_link()
+        link.add_link()
+        self.assertEqual(link.add_link(), 3)
+
+    @attr('links')
+    @attr('links.addlink')
+    def test_LinkAddLinkAddTwoOK(self):
+        """ Check method increase correctly with arg """
+        link = Links(manager=self.utils.manager)
+        link.add_link(inc=1)
+        link.add_link(inc=2)
+        link.add_link(inc=3)
+        self.assertEqual(link.created_links, 6)
+
+    @attr('links')
+    @attr('links.dolinks')
+    def test_LinksDoLinksThrowsWrongUser(self):
+        """ Check method throws exception because user not authorized """
+        links = Links(manager=self.utils.manager)
+        os.environ['USER'] = 'fakeuser'
+        with self.assertRaises(SystemExit):
+            links.do_links()
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksNoArgsThrows(self):
+        """ Check method throws if not args source given """
+        link = Links(manager=self.utils.manager)
+        with self.assertRaises(SystemExit):
+            link._prepare_links()
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksSourceOKTargetMissingThrows(self):
+        """ Check method throws if source given but no other args """
+        link = Links(manager=self.utils.manager)
+        with self.assertRaises(SystemExit):
+            link._prepare_links(source=self.utils.data_dir)
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksArgsOKConfigDataDirMissingThrows(self):
+        """ Check method throws if source given but no other args """
+        link = Links(manager=self.utils.manager)
+        self.utils.manager.config.remove_option('GENERAL', 'data.dir')
+        with self.assertRaises(SystemExit):
+            link._prepare_links(source=self.utils.data_dir, target="test")
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksArgsOKConfigProdDirMissingThrows(self):
+        """ Check method throws if source given but no other args """
+        link = Links(manager=self.utils.manager)
+        self.utils.manager.config.remove_option('MANAGER', 'production.dir')
+        with self.assertRaises(SystemExit):
+            link._prepare_links(source=self.utils.data_dir, target="test")
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksArgsOKSourceNotDirThrows(self):
+        """ Check method throws if source given is not a directory """
+        link = Links(manager=self.utils.manager)
+        link.manager.config.set('GENERAL', 'data.dir', '/dir/does_not/')
+        self.assertEqual(link._prepare_links(source='/exist', target="link_test"), 1)
+
+
 class TestBiomajManagerNews(unittest.TestCase):
 
+    """ Class for testing biomajmanager.news class """
+
     def setUp(self):
+        """ Setup stuff """
         self.utils = UtilsForTests()
         # Make our test global.properties set as env var
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
     def tearDown(self):
+        """ Clean """
         self.utils.clean()
 
     @attr('manager')
     @attr('manager.news')
     def test_NewWithMaxNews(self):
-        """
-        Check max_news args is OK
-        :return:
-        """
+        """ Check max_news args is OK """
         news = News(max_news=10)
         self.assertEqual(news.max_news, 10)
 
     @attr('manager')
     @attr('manager.news')
     def test_NewWithConfigOK(self):
-        """
-        Check init set everthing from config as arg
-        :return:
-        """
+        """ Check init set everything from config as arg """
         manager = Manager()
         news_dir = manager.config.get('MANAGER', 'news.dir')
         news = News(config=manager.config)
@@ -682,10 +659,7 @@ class TestBiomajManagerNews(unittest.TestCase):
     @attr('manager')
     @attr('manager.news')
     def test_NewWithConfigNoSection(self):
-        """
-        Check init throws because config has no section 'MANAGER'
-        :return:
-        """
+        """ Check init throws because config has no section 'MANAGER' """
         manager = Manager()
         manager.config.remove_section('MANAGER')
         with self.assertRaises(SystemExit):
@@ -694,10 +668,7 @@ class TestBiomajManagerNews(unittest.TestCase):
     @attr('manager')
     @attr('manager.news')
     def test_NewWithConfigNoOption(self):
-        """
-        Check init throws because config has no option 'news.dir
-        :return:
-        """
+        """ Check init throws because config has no option 'news.dir """
         manager = Manager()
         manager.config.remove_option('MANAGER', 'news.dir')
         with self.assertRaises(SystemExit):
@@ -706,10 +677,7 @@ class TestBiomajManagerNews(unittest.TestCase):
     @attr('manager')
     @attr('manager.news')
     def test_NewsNewsDirOK(self):
-        """
-        Check get_news set correct thing
-        :return:
-        """
+        """ Check get_news set correct thing """
         self.utils.copy_news_files()
         news = News()
         news.get_news(news_dir=self.utils.news_dir)
@@ -718,20 +686,14 @@ class TestBiomajManagerNews(unittest.TestCase):
     @attr('manager')
     @attr('manager.news')
     def test_NewsDirNotADirectory(self):
-        """
-        Check the dir given is not a directory
-        :return:
-        """
+        """ Check the dir given is not a directory """
         with self.assertRaises(SystemExit):
             News(news_dir="/foobar")
 
     @attr('manager')
     @attr('manager.news')
     def test_NewsGetNewsWrongDirectory(self):
-        """
-        Check method throws exception with wrong dir calling get_news
-        :return:
-        """
+        """ Check method throws exception with wrong dir calling get_news """
         news = News()
         with self.assertRaises(SystemExit):
             news.get_news(news_dir='/not_found')
@@ -739,10 +701,7 @@ class TestBiomajManagerNews(unittest.TestCase):
     @attr('manager')
     @attr('manager.news')
     def test_NewsGetNewsNewsDirNotDefined(self):
-        """
-        Check method throws exception while 'news.dir' not defined
-        :return:
-        """
+        """ Check method throws exception while 'news.dir' not defined """
         news = News()
         with self.assertRaises(SystemExit):
             news.get_news()
@@ -750,15 +709,11 @@ class TestBiomajManagerNews(unittest.TestCase):
     @attr('manager')
     @attr('manager.news')
     def test_FileNewsContentEqual(self):
-        """
-        Check the content of 2 generated news files are identical
-        :return:
-        """
-
+        """ Check the content of 2 generated news files are identical """
         self.utils.copy_news_files()
         data = []
         for i in range(1, 4):
-            data.append({'type': 'type' + str(i),
+            data.append({'label': 'type' + str(i),
                          'date': str(i) + '0/12/2015',
                          'title': 'News%s Title' % str(i),
                          'text': 'This is text #%s from news%s' %  (str(i), str(i)),
@@ -769,10 +724,10 @@ class TestBiomajManagerNews(unittest.TestCase):
         data.reverse()
 
         if 'news' in news_data:
-            for d in news_data['news']:
-                n = data.pop()
-                for k in ['type', 'date', 'title', 'text', 'item']:
-                    self.assertEqual(d[k], n[k])
+            for new in news_data['news']:
+                dat = data.pop()
+                for k in ['label', 'date', 'title', 'text', 'item']:
+                    self.assertEqual(dat[k], new[k])
         else:
             raise(unittest.E)
         shutil.rmtree(self.utils.news_dir)
@@ -780,21 +735,22 @@ class TestBiomajManagerNews(unittest.TestCase):
 
 class TestBioMajManagerDecorators(unittest.TestCase):
 
+    """ Class for testing biomajmanager.decorators """
+
     def setUp(self):
+        """ Setup stuff """
         self.utils = UtilsForTests()
         # Make our test global.properties set as env var
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
     def tearDown(self):
+        """ Clean """
         self.utils.clean()
 
     @attr('manager')
     @attr('manager.decorators')
     def test_DecoratorBankRequiredOK(self):
-        """
-        Test we've got a bank name set
-        :return:
-        """
+        """ Test we've got a bank name set """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         sections = manager.get_dict_sections('blast2')
@@ -806,10 +762,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
     @attr('manager')
     @attr('manager.decorators')
     def test_DecoratorBankRequiredNotOK(self):
-        """
-        Test we've got a bank name set
-        :return:
-        """
+        """ Test we've got a bank name set """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager()
         with self.assertRaises(SystemExit):
@@ -819,10 +772,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
     @attr('manager')
     @attr('manager.decorators')
     def test_DecoratorsUserGrantedOK(self):
-        """
-        Test the user is granted
-        :return:
-        """
+        """ Test the user is granted """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.save_banks_version(file=self.utils.test_dir + '/saved_versions.txt')
@@ -831,10 +781,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
     @attr('manager')
     @attr('manager.decorators')
     def test_DecoratorsUserGrantedNotOK(self):
-        """
-        Test the user is granted
-        :return:
-        """
+        """ Test the user is granted """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # Just change the env LOGNAME do misfit with db user
@@ -849,10 +796,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
     @attr('manager')
     @attr('manager.decorators')
     def test_DecoratorsUserGrantedAdminNotSet(self):
-        """
-        Test the user is granted
-        :return:
-        """
+        """ Test the user is granted """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # Unset admin from config file and owner from the bank just created
@@ -865,41 +809,36 @@ class TestBioMajManagerDecorators(unittest.TestCase):
 
 class TestBioMajManagerManager(unittest.TestCase):
 
+    """ Class for testing biomajmanager.manager class """
+
     def setUp(self):
+        """ Setup stuff """
         self.utils = UtilsForTests()
         # Make our test global.properties set as env var
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
     def tearDown(self):
+        """ Clean """
         self.utils.clean()
 
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerNoConfigRaisesException(self):
-        """
-        Check an exception is raised while config loading
-        :return:
-        """
+        """ Check an exception is raised while config loading """
         with self.assertRaises(SystemExit):
             Manager(cfg="/no_manager_cfg", global_cfg="/no_global_cfg")
 
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerGlobalConfigException(self):
-        """
-        Check an exception is raised config loading
-        :return:
-        """
+        """ Check an exception is raised config loading """
         with self.assertRaises(SystemExit):
             Manager(global_cfg="/no_global_cfg")
 
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ConfigNoManagerSection(self):
-        """
-        Check we don't have a 'MANAGER' section in our config
-        :return:
-        """
+        """ Check we don't have a 'MANAGER' section in our config """
         no_sec = 'manager-nomanager-section.properties'
         self.utils.copy_file(file=no_sec, todir=self.utils.conf_dir)
         cfg = Manager.load_config(cfg=os.path.join(self.utils.conf_dir, no_sec))
@@ -908,10 +847,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerLoadConfig(self):
-        """
-        Check we can load any configuration file on demand
-        :return:
-        """
+        """ Check we can load any configuration file on demand """
         for file in ['m1.properties', 'm2.properties', 'm3.properties']:
             self.utils.copy_file(file=file, todir=self.utils.test_dir)
             cfg = Manager.load_config(cfg=os.path.join(self.utils.test_dir, file))
@@ -921,10 +857,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerLoadConfigNOTOK(self):
-        """
-        Check we throw an error when no 'manager.properties' found
-        :return:
-        """
+        """ Check we throw an error when no 'manager.properties' found """
         os.remove(os.path.join(self.utils.conf_dir, 'manager.properties'))
         with self.assertRaises(SystemExit):
             Manager.load_config(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
@@ -932,12 +865,8 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.bankinfo')
     def test_ManagerBankInfo(self):
-        """
-        Check method returns right info about a bank
-        :return:
-        """
+        """ Check method returns right info about a bank """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
-        self.maxDiff = None
         now = time.time()
         manager = Manager(bank='alu')
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now, 'last_update_session': now,
@@ -963,10 +892,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.bankpublished')
     def test_ManagerBankPublishedTrue(self):
-        """
-        Check a bank is published or not (True)
-        :return:
-        """
+        """ Check a bank is published or not (True) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         # at begining, biomaj create an empty bank entry into Mongodb
         manager = Manager(bank='alu')
@@ -978,10 +904,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.bankpublished')
     def test_ManagerBankPublishedFalse(self):
-        """
-        Check a bank is published or not (False)
-        :return:
-        """
+        """ Check a bank is published or not (False) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         # at begining, biomaj create an empty bank entry into Mongodb
         manager = Manager(bank='alu')
@@ -993,10 +916,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedFalseNoPendingFalse(self):
-        """
-        Check we have a failed session and no pending session(s)
-        :return:
-        """
+        """ Check we have a failed session and no pending session(s) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         data = {'name': 'alu',
@@ -1011,10 +931,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedTrueNoPendingTrue(self):
-        """
-        Check we have a failed session and no pending session(s)
-        :return:
-        """
+        """ Check we have a failed session and no pending session(s) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         data = {'name': 'alu',
@@ -1031,10 +948,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedTrueNoPendingFalse(self):
-        """
-        Check we have a failed session and no pending session(s)
-        :return:
-        """
+        """ Check we have a failed session and no pending session(s) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         data = {'name': 'alu',
@@ -1050,10 +964,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankHasFormatNoFormat(self):
-        """
-        Check missing arg raises error
-        :return:
-        """
+        """ Check missing arg raises error """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
@@ -1063,10 +974,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankHasFormatsTrue(self):
-        """
-        Check if the bank has a specific format (True)
-        :return:
-        """
+        """ Check if the bank has a specific format (True) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         self.assertTrue(manager.has_formats(fmt='blast'))
@@ -1075,10 +983,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankHasFormatsFalse(self):
-        """
-        Check if the bank has a specific format (False)
-        :return:
-        """
+        """ Check if the bank has a specific format (False) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         self.assertFalse(manager.has_formats(fmt='unknown'))
@@ -1087,10 +992,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankFormatsFlatFalseOK(self):
-        """
-        Check if the bank has a specific format (True)
-        :return:
-        """
+        """ Check if the bank has a specific format (True) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         returned = manager.formats()
@@ -1101,10 +1003,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankFormatsFlatTrueOK(self):
-        """
-        Check if the bank has a specific format (True)
-        :return:
-        """
+        """ Check if the bank has a specific format (True) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         returned = manager.formats(flat=True)
@@ -1115,10 +1014,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankFormatsAsStringOK(self):
-        """
-        Check if the bank has a specific format returned as string (True)
-        :return:
-        """
+        """ Check if the bank has a specific format returned as string (True) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         returned = manager.formats_as_string()
@@ -1128,15 +1024,12 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.getsessionfromid')
-    def test_ManagerGetSessionFromIDNotNone(self):
-        """
-        Check we retrieve the right session id (Not None)
-        :return:
-        """
+    def test_ManagerGetSessionFromIDNotNoneNotNone(self):
+        """ Check we retrieve the right session id (Not None) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
-                'sessions': [{'id': 1, 'status': { 'over': True}},
-                             {'id': 2, 'status': { 'over': True}}]}
+                'sessions': [{'id': 1, 'status': {'over': True}},
+                             {'id': 2, 'status': {'over': True}}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertIsNotNone(manager.get_session_from_id(1))
@@ -1144,15 +1037,12 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.getsessionfromid')
-    def test_ManagerGetSessionFromIDNone(self):
-        """
-        Check we retrieve the right session id (None)
-        :return:
-        """
+    def test_ManagerGetSessionFromIDNotNone(self):
+        """ Check we retrieve the right session id (None) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
-                'sessions': [{'id': 1, 'status': { 'over': True}},
-                             {'id': 2, 'status': { 'over': True}}]}
+                'sessions': [{'id': 1, 'status': {'over': True}},
+                             {'id': 2, 'status': {'over': True}}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertIsNone(manager.get_session_from_id(3))
@@ -1161,14 +1051,11 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getsessionfromid')
     def test_ManagerGetSessionFromIDNone(self):
-        """
-        Check method raises exception
-        :return:
-        """
+        """ Check method raises exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
-                'sessions': [{'id': 1, 'status': { 'over': True}},
-                             {'id': 2, 'status': { 'over': True}}]}
+                'sessions': [{'id': 1, 'status': {'over': True}},
+                             {'id': 2, 'status': {'over': True}}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         with self.assertRaises(SystemExit):
@@ -1178,10 +1065,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getpendingsessions')
     def test_ManagerGetPendingSessionsOK(self):
-        """
-        Check method returns correct pending session
-        :return:
-        """
+        """ Check method returns correct pending session """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -1197,10 +1081,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.showpendingsessions')
     def test_ManagerShowPendingSessionsOK(self):
-        """
-        Check method returns correct pending session
-        :return:
-        """
+        """ Check method returns correct pending session """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -1216,10 +1097,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseNotNone(self):
-        """
-        Check we get a the published release (NotNone)
-        :return:
-        """
+        """ Check we get a the published release (NotNone) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         release = 'R54'
@@ -1236,10 +1114,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseNone(self):
-        """
-        Check we get a the published release (None)
-        :return:
-        """
+        """ Check we get a the published release (None) """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         release = 'R54'
@@ -1255,15 +1130,11 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseRaisesOK(self):
-        """
-        Check method raises an exception
-        :return:
-        """
+        """ Check method raises an exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
-        release = 'R54'
         data = {'name': 'alu', 'current': now,
-                'sessions': [{'id': 1 }, {'id': now }]
+                'sessions': [{'id': 1}, {'id': now}]
                 }
         manager = Manager(bank='alu')
         manager.bank.bank = data
@@ -1274,10 +1145,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetDictSections(self):
-        """
-        Get sections for a bank
-        :return:
-        """
+        """ Get sections for a bank """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         dsections = manager.get_dict_sections(tool='blast2')
@@ -1289,10 +1157,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetDictSectionsOnlySectionsOK(self):
-        """
-        Test we've got only sections not db from bank properties
-        :return:
-        """
+        """ Test we've got only sections not db from bank properties """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         sections = manager.get_dict_sections('golden')
@@ -1304,10 +1169,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetListSectionsGolden(self):
-        """
-        Check we get rigth sections tool bank name for bank
-        :return:
-        """
+        """ Check we get rigth sections tool bank name for bank """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         lsections = manager.get_list_sections(tool='golden')
@@ -1317,23 +1179,17 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetListSectionsBlast2(self):
-        """
-        Check we get rigth sections bank and subsection for bank
-        :return:
-        """
+        """ Check we get rigth sections bank and subsection for bank """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         lsections = manager.get_list_sections(tool='blast2')
-        self.assertListEqual(lsections, ['alunuc', 'alupro','alunuc1','alunuc2', 'alupro1', 'alupro2'])
+        self.assertListEqual(lsections, ['alunuc', 'alupro', 'alunuc1','alunuc2', 'alupro1', 'alupro2'])
         self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetDictSectionsNoTool(self):
-        """
-        Get sections for a bank
-        :return:
-        """
+        """ Get sections for a bank """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
@@ -1343,10 +1199,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetListSectionsNoTool(self):
-        """
-        Get sections for a bank
-        :return:
-        """
+        """ Get sections for a bank """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
@@ -1356,10 +1209,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_CurrentSet(self):
-        """
-
-        :return:
-        """
+        """ Check correct release is returned """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager._current_release = str(54)
@@ -1368,10 +1218,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_CurrentANDSessions(self):
-        """
-        Check we get the right current release
-        :return:
-        """
+        """ Check we get the right current release """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         release = 'R54'
@@ -1387,10 +1234,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_ProductionRemoteRelease(self):
-        """
-        Check we get the right current release
-        :return:
-        """
+        """ Check we get the right current release """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         release = 'R54'
@@ -1405,10 +1249,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_ProductionRelease(self):
-        """
-        Check we get the right current release
-        :return:
-        """
+        """ Check we get the right current release """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         release = 'R54'
@@ -1423,15 +1264,12 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentuser')
     def test_ManagerCurrentUserTestUSEROK(self):
-        """
-        Check we can get USER from environ with LOGNAME unset
-        :return:
-        """
+        """ Check we can get USER from environ with LOGNAME unset """
         backlog = ""
         user = os.getlogin()
         if 'LOGNAME' in os.environ:
             backlog = os.environ['LOGNAME']
-            del(os.environ['LOGNAME'])
+            del os.environ['LOGNAME']
         manager = Manager()
         self.assertEqual(manager._current_user(), user)
         if 'LOGNAME' not in os.environ:
@@ -1440,10 +1278,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentuser')
     def test_ManagerCurrentUserTestUserIsNone(self):
-        """
-        Check method throws exception when env LOGNAME and USER not found
-        :return:
-        """
+        """ Check method throws exception when env LOGNAME and USER not found """
         manager = Manager()
         backup = os.environ.copy()
         os.environ = {}
@@ -1453,10 +1288,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentlink')
     def test_ManagerGetCurrentLinkNOTOK(self):
-        """
-        Check get_current_link throws exception
-        :return:
-        """
+        """ Check get_current_link throws exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         cur_link = manager.get_current_link()
@@ -1466,10 +1298,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentlink')
     def test_ManagerGetCurrentLinkOK(self):
-        """
-        Check get_current_link throws exception
-        :return:
-        """
+        """ Check get_current_link throws exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         cur_link = manager.get_current_link()
@@ -1479,10 +1308,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.futurelink')
     def test_ManagerGetFutureLinkNOTOK(self):
-        """
-        Check get_future_link throws exception
-        :return:
-        """
+        """ Check get_future_link throws exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         cur_link = manager.get_future_link()
@@ -1492,10 +1318,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.futurelink')
     def test_ManagerGetFutureLinkOK(self):
-        """
-        Check get_future_link throws exception
-        :return:
-        """
+        """ Check get_future_link throws exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         cur_link = manager.get_future_link()
@@ -1505,10 +1328,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.hascurrentlink')
     def test_ManagerHasCurrentLinkFalse(self):
-        """
-        Check has_current_link returns False
-        :return:
-        """
+        """ Check has_current_link returns False """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         self.assertFalse(manager.has_current_link())
@@ -1517,10 +1337,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.hascurrentlink')
     def test_ManagerHasCurrentLinkIsLinkTrue(self):
-        """
-        Check has_current_link returns True
-        :return:
-        """
+        """ Check has_current_link returns True """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         link = os.path.join(self.utils.data_dir)
@@ -1532,10 +1349,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.hasfuturelink')
     def test_ManagerHasFutureLinkFalse(self):
-        """
-        Check has_future_link returns False
-        :return:
-        """
+        """ Check has_future_link returns False """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         self.assertFalse(manager.has_future_link())
@@ -1544,10 +1358,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.hasfuturelink')
     def test_ManagerHasFutureLinkIsLinkOK(self):
-        """
-        Check has_future_link returns future link
-        :return:
-        """
+        """ Check has_future_link returns future link """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         link = os.path.join(self.utils.data_dir)
@@ -1559,10 +1370,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_Raises(self):
-        """
-        Check method raises "Can't get current production directory: 'current_release' ..."
-        :return:
-        """
+        """ Check method raises "Can't get current production directory: 'current_release' ..." """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
@@ -1571,10 +1379,8 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_RaisesNoCurrentRelease(self):
-        """
-        Check method raises "Can't get current production directory: 'current_release' ..."
+        """ Check method raises "Can't get current production directory: 'current_release' ..."
         release ok, prod not ok
-        :return:
         """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
@@ -1588,10 +1394,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_OK(self):
-        """
-        Check method returns path to production dir
-        :return:
-        """
+        """ Check method returns path to production dir """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         prod_dir = 'alu_54'
@@ -1607,10 +1410,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_RaisesNoProd(self):
-        """
-        Check method raises "Can't get current production directory, 'prod_dir' or 'data_dir' missing ..."
-        :return:
-        """
+        """ Check method raises "Can't get current production directory, 'prod_dir' or 'data_dir' missing ..." """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         prod_dir = 'alu_54'
@@ -1624,50 +1424,35 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getverbose')
     def test_ManagerGetVerboseTrue(self):
-        """
-        Check manager.get_verbose() get True when Manager.verbose = True
-        :return:
-        """
+        """ Check manager.get_verbose() get True when Manager.verbose = True """
         Manager.verbose = True
         self.assertTrue(Manager.get_verbose())
 
     @attr('manager')
     @attr('manager.getverbose')
     def test_ManagerGetVerboseFalse(self):
-        """
-        Check manager.get_verbose() get False when Manager.verbose = False
-        :return:
-        """
+        """ Check manager.get_verbose() get False when Manager.verbose = False """
         Manager.verbose = False
         self.assertFalse(Manager.get_verbose())
 
     @attr('manager')
     @attr('manager.getsimulate')
     def test_ManagerGetSimulateTrue(self):
-        """
-        Check manager.get_simulate() get True when Manager.simulate = True
-        :return:
-        """
+        """ Check manager.get_simulate() get True when Manager.simulate = True """
         Manager.simulate = True
         self.assertTrue(Manager.get_simulate())
 
     @attr('manager')
     @attr('manager.getsimulate')
     def test_ManagerGetSimulateFalse(self):
-        """
-        Check manager.get_simulate() get False when Manager.simulate = False
-        :return:
-        """
+        """ Check manager.get_simulate() get False when Manager.simulate = False """
         Manager.simulate = False
         self.assertFalse(Manager.get_simulate())
 
     @attr('manager')
     @attr('manager.banklist')
     def test_ManagerGetBankListOK(self):
-        """
-        Check bank list works OK
-        :return:
-        """
+        """ Check bank list works OK """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         self.utils.copy_file(file='minium.properties', todir=self.utils.conf_dir)
         # Create 2 entries into the database
@@ -1681,10 +1466,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.banklist')
     def test_ManagerGetBankListBioMAJConfigNOTOK(self):
-        """
-        Check bank list throws SystemExit exception
-        :return:
-        """
+        """ Check bank list throws SystemExit exception """
         from biomaj.mongo_connector import MongoConnector
         from biomaj.config import BiomajConfig
         # Unset MongoConnector and env BIOMAJ_CONF to force config relaod and Mongo reconnect
@@ -1700,10 +1482,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.banklist')
     def test_ManagerGetBankListMongoConnectorNOTOK(self):
-        """
-        Check bank list throws ServerSelectionTimeoutError ConnectionFailure exception
-        :return:
-        """
+        """ Check bank list throws ServerSelectionTimeoutError ConnectionFailure exception """
         from biomaj.mongo_connector import MongoConnector
         from biomaj.config import BiomajConfig
         # Unset MongoConnector and env BIOMAJ_CONF to force config relaod and Mongo reconnect
@@ -1720,10 +1499,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getconfigregexp')
     def test_ManagerGetConfigRegExpOKWithValuesTrue(self):
-        """
-        Check method get the right entries from config
-        :return:
-        """
+        """ Check method get the right entries from config """
         manager = Manager()
         my_values = manager.get_config_regex(regex='.*\.dir$', with_values=False)
         expected = ['lock.dir', 'log.dir', 'process.dir', 'data.dir', 'cache.dir', 'conf.dir']
@@ -1733,10 +1509,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getconfigregexp')
     def test_ManagerGetConfigRegExpOKWithValuesFalse(self):
-        """
-        Check method get the right entries from config
-        :return:
-        """
+        """ Check method get the right entries from config """
         manager = Manager()
         my_values = manager.get_config_regex(regex='^db\.', with_values=True)
         self.assertListEqual(my_values, [self.utils.db_test, 'mongodb://localhost:27017'])
@@ -1745,10 +1518,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getconfigregexp')
     def test_ManagerGetConfigRegExpNoRegExp(self):
-        """
-        Check method get the right entries from config
-        :return:
-        """
+        """ Check method get the right entries from config """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
@@ -1757,10 +1527,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getbankpackages')
     def test_ManagerGetBankPackagesOK(self):
-        """
-        Check get_bank_packages() is ok
-        :return:
-        """
+        """ Check get_bank_packages() is ok """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         packs = ['pack@blast@2.2.26', 'pack@fasta@3.6']
@@ -1771,10 +1538,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getbankpackages')
     def test_ManagerGetBankPackagesNoneOK(self):
-        """
-        Check get_bank_packages() is ok
-        :return:
-        """
+        """ Check get_bank_packages() is ok """
         self.utils.copy_file(file='minium.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='minium')
         bank_packs = manager.get_bank_packages()
@@ -1784,10 +1548,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleaseOK(self):
-        """
-        Check we get the right list for a bank supported formats
-        :return:
-        """
+        """ Check we get the right list for a bank supported formats """
         expected = []
         for directory in ['flat', 'blast2/2.2.21', 'fasta/3.6', 'golden/3.0']:
             os.makedirs(os.path.join(self.utils.data_dir, directory))
@@ -1801,10 +1562,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleaseRaises(self):
-        """
-        Check method throws error
-        :return:
-        """
+        """ Check method throws error """
         manager = Manager()
         with self.assertRaises(SystemExit):
             manager._get_formats_for_release()
@@ -1812,10 +1570,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleasePathNotExistsEmptyList(self):
-        """
-        Check method throws error
-        :return:
-        """
+        """ Check method throws error """
         manager = Manager()
         returned = manager._get_formats_for_release(path="/not_found")
         self.assertListEqual(returned, [])
@@ -1823,10 +1578,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getlastsession')
     def test_ManagerGetLastSessionOK(self):
-        """
-        Check method returns correct session
-        :return:
-        """
+        """ Check method returns correct session """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -1840,23 +1592,17 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getlastsession')
     def test_ManagerGetLastSessionThrows(self):
-        """
-        Check method throws exception
-        :return:
-        """
+        """ Check method throws exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        del(manager.bank.bank['sessions'])
+        del manager.bank.bank['sessions']
         with self.assertRaises(SystemExit):
             manager._get_last_session()
         self.utils.drop_db()
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryNoProductionRaisesError(self):
-        """
-        Check when no 'production' field in bank, history raises exception
-        :return:
-        """
+        """ Check when no 'production' field in bank, history raises exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'] = None
@@ -1867,10 +1613,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryNoSessionsRaisesError(self):
-        """
-        Check when no 'sessions' field in bank, history raises exception
-        :return:
-        """
+        """ Check when no 'sessions' field in bank, history raises exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12})
@@ -1879,14 +1622,10 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.history()
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryCheckIDSessionsOK(self):
-        """
-        Check bank has right session id
-        :return:
-        """
+        """ Check bank has right session id """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
@@ -1900,10 +1639,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryCheckStatusDeprecatedOK(self):
-        """
-        Check bank has status deprecrated
-        :return:
-        """
+        """ Check bank has status deprecated """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
@@ -1917,16 +1653,13 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryStatusUnpublishedOK(self):
-        """
-        Check bank not published yet (first run) has status unpublished
-        :return:
-        """
+        """ Check bank not published yet (first run) has status unpublished """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
         manager.bank.bank['sessions'].append({'id': 100})
-        del(manager.bank.bank['current'])
+        del manager.bank.bank['current']
         history = manager.history()
         self.assertEqual(history[0]['status'], 'unpublished')
         self.utils.drop_db()
@@ -1934,10 +1667,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistorySessionsHistoryANDStatusDeletedOK(self):
-        """
-        Check bank has status deleted
-        :return:
-        """
+        """ Check bank has status deleted """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_12'))
@@ -1952,10 +1682,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryNoProductionRaisesError(self):
-        """
-        Check when no 'production' field in bank, history raises exception
-        :return:
-        """
+        """ Check when no 'production' field in bank, history raises exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'] = None
@@ -1966,10 +1693,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryNoSessionsRaisesError(self):
-        """
-        Check when no 'sessions' field in bank, history raises exception
-        :return:
-        """
+        """ Check when no 'sessions' field in bank, history raises exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12})
@@ -1981,10 +1705,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryCheckIDSessionsOK(self):
-        """
-        Check bank has right session id
-        :return:
-        """
+        """ Check bank has right session id """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         _id = "@".join(['bank', 'alu', '12', Utils.time2datefmt(100, Manager.DATE_FMT)])
@@ -1999,10 +1720,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryCheckStatusDeprecatedOK(self):
-        """
-        Check bank has status deprecrated
-        :return:
-        """
+        """ Check bank has status deprecated """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
@@ -2016,16 +1734,13 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryStatusUnpublishedOK(self):
-        """
-        Check bank not published yet (first run) has status unpublished
-        :return:
-        """
+        """ Check bank not published yet (first run) has status unpublished """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
         manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12})
-        del(manager.bank.bank['current'])
+        del manager.bank.bank['current']
         history = manager.mongo_history()
         self.assertEqual(history[0]['status'], 'unpublished')
         self.utils.drop_db()
@@ -2033,10 +1748,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistorySessionsHistoryANDStatusDeletedOK(self):
-        """
-        Check bank has status deleted
-        :return:
-        """
+        """ Check bank has status deleted """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_12'))
@@ -2052,10 +1764,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsNotOK(self):
-        """
-        Check method throw exception, can't create directory
-        :return:
-        """
+        """ Check method throw exception, can't create directory """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['properties']['owner'] = manager.config.get('GENERAL', 'admin')
@@ -2070,10 +1779,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsThrowsException(self):
-        """
-        Check method throw exception, can't access file
-        :return:
-        """
+        """ Check method throw exception, can't access file """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['properties']['owner'] = manager.config.get('GENERAL', 'admin')
@@ -2087,14 +1793,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Reset to the right user name as previously
         os.environ["LOGNAME"] = back_log
 
-
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsNoFileOK(self):
-        """
-        Test exceptions
-        :return:
-        """
+        """ Test exceptions """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -2109,16 +1811,13 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.1')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsFileContentOK(self):
-        """
-        Test exceptions
-        :return:
-        """
+        """ Test exceptions """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         outputfile = os.path.join(self.utils.data_dir, 'saved_version.txt')
         manager = Manager(bank='alu')
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
-                                                    '$push': {'production': {'session': now, 'release': '54','size': '100Mo'}}})
+                                                    '$push': {'production': {'session': now, 'release': '54', 'size': '100Mo'}}})
         # Prints on output using simulate mode
         back_patt = Manager.SAVE_BANK_LINE_PATTERN
         Manager.SAVE_BANK_LINE_PATTERN = "%s_%s_%s_%s_%s"
@@ -2135,15 +1834,12 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsManagerVerboseOK(self):
-        """
-        Test exceptions
-        :return:
-        """
+        """ Test exceptions """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
-                                                    '$push': {'production': {'session': now, 'release': '54','size': '100Mo'}}})
+                                                    '$push': {'production': {'session': now, 'release': '54', 'size': '100Mo'}}})
         # Set verbose mode
         Manager.set_verbose(True)
         self.assertEqual(manager.save_banks_version(), 0)
@@ -2154,10 +1850,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankOK(self):
-        """
-        Check method checks are ok
-        :return:
-        """
+        """ Check method checks are ok """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager()
         from biomaj.bank import Bank
@@ -2168,40 +1861,28 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankNOTOK(self):
-        """
-        Check method checks are not ok
-        :return:
-        """
+        """ Check method checks are not ok """
         manager = Manager()
         self.assertFalse(manager.set_bank())
 
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankWrongInstanceOK(self):
-        """
-        Check method checks are not ok
-        :return:
-        """
+        """ Check method checks are not ok """
         manager = Manager()
         self.assertFalse(manager.set_bank(bank=Manager()))
 
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankFromNameFalse(self):
-        """
-        Check method checks are not ok
-        :return:
-        """
+        """ Check method checks are not ok """
         manager = Manager()
         self.assertFalse(manager.set_bank_from_name(""))
 
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankFromNameOK(self):
-        """
-        Check method checks are not ok
-        :return:
-        """
+        """ Check method checks are not ok """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager()
         self.assertTrue(manager.set_bank_from_name("alu"))
@@ -2210,46 +1891,31 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.setverbose')
     def test_ManagerSetVerboseReturnsTrue(self):
-        """
-        Check set verbose set the correct boolean
-        :return:
-        """
+        """ Check set verbose set the correct boolean """
         self.assertTrue(Manager.set_verbose("OK"))
 
     @attr('manager')
     @attr('manager.setverbose')
     def test_ManagerSetVerboseReturnsFalse(self):
-        """
-        Check set verbose set the correct boolean
-        :return:
-        """
+        """ Check set verbose set the correct boolean """
         self.assertFalse(Manager.set_verbose(""))
 
     @attr('manager')
     @attr('manager.setsimulate')
     def test_ManagerSetSimulateReturnsTrue(self):
-        """
-        Check set simulate set the correct boolean
-        :return:
-        """
+        """ Check set simulate set the correct boolean """
         self.assertTrue(Manager.set_simulate("OK"))
 
     @attr('manager')
     @attr('manager.setsimulate')
     def test_ManagerSetSimulateReturnsFalse(self):
-        """
-        Check set simulate set the correct boolean
-        :return:
-        """
+        """ Check set simulate set the correct boolean """
         self.assertFalse(Manager.set_simulate(""))
 
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_BankIsLocked(self):
-        """
-        Check manager.can_switch returns False because bank is locked
-        :return:
-        """
+        """ Check manager.can_switch returns False because bank is locked """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         lock_file = os.path.join(manager.bank.config.get('lock.dir'), manager.bank.name + '.lock')
@@ -2261,14 +1927,9 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.showneedupdate')
     def test_ManagerShowNeedUpdate_CannotSwitch(self):
-        """
-        Check method returns empty dict because bank cannot switch
-        :return:
-        """
+        """ Check method returns empty dict because bank cannot switch """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        # We set 'current' field to avoid to return False with 'bank_is_published'
-        now = time.time()
         # setting current to None means no current bank published.
         manager.bank.bank['current'] = None
         returned = manager.show_need_update()
@@ -2277,10 +1938,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.showneedupdate')
     def test_ManagerShowNeedUpdate_CanSwitchOneBank(self):
-        """
-        Check method returns dict because bank can switch
-        :return:
-        """
+        """ Check method returns dict because bank can switch """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         # We created these 2 managers to set 2 banks in db
         alu = Manager(bank='alu')
@@ -2295,10 +1953,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.showneedupdate')
     def test_ManagerShowNeedUpdate_CanSwitchTwoBank(self):
-        """
-        Check method returns dict because bank can switch
-        :return:
-        """
+        """ Check method returns dict because bank can switch """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         self.utils.copy_file(file='minium.properties', todir=self.utils.conf_dir)
         now = time.time()
@@ -2319,10 +1974,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_BankNotPublished(self):
-        """
-        Check manager.can_switch returns False because bank not published yet
-        :return:
-        """
+        """ Check manager.can_switch returns False because bank not published yet """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # To be sure we set 'current' from MongoDB to null
@@ -2333,10 +1985,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_BankUpdateNotReady(self):
-        """
-        Check manager.can_switch returns False because last session failed
-        :return:
-        """
+        """ Check manager.can_switch returns False because last session failed """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # We set 'current' field to avoid to return False with 'bank_is_published'
@@ -2350,10 +1999,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_BankLastSessionFailed(self):
-        """
-        Check manager.can_switch returns False because last session failed
-        :return:
-        """
+        """ Check manager.can_switch returns False because last session failed """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # We set 'current' field to avoid to return False with 'bank_is_published'
@@ -2368,10 +2014,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_SwitchTrue(self):
-        """
-        Check manager.can_switch returns True
-        :return:
-        """
+        """ Check manager.can_switch returns True """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # We set 'current' field to avoid to return False with 'bank_is_published'
@@ -2385,10 +2028,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyRaisesErrorOK(self):
-        """
-        Check the method raises exception
-        :return:
-        """
+        """ Check the method raises exception """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
@@ -2398,10 +2038,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyWithCurrentTrue(self):
-        """
-        Check the method returns True
-        :return:
-        """
+        """ Check the method returns True """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -2413,10 +2050,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyWithCurrentFalse(self):
-        """
-        Check the method returns False
-        :return:
-        """
+        """ Check the method returns False """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -2428,14 +2062,11 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyWithProductionTrue(self):
-        """
-        Check the method returns False
-        :return:
-        """
+        """ Check the method returns False """
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
-        del(manager.bank.bank['current'])
+        del manager.bank.bank['current']
         manager.bank.bank['last_update_session'] = now
         manager.bank.bank['production'].append({'session': now})
         manager.bank.bank['sessions'].append({'id': now, 'status': {'over': True}})
@@ -2445,10 +2076,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandCheckConfigStop(self):
-        """
-        Check some config values are ok
-        :return:
-        """
+        """ Check some config values are ok """
         manager = Manager()
         manager.config.remove_option('MANAGER', 'jobs.stop.exe')
         # Grant usage for current user
@@ -2460,10 +2088,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandCheckConfigRestart(self):
-        """
-        Check some config values are ok
-        :return:
-        """
+        """ Check some config values are ok """
         manager = Manager()
         manager.config.remove_option('MANAGER', 'jobs.restart.exe')
         # Grant usage for current user
@@ -2475,10 +2100,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandRestartJobsScriptOK(self):
-        """
-        Check restart jobs runs OK
-        :return:
-        """
+        """ Check restart jobs runs OK """
         manager = Manager()
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
@@ -2489,10 +2111,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandRestartJobsScriptDoesNotExists(self):
-        """
-        Check restart jobs runs OK
-        :return:
-        """
+        """ Check restart jobs runs OK """
         manager = Manager()
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
@@ -2505,10 +2124,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandStopJobsScriptOK(self):
-        """
-        Check restart jobs runs OK
-        :return:
-        """
+        """ Check restart jobs runs OK """
         manager = Manager()
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
@@ -2519,10 +2135,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandStopScriptDoesNotExists(self):
-        """
-        Check restart jobs runs OK
-        :return:
-        """
+        """ Check restart jobs runs OK """
         manager = Manager()
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
@@ -2535,20 +2148,14 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerLaunchCommandOK(self):
-        """
-        Check a command started is OK
-        :return:
-        """
+        """ Check a command started is OK """
         manager = Manager()
         self.assertTrue(manager._run_command(exe='ls', args=['/tmp'], quiet=True))
 
     @attr('manager')
     @attr('manager.command')
     def test_ManagerLaunchCommandError(self):
-        """
-        Check a wrong return launched command
-        :return:
-        """
+        """ Check a wrong return launched command """
         manager = Manager()
         with self.assertRaises(SystemExit):
             manager._run_command(exe='ls', args=['/notfound'], quiet=True)
@@ -2556,10 +2163,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerRunCommandErrorNoExe(self):
-        """
-        Check method throws error when no 'exe'
-        :return:
-        """
+        """ Check method throws error when no 'exe' """
         manager = Manager()
         with self.assertRaises(SystemExit):
             manager._run_command(args=['foobar'], quiet=True)
@@ -2567,10 +2171,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerRunCommandErrorNoRights(self):
-        """
-        Check method throws error we can run command, no rights
-        :return:
-        """
+        """ Check method throws error we can run command, no rights """
         manager = Manager()
         with self.assertRaises(SystemExit):
             manager._run_command(exe='chmod', args=['-x', '/bin/ls'], quiet=True)
@@ -2578,10 +2179,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerRunCommandErrorCantRunCommand(self):
-        """
-        Check method throws error command does not exist
-        :return:
-        """
+        """ Check method throws error command does not exist """
         manager = Manager()
         with self.assertRaises(SystemExit):
             manager._run_command(exe='/bin/nobin', args=['/tmp'], quiet=True)
@@ -2589,132 +2187,107 @@ class TestBioMajManagerManager(unittest.TestCase):
 
 class TestBiomajManagerPlugins(unittest.TestCase):
 
+    """ Class for testing biomajmanager.plugins class """
+
     def setUp(self):
+        """ Setup stuff """
         self.utils = UtilsForTests()
         self.utils.copy_plugins()
         # Make our test global.properties set as env var
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
 
     def tearDown(self):
+        """ Clean """
         self.utils.clean()
 
     @attr('plugins')
     def test_PluginLoadErrorNoManager(self):
-        """
-        Chek we've got an excedption thrown when Plugin Object is build without manager as args
-        :return:
-        """
-        from biomajmanager.plugins import Plugins
+        """ Check we've got an exception thrown when Plugin Object is build without manager as args """
         with self.assertRaises(SystemExit):
             Plugins()
 
     @attr('plugins')
     def test_PluginsLoadedOK_AsStandAlone(self):
-        """
-        Check the Plugins Object can be build as a standlone object
-        :return:
-        """
-        from biomajmanager.plugins import Plugins
+        """ Check the Plugins Object can be build as a standalone object """
         manager = Manager()
         plugins = Plugins(manager=manager)
         self.assertIsInstance(plugins, Plugins)
 
     @attr('plugins')
+    @attr('plugins.loading')
     def test_PluginsLoaded(self):
-        """
-        Check a list of plugins are well loaded
-        :return:
-        """
+        """ Check a list of plugins are well loaded """
         manager = Manager()
         manager.load_plugins()
         self.assertEqual(manager.plugins.myplugin.get_name(), 'myplugin')
         self.assertEqual(manager.plugins.anotherplugin.get_name(), 'anotherplugin')
 
     @attr('plugins')
+    @attr('plugins.listplugins')
     def test_PluginsListPlugins(self):
-        """
-        Check method returns right list of configured plugins from file
-        :return:
-        """
+        """ Check method returns right list of configured plugins from file """
         manager = Manager()
         returned = manager.list_plugins()
         expected = ['myplugin', 'anotherplugin']
         self.assertListEqual(expected, returned)
 
     @attr('plugins')
+    @attr('plugins.loading')
     def test_PluginsLoadingNoSection(self):
-        """
-        Check the availability of section 'PLUGINS' is correctly checked
-        :return:
-        """
+        """ Check the availability of section 'PLUGINS' is correctly checked """
         manager = Manager()
         manager.config.remove_section('PLUGINS')
         with self.assertRaises(SystemExit):
             manager.load_plugins()
 
     @attr('plugins')
+    @attr('plugins.loading')
     def test_PluginsLoadingNoPLuginsDir(self):
-        """
-        Check the plugins.dir value is correctly checked
-        :return:
-        """
+        """ Check the plugins.dir value is correctly checked """
         manager = Manager()
         manager.config.remove_option('MANAGER', 'plugins.dir')
         with self.assertRaises(SystemExit):
             manager.load_plugins()
 
     @attr('plugins')
+    @attr('plugins.loading')
     def test_PluginsLoadingNoPLuginsList(self):
-        """
-        Check the plugins.dir value is correctly checked
-        :return:
-        """
+        """ Check the plugins.dir value is correctly checked """
         manager = Manager()
         manager.config.remove_option('PLUGINS', 'plugins.list')
         with self.assertRaises(SystemExit):
             manager.load_plugins()
 
     @attr('plugins')
-    def test_PluginsLoadingNoPLuginsDirExists(self):
-        """
-        Check the plugins.dir path  is correctly checked
-        :return:
-        """
+    @attr('plugins.loading')
+    def test_PluginsLoadingNoPluginsDirExists(self):
+        """ Check the plugins.dir path  is correctly checked """
         manager = Manager()
         manager.config.set('MANAGER', 'plugins.dir', '/notfound')
         with self.assertRaises(SystemExit):
             manager.load_plugins()
 
     @attr('plugins')
+    @attr('plugins.loading')
     def test_PluginsLoadingNoConfig(self):
-        """
-        Check the plugins.dir value is correctly checked
-        :return:
-        """
+        """ Check config instance is OK """
         manager = Manager()
         manager.load_plugins()
-        manager.config = None
         from configparser import RawConfigParser
         self.assertIsInstance(manager.plugins.myplugin.get_config(), RawConfigParser)
 
     @attr('plugins')
     def test_PluginsLoadingNoManager(self):
-        """
-        Check the plugins.dir value is correctly checked
-        :return:
-        """
+        """ Check manager instance is OK """
         manager = Manager()
         manager.load_plugins()
-        manager.manager = None
+
         self.assertIsInstance(manager.plugins.myplugin.get_manager(), Manager)
 
 
     @attr('plugins')
     def test_PluginsCheckConfigValues(self):
-        """
-        Check the plugins config values
-        :return:
-        """
+        """ Check the plugins config values """
         manager = Manager()
         manager.load_plugins()
         self.assertEqual(manager.plugins.myplugin.get_cfg_name(), 'myplugin')
@@ -2724,10 +2297,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
 
     @attr('plugins')
     def test_PluginsCheckMethodValue(self):
-        """
-        Check the value returned by method is OK
-        :return:
-        """
+        """ Check the value returned by method is OK """
         manager = Manager()
         manager.load_plugins()
         self.assertEqual(manager.plugins.myplugin.get_value(), 1)
@@ -2737,10 +2307,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
 
     @attr('plugins')
     def test_PluginsCheckTrue(self):
-        """
-        Check boolean returned by method
-        :return:
-        """
+        """ Check boolean returned by method """
         manager = Manager()
         manager.load_plugins()
         self.assertTrue(manager.plugins.myplugin.get_true())
@@ -2748,10 +2315,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
 
     @attr('plugins')
     def test_PluginsCheckFalse(self):
-        """
-        Check boolean returned by method
-        :return:
-        """
+        """ Check boolean returned by method """
         manager = Manager()
         manager.load_plugins()
         self.assertFalse(manager.plugins.myplugin.get_false())
@@ -2759,10 +2323,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
 
     @attr('plugins')
     def test_PluginsCheckNone(self):
-        """
-        Check None returned by method
-        :return:
-        """
+        """ Check None returned by method """
         manager = Manager()
         manager.load_plugins()
         self.assertIsNone(manager.plugins.myplugin.get_none())
@@ -2770,10 +2331,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
 
     @attr('plugins')
     def test_PluginsCheckException(self):
-        """
-        Check exception returned by method
-        :return:
-        """
+        """ Check exception returned by method """
         manager = Manager()
         manager.load_plugins()
         self.assertRaises(Exception, manager.plugins.myplugin.get_exception())

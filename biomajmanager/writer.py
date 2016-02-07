@@ -1,3 +1,4 @@
+""" Writer class to be used with Jinja2 tamplates """
 from __future__ import print_function
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError, TemplateError
@@ -8,13 +9,16 @@ import sys
 
 class Writer(object):
 
-    def __init__(self, template_dir=None, format='txt', config=None, output=None):
+    """ Writer class for BioMAJ manager to create what's desired as output """
+
+    def __init__(self, template_dir=None, output_format='txt', config=None, output=None):
         '''
         Create Writer object
+
         :param template_dir: Root directory where to find templates
         :type template_dir: String
-        :param format: Template format. Default 'txt'
-        :type format: String
+        :param output_format: Template format. Default 'txt'
+        :type output_format: String
         :param config: Global configuration file from BiomajConfig
         :type config: configparser
         :param output: Output file. Default STDOUT
@@ -42,7 +46,7 @@ class Writer(object):
             Utils.error("'template.dir' not set")
 
         self.env = Environment(loader=FileSystemLoader(self.template_dir))
-        self.format = format
+        self.format = output_format
         self.output = output
 
     def write(self, file=None, data=None):
@@ -50,6 +54,7 @@ class Writer(object):
         Print template 'data' to stdout using template file 'file'
         data args can be left None, this way method can be used to render file
         from scratch
+
         :param file: Template file name
         :type file: String
         :param data: Template data
