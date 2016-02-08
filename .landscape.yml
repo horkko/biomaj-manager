@@ -1,0 +1,13 @@
+doc-warnings: yes
+test-warnings: no
+strictness: medium
+max-line-length: 120
+pep8:
+    disable:
+        - E501
+python-targets:
+    - 2
+    - 3
+ignore-paths:
+    - plugins
+    - cover

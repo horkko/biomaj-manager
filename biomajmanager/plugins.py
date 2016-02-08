@@ -1,3 +1,4 @@
+"""Plugins mechanism to load user defined method"""
 from __future__ import print_function
 
 from biomajmanager.utils import Utils
@@ -5,13 +6,17 @@ from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
 import os
 
+
 class Plugins(object):
+
+    """Plugin class for BioMAJ Manager"""
 
     CATEGORY = 'MANAGER'
 
     def __init__(self, manager=None, name=None):
         """
         Create the plugin object
+
         :param manager: Manager instance
         :type config: biomajmanager.manager
         :param name: Name of the plugin to load. [DEFAULT: load all plugins]
@@ -32,11 +37,12 @@ class Plugins(object):
 
         if not os.path.isdir(self.config.get('MANAGER', 'plugins.dir')):
             Utils.error("Can't find plugins.dir")
-        pm = PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
-                           categories_filter={Plugins.CATEGORY: BMPlugin})
-        pm.collectPlugins()
-        self.pm = pm
-        user_plugins = [ ]
+        plugin_manager= PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
+                                      categories_filter={Plugins.CATEGORY: BMPlugin})
+        plugin_manager.collectPlugins()
+        self.pm = plugin_manager
+        self.name = name
+        user_plugins = []
 
         # Load user wanted plugin(s)
         for plugin in self.config.get('PLUGINS', 'plugins.list').split(','):
@@ -45,46 +51,45 @@ class Plugins(object):
             user_plugins.append(plugin)
 
         # This means that all plugins must inherits from BMPlugin
-        for pluginInfo in pm.getPluginsOfCategory(Plugins.CATEGORY):
+        for pluginInfo in plugin_manager.getPluginsOfCategory(Plugins.CATEGORY):
             Utils.verbose("[manager] plugin name => %s" % pluginInfo.name)
             if pluginInfo.name in user_plugins:
                 if not pluginInfo.is_activated:
                     Utils.verbose("[manager] plugin %s activated" % pluginInfo.name)
-                    pm.activatePluginByName(pluginInfo.name)
+                    plugin_manager.activatePluginByName(pluginInfo.name)
                 setattr(self, pluginInfo.name, pluginInfo.plugin_object)
                 pluginInfo.plugin_object.set_config(self.config)
                 pluginInfo.plugin_object.set_manager(self.manager)
 
 
 class BMPlugin(IPlugin):
-    """
-    Base plugin class for BioMAJ manager
-    """
+
+    """Base plugin class for BioMAJ manager"""
 
     def get_name(self):
+        """Get the name of the plugin. Based on the class name"""
         return self.__class__.__name__
 
     def get_config(self):
         """
         Get the BioMAJ manager config as object
+
+        :return: configparser instance
         """
         return self.config
 
     def get_manager(self):
         """
         Get the BioMAJ manager instance
+
         :return: biomajmanager.manager
         """
         return self.manager
 
     def set_config(self, config):
-        """
-        Set BioMAJ manager config object
-        """
+        """Set BioMAJ manager config object"""
         self.config = config
 
     def set_manager(self, manager):
-        """
-        Set BioMAJ manager config object
-        """
+        """Set BioMAJ manager config object"""
         self.manager = manager

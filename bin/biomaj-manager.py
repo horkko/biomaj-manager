@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+This script is used to use take advantage of functions developed as Swiss knife around BioMAJ3 API
+To see what's possible, just type biomaj-manager.py --help
+"""
 from __future__ import print_function
 from future import standard_library
 from pprint import pprint
@@ -18,27 +22,33 @@ from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 from tabulate import tabulate
 
+__author__ = 'tuco'
 
 def main():
-
+    """This is the main function treating arguments passed on the command line."""
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
     parser.add_argument('-C', '--clean_links', dest="clean_links", help="Remove old links (Permissions required)",
                         action="store_true", default=False)
-    parser.add_argument('-D', '--save_versions', dest="save_versions", help="Prints info about all banks into version file. (Requires permissions)",
+    parser.add_argument('-D', '--save_versions', dest="save_versions", help="Prints info about all banks into version file.\
+                                                                             (Requires permissions)",
                         action="store_true", default=False)
     parser.add_argument('-H', '--history', dest="history", help="Prints banks releases history. [-b] available.",
                         action="store_true", default=False)
     parser.add_argument('-i', '--info', dest="info", help="Print info about a bank. [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-J', '--check_links', dest="check_links", help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]",
+    parser.add_argument('-J', '--check_links', dest="check_links", help="Check if the bank required symlinks to be created\
+                                                                         (Permissions required). [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-l', '--links', dest="links", help="Just (re)create symlink, don't do any bank switch. (Permissions required). [-b REQUIRED]",
+    parser.add_argument('-l', '--links', dest="links", help="Just (re)create symlink, don't do any bank switch.\
+                                                             (Permissions required). [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-L', '--bank_formats', dest="bank_formats", help="List supported formats and index for each banks. [-b] available.",
+    parser.add_argument('-L', '--bank_formats', dest="bank_formats", help="List supported formats and index for each banks.\
+                                                                           [-b] available.",
                         action="store_true", default=False)
-    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
+    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb).\
+                                                                   [-b and --db_type REQUIRED]",
                         action="store_true", default=False)
     parser.add_argument('-N', '--news', dest="news", help="Create news to display at BiomajWatcher. [Default output txt]",
                         action="store_true", default=False)
@@ -50,7 +60,9 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-X', '--test', dest="test", help="Test method. [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-U', '--show_update', dest="show_update", help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that need to be updated. [-b] available.",
+    parser.add_argument('-U', '--show_update', dest="show_update", help="If -b passed prints if bank needs to be updated.\
+                                                                         Otherwise, prints all bank that need to be updated.\
+                                                                          [-b] available.",
                         action="store_true", default=False)
     parser.add_argument('-v', '--version', dest="version", help="Show version",
                         action="store_true", default=False)
@@ -72,8 +84,7 @@ def main():
     Manager.verbose = options.verbose
 
     if options.bank_formats:
-        formats = { }
-        manager = None
+        formats = {}
         Utils.start_timer()
         if options.bank:
             manager = Manager(bank=options.bank)
@@ -99,20 +110,19 @@ def main():
         sys.exit(0)
 
     if options.history:
-        list = []
+        bank_list = []
         history = []
         if not options.bank:
-            list = Manager.get_bank_list()
+            bank_list = Manager.get_bank_list()
         else:
-            list.append(options.bank)
+            bank_list.append(options.bank)
 
-        for bank in list:
+        for bank in bank_list:
             manager = Manager(bank=bank)
             history.append(manager.mongo_history())
         if options.oformat and options.oformat == 'json':
             print(json.dumps([h for hist in history for h in hist]))
         else:
-            #pprint([h for hist in history for h in hist])
             pprint(history)
         sys.exit(0)
 
@@ -149,8 +159,8 @@ def main():
         else:
             if options.oformat is None:
                 options.oformat = 'txt'
-            writer = Writer(config=config, data=news.data, format=options.oformat)
-            writer.write(file='news' + '.' + options.oformat)
+            writer = Writer(config=config, output_format=options.oformat)
+            writer.write(file='news' + '.' + options.oformat, data=news.data)
         sys.exit(0)
 
     if options.pending:
@@ -158,22 +168,22 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
 
-        # Supoprt output to stdout
+        # Support output to stdout
         pending = manager.get_pending_sessions()
         if options.oformat:
-            writer = Writer(config=manager.config, data={'pending': pending}, format=options.oformat)
-            writer.write(file='pending' + '.' + options.oformat)
+            writer = Writer(config=manager.config, output_format=options.oformat)
+            writer.write(file='pending' + '.' + options.oformat, data={'pending': pending})
         else:
             if pending:
+                info = []
                 for pend in pending:
                     release = pend['release']
-                    id = pend['session_id']
-                    date = Utils.time2datefmt(id, Manager.DATE_FMT)
-                    info = []
+                    sess_id = pend['session_id']
+                    date = Utils.time2datefmt(sess_id, Manager.DATE_FMT)
                     info.append(["Release", "Run time"])
                     info.append([str(release), str(date)])
-                    print("[%s] Pending session" % manager.bank.name)
-                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+                print("[%s] Pending session" % manager.bank.name)
+                print(tabulate(info, headers="firstrow", tablefmt='psql'))
             else:
                 print("[%s] No pending session" % manager.bank.name)
         sys.exit(0)
@@ -218,13 +228,13 @@ def main():
         if not options.db_type:
             Utils.error("--db_type required")
 
-        list = []
+        bank_list = []
         if not options.bank:
-            list = Manager.get_bank_list()
+            bank_list = Manager.get_bank_list()
         else:
-            list.append(options.bank)
+            bank_list.append(options.bank)
 
-        for bank in list:
+        for bank in bank_list:
             manager = Manager(bank=bank)
             manager.load_plugins()
             if options.db_type.lower() == 'mongodb':
