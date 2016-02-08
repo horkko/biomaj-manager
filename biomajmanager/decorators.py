@@ -8,9 +8,9 @@ def bank_required(func):
     Decorator function that check a bank name is set
 
     :param func:
+    :type func: Function
     :return:
     """
-
     def _check_bank_required(*args, **kwargs):
         """ Small function to check a bank object is set in BioMAJ Manager instance """
         self = args[0]
@@ -24,7 +24,7 @@ def user_granted(func):
     Decorator that check a user has enough right to perform action
 
     :param func: Decorated function
-    :type: Function
+    :type func: Function
     :return:
     """
     def _check_user_granted(*args, **kwargs):
@@ -36,7 +36,6 @@ def user_granted(func):
 
         :return: Boolean
         """
-
         self = args[0]
         admin = self.config.get('GENERAL', 'admin')
         if self.bank:

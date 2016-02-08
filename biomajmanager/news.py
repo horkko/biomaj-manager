@@ -1,4 +1,4 @@
-""" Utilities to create some news for BioMAJ """
+"""Utilities to create some news for BioMAJ"""
 from __future__ import print_function
 from stat import S_ISREG, ST_CTIME, ST_MODE
 from biomajmanager.utils import Utils
@@ -7,7 +7,7 @@ import os
 
 class News(object):
 
-    """ Class for creating news to be displayed for BioMAJ """
+    """Class for creating news to be displayed for BioMAJ"""
 
     MAX_NEWS = 5
 

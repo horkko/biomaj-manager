@@ -1,6 +1,5 @@
-"""
-Main class of BioMAJ Manager
-"""
+"""Main class of BioMAJ Manager"""
+
 from __future__ import print_function
 from datetime import datetime
 import re
@@ -20,7 +19,7 @@ from biomajmanager.decorators import bank_required, user_granted
 
 class Manager(object):
 
-    """ Manager class, the swiss knife around BioMAJ3 """
+    """Manager class, the swiss knife around BioMAJ3"""
 
     # Simulation mode
     simulate = False
@@ -82,7 +81,6 @@ class Manager(object):
         :return: ConfigParser object
         :rtype: configparser.SafeParser
         """
-
         # Load global.properties (or user defined global_cfg)
         Utils.verbose("[manager] Loading Biomaj global configuration file")
         try:
@@ -104,6 +102,7 @@ class Manager(object):
     def bank_info(self):
         """
         Prints some information about the bank
+
         :return: Output from biomaj.bank.get_bank_release_info (Lists)
         """
         return self.bank.get_bank_release_info(full=True)
@@ -247,6 +246,7 @@ class Manager(object):
 
     @bank_required
     def formats_as_string(self):
+        """Returns the formats as a List of string"""
         return self.formats(flat=True)
 
     @staticmethod
@@ -320,7 +320,6 @@ class Manager(object):
         :return: Path to the current production bank
         :rtype: String
         """
-
         release = self.current_release()
         if release:
             prod = self.bank.get_production(release)
@@ -365,16 +364,16 @@ class Manager(object):
     @bank_required
     def get_dict_sections(self, tool=None):
         """
-         Get the "supported" blast2/golden indexes for this bank
-         Each bank can have some sub sections. This method return
-         them as a dictionary
+        Get the "supported" blast2/golden indexes for this bank
+        Each bank can have some sub sections. This method return
+        them as a dictionary
 
-         :param tool: Name of the index to search
-         :type tool: String
-         :return: If info defined,
-                dictionary with section(s) and bank(s)
-                sorted by type(nuc/pro)
-                Otherwise empty dict
+        :param tool: Name of the index to search
+        :type tool: String
+        :return: If info defined,
+                 dictionary with section(s) and bank(s)
+                 sorted by type(nuc/pro)
+                 Otherwise empty dict
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve virtual info")
@@ -396,14 +395,14 @@ class Manager(object):
                 if sec and sec != '':
                     dbs['pro']['dbs'].append(sec)
         if self.bank.config.get(nsec):
-            if not 'nuc' in dbs:
+            if 'nuc' not in dbs:
                 dbs['nuc'] = {}
             dbs['nuc']['secs'] = []
             for sec in self.bank.config.get(nsec).split(','):
                 if sec and sec != '':
                     dbs['nuc']['secs'].append(sec)
         if self.bank.config.get(psec):
-            if not 'pro' in dbs:
+            if 'pro' not in dbs:
                 dbs['pro'] = {}
             dbs['pro']['secs'] = []
             for sec in self.bank.config.get(psec).split(','):
@@ -490,20 +489,20 @@ class Manager(object):
         return None
 
     @bank_required
-    def get_session_from_id(self, id):
+    def get_session_from_id(self, session_id):
         """
         Retrieve a bank session from its id
 
-        :param id: Session id
-        :type id: String
+        :param session_id: Session id
+        :type session_id: String
         :return: Session or None
         """
         sess = None
-        if not id:
+        if not session_id:
             Utils.error("A session id is required")
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             for session in self.bank.bank['sessions']:
-                if id == session['id']:
+                if session_id == session['id']:
                    sess = session
         return sess
 
@@ -574,7 +573,6 @@ class Manager(object):
 
         :return: A list with the full history of the bank
         """
-
         productions = sessions = None
         if 'production' in self.bank.bank and self.bank.bank['production']:
             productions = self.bank.bank['production']
@@ -620,14 +618,14 @@ class Manager(object):
             if 'id' in sess:
                 if sess['id'] in map(lambda d: d['id'], history):
                     continue
-                dir = os.path.join(sess['data_dir'], str(sess['dir_version']), str(sess['prod_dir']))
+                path = os.path.join(sess['data_dir'], str(sess['dir_version']), str(sess['prod_dir']))
                 history.append({
                     'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
                     'id': sess['id'],
                     'removed': True,
                     'status': 'deleted',
                     'name': self.bank.name,
-                    'path': dir,
+                    'path': path,
                     'bank_type': bank_type,
                     'bank_format': bank_format,
                     'description': description,
@@ -701,7 +699,6 @@ class Manager(object):
 
         :return: history + extra info to be included into bioweb (Institut Pasteur only)
         """
-
         productions = sessions = None
         if 'production' in self.bank.bank and self.bank.bank['production']:
             productions = self.bank.bank['production']
@@ -796,8 +793,6 @@ class Manager(object):
         :return: 0
         :raise: Exception
         """
-
-        fv = None
         if not file:
             file = os.path.join(self.bank_prod,
                                 'doc',
@@ -855,7 +850,6 @@ class Manager(object):
         :type name: String
         :return: Boolean
         """
-
         if not name or name is None:
             return False
         bank = Bank(name=name, no_log=True)
@@ -910,7 +904,6 @@ class Manager(object):
 
         :return:
         """
-
         banks = {}
         if self.bank:
             if self.can_switch():
@@ -956,7 +949,7 @@ class Manager(object):
         """
         ready = False
 
-        if not 'last_update_session' in self.bank.bank:
+        if 'last_update_session' not in self.bank.bank:
             Utils.error("No last session recorded")
         last_update_id = self.bank.bank['last_update_session']
 
@@ -982,9 +975,7 @@ class Manager(object):
                             ready = session['status']['over']
         return ready
 
-    """
-    Private methods
-    """
+    """Private methods"""
 
     def _current_user(self):
         """
@@ -1020,13 +1011,13 @@ class Manager(object):
             Utils.warn("Path %s does not exist" % path)
             return formats
 
-        for dir, dirs, files in os.walk(path):
-            if dir == path or not len(dirs):
+        for pathdir, dirs, _ in os.walk(path):
+            if pathdir == path or not len(dirs):
                 continue
-            if dir == 'flat':
+            if pathdir == 'flat':
                 continue
             for d in dirs:
-                formats.append('@'.join(['pack', os.path.basename(dir), d or '-']))
+                formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
         return formats
 
     @bank_required
@@ -1055,8 +1046,6 @@ class Manager(object):
         :type quiet: Boolean
         :return: Boolean
         """
-
-        proc = None
         # Sleep time while waiting for process to terminate
         sleep = float(5)
 

@@ -1,4 +1,4 @@
-""" Utilies class for BioMAJ Manager """
+"""Utilities class for BioMAJ Manager"""
 from __future__ import print_function
 import os
 import sys
@@ -8,7 +8,7 @@ from datetime import datetime
 
 class Utils(object):
 
-    """ Utility class """
+    """Utility class"""
 
     timer_start = timer_stop = 0.0
     show_warn = True
@@ -78,7 +78,7 @@ class Utils(object):
             Utils.error("%s does not exists" % str(path))
 
         dirs = []
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, dirnames, _ in os.walk(path):
             if len(dirnames) == 0:
                 if full:
                     dirs.append(dirpath)

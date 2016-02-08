@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 This script is used to use take advantage of functions developed as Swiss knife around BioMAJ3 API
 To see what's possible, just type biomaj-manager.py --help
@@ -24,7 +25,7 @@ from tabulate import tabulate
 __author__ = 'tuco'
 
 def main():
-    """ This is the main function treating arguments passed on the command line. """
+    """This is the main function treating arguments passed on the command line."""
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value

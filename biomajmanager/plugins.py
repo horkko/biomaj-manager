@@ -1,4 +1,4 @@
-""" Plugins mechanism to load user defined method """
+"""Plugins mechanism to load user defined method"""
 from __future__ import print_function
 
 from biomajmanager.utils import Utils
@@ -9,7 +9,7 @@ import os
 
 class Plugins(object):
 
-    """ Plugin class for BioMAJ Manager """
+    """Plugin class for BioMAJ Manager"""
 
     CATEGORY = 'MANAGER'
 
@@ -63,12 +63,11 @@ class Plugins(object):
 
 
 class BMPlugin(IPlugin):
-    """
-    Base plugin class for BioMAJ manager
-    """
+
+    """Base plugin class for BioMAJ manager"""
 
     def get_name(self):
-        """ Get the name of the plugin. Based on the class name """
+        """Get the name of the plugin. Based on the class name"""
         return self.__class__.__name__
 
     def get_config(self):
@@ -88,9 +87,9 @@ class BMPlugin(IPlugin):
         return self.manager
 
     def set_config(self, config):
-        """ Set BioMAJ manager config object """
+        """Set BioMAJ manager config object"""
         self.config = config
 
     def set_manager(self, manager):
-        """ Set BioMAJ manager config object """
+        """Set BioMAJ manager config object"""
         self.manager = manager

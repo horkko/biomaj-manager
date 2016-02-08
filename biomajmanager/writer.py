@@ -1,4 +1,4 @@
-""" Writer class to be used with Jinja2 tamplates """
+"""Writer class to be used with Jinja2 templates"""
 from __future__ import print_function
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError, TemplateError
@@ -9,10 +9,10 @@ import sys
 
 class Writer(object):
 
-    """ Writer class for BioMAJ manager to create what's desired as output """
+    """Writer class for BioMAJ manager to create what's desired as output"""
 
     def __init__(self, template_dir=None, output_format='txt', config=None, output=None):
-        '''
+        """
         Create Writer object
 
         :param template_dir: Root directory where to find templates
@@ -24,8 +24,7 @@ class Writer(object):
         :param output: Output file. Default STDOUT
         :type output: String
         :return:
-        '''
-
+        """
         self.env = None
         self.format = None
         self.output = None
@@ -50,7 +49,7 @@ class Writer(object):
         self.output = output
 
     def write(self, file=None, data=None):
-        '''
+        """
         Print template 'data' to stdout using template file 'file'
         data args can be left None, this way method can be used to render file
         from scratch
@@ -60,7 +59,7 @@ class Writer(object):
         :param data: Template data
         :type data: Dictionary
         :return: True, throws on error
-        '''
+        """
         if file is None:
             Utils.error("A template name is required")
         try:

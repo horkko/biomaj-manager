@@ -1,4 +1,4 @@
-""" Automatically create symbolic links from bank data dir to defined target """
+"""Automatically create symbolic links from bank data dir to defined target"""
 from __future__ import print_function
 from biomajmanager.utils import Utils
 from biomajmanager.manager import Manager
@@ -9,7 +9,7 @@ __author__ = 'tuco'
 
 class Links(object):
 
-    """ Class to manager symbolic links for a bank based on supported formats """
+    """Class to manager symbolic links for a bank based on supported formats"""
 
     def __init__(self, manager=None):
         """
@@ -18,7 +18,6 @@ class Links(object):
         :param manager: Biomaj Manager instance
         :return:
         """
-
         self.source = None
         self.target = None
 
@@ -58,7 +57,7 @@ class Links(object):
         self.do_links()
         return self.created_links
 
-    def do_links(self, dirs={}, files={}):
+    def do_links(self, dirs=None, files=None):
         """
         Create a list of links (Hard coded)
 
@@ -70,7 +69,6 @@ class Links(object):
         :return: Number of created links
         :rtype: Integer
         """
-
         props = self.manager.bank.get_properties()
         admin = None
         if 'owner' in props and props['owner']:
@@ -79,17 +77,17 @@ class Links(object):
             Utils.error("[%s] You are not allowed to create link(s)" % Utils.user())
 
         # Our default internal use
-        # if not dirs.keys():
-        #     dirs = {
-        #         'bowtie': ['index/bowtie'], 'bwa': ['index/bwa'], 'gatk': ['index/gatk'], 'picard': ['index/picard'],
-        #         'samtools': ['index/samtools'], 'fusioncatcher': ['index/fusioncatcher'], 'soap': ['index/soap'],
-        #         'blast2': ['index/blast2'], 'blast+': ['index/blast+'], 'flat': ['ftp'], 'uncompressed': ['release']
-        #     }
-        # if not files.keys():
-        #     files = {
-        #         'golden': ['index/golden'], 'uncompressed': ['index/golden'], 'blast2': ['fasta', 'index/blast2'],
-        #         'hmmer': ['index/hmmer'], 'fasta': ['fasta'], 'bdb': ['index/bdb']
-        #     }
+        if dirs is None:
+            dirs = {
+                'bowtie': ['index/bowtie'], 'bwa': ['index/bwa'], 'gatk': ['index/gatk'], 'picard': ['index/picard'],
+                'samtools': ['index/samtools'], 'fusioncatcher': ['index/fusioncatcher'], 'soap': ['index/soap'],
+                'blast2': ['index/blast2'], 'blast+': ['index/blast+'], 'flat': ['ftp'], 'uncompressed': ['release']
+            }
+        if files is None:
+            files = {
+                'golden': ['index/golden'], 'uncompressed': ['index/golden'], 'blast2': ['fasta', 'index/blast2'],
+                'hmmer': ['index/hmmer'], 'fasta': ['fasta'], 'bdb': ['index/bdb']
+            }
         # for source, targets in dirs.iteritems():
         #     for target in targets:
         #         self._generate_dir_link(source=source, target=target)
@@ -137,7 +135,6 @@ class Links(object):
         :return: Number of link(s) created
         :rtype: Integer
         """
-
         if self._prepare_links(source=source, target=target, fallback=fallback):
             return 0
 
@@ -172,7 +169,6 @@ class Links(object):
         :return: Number of link(s) created
         :rtype: Integer
         """
-
         if self._prepare_links(source=source, target=target, use_deepest=True):
             return 0
 
@@ -220,7 +216,6 @@ class Links(object):
         :return: Number of created link(s)
         :rtype: Integer
         """
-
         if not links or not len(links):
             return 0
 
@@ -254,7 +249,6 @@ class Links(object):
         :type fallback: String
         :return: 0/1
         """
-
         if not source:
             Utils.error("source required")
         if not target:
