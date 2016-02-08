@@ -519,14 +519,15 @@ class TestBiomajManagerLinks(unittest.TestCase):
         manager.bank.bank['production'].append({'release': '54', 'data_dir': self.utils.data_dir,
                                                 'prod_dir': 'alu_54'})
         self.utils.manager = manager
-
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat'))
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
 
     def tearDown(self):
         """Clean all"""
         self.utils.clean()
         # As we created an entry in the database ('alu'), we clean the database
         self.utils.drop_db()
-
 
     @attr('links')
     @attr('links.init')
@@ -626,6 +627,58 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link = Links(manager=self.utils.manager)
         link.manager.config.set('GENERAL', 'data.dir', '/dir/does_not/')
         self.assertEqual(link._prepare_links(source='/exist', target="link_test"), 1)
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksWithFallbackOK(self):
+        """Check method passes OK if fallback given"""
+        link = Links(manager=self.utils.manager)
+        # Remove uncompressed directory, and fallback to flat
+        os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
+        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', fallback='flat'), 0)
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksWithFallbackUseDeepestOK(self):
+        """Check method passes OK if fallback given"""
+        link = Links(manager=self.utils.manager)
+        # Remove uncompressed directory, and fallback to flat
+        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', use_deepest=True), 0)
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksWithSimulateModeOK(self):
+        """Check method prints in simulate mode"""
+        link = Links(manager=self.utils.manager)
+        link.manager.set_simulate(True)
+        link.manager.set_verbose(True)
+        # Remove uncompressed directory, and fallback to flat
+        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test'), 0)
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksMakeTargetDirThrows(self):
+        """Check method throws when making target dir"""
+        link = Links(manager=self.utils.manager)
+        link.manager.set_simulate(False)
+        link.manager.set_verbose(False)
+        # Remove uncompressed directory, and fallback to flat
+        with self.assertRaises(SystemExit):
+            link._prepare_links(source='uncompressed', target='../../../../flat_test')
+
+    @attr('links')
+    @attr('links.makelinks')
+    def test_LinksMakeLinksNoArgsReturns0(self):
+        """Check the method returns 0 when no 'links' args given"""
+        link = Links(manager=self.utils.manager)
+        self.assertEqual(link._make_links(), 0)
+
+    @attr('links')
+    @attr('links.makelinks')
+    def test_LinksMakeLinksPathAlreadyExistsReturns0(self):
+        """Check the method returns 0 because source and target already exist"""
+        pass
+
 
 
 class TestBiomajManagerNews(unittest.TestCase):

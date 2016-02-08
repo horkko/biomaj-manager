@@ -260,22 +260,20 @@ class Links(object):
 
         bank_name = self.manager.bank.name
         current_release = self.manager.current_release()
-        source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'),
-                              bank_name,
-                              current_release,
-                              source)
+        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name, 'alu_' + current_release)
+        target_dir = self.manager.config.get('MANAGER', 'production.dir')
+        source = os.path.join(data_dir, source)
+
         if not os.path.isdir(source) and fallback is None:
-            Utils.warn("[%s] %s does not exists" % (bank_name, source))
+            Utils.warn("[%s] %s does not exist" % (bank_name, source))
             return 1
         elif fallback:
             print("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
-            source = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name,
-                                  current_release, fallback)
+            source = os.path.join(data_dir, fallback)
 
         if use_deepest:
             source = Utils.get_deepest_dir(source, full=use_deepest)
-        target = os.path.join(self.manager.config.get('MANAGER', 'production.dir'),
-                              target)
+        target = os.path.join(target_dir, target)
 
         # Check destination directory where to create link(s)
         if not os.path.exists(target) and not os.path.isdir(target):
@@ -286,7 +284,7 @@ class Links(object):
                     if not Manager.get_simulate():
                         os.makedirs(target)
                 except OSError as err:
-                    Utils.error("[%s] Can't create dirs: %s" % (bank_name, str(err)))
+                    Utils.error("[%s] Can't create %s dir: %s" % (bank_name, target, str(err)))
 
         self.source = source
         self.target = target
