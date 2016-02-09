@@ -512,6 +512,9 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Setup stuff"""
         self.utils = UtilsForTests()
         os.environ['BIOMAJ_CONF'] = self.utils.global_properties
+        # Default switch off simulate and verbose mode for each test
+        Manager.simulate = False
+        Manager.verbose = False
         # Links need to have a production dir ready, so we do it
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
@@ -677,7 +680,71 @@ class TestBiomajManagerLinks(unittest.TestCase):
     @attr('links.makelinks')
     def test_LinksMakeLinksPathAlreadyExistsReturns0(self):
         """Check the method returns 0 because source and target already exist"""
-        pass
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        target = os.path.join(self.utils.prod_dir, 'uncmp_link')
+        os.symlink(os.path.relpath(source, start=target), target)
+        self.assertEqual(0, link._make_links(links=[(source, target)]))
+        os.remove(target)
+
+    @attr('links')
+    @attr('links.makelinks')
+    def test_LinksMakeLinksPathNotExistsSimulateOnVerboseOnReturns0(self):
+        """Check the method returns 0 because simulate and verbose mode on"""
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        target = os.path.join(self.utils.prod_dir, 'uncmp_link')
+        link.manager.set_simulate(True)
+        link.manager.set_verbose(True)
+        link._prepare_links(source=source, target=target)
+        self.assertEqual(0, link._make_links(links=[(source, target)]))
+
+    @attr('links')
+    @attr('links.makelinks')
+    def test_LinksMakeLinksPathNotExistsSimulateOnVerboseOffReturns1(self):
+        """Check the method returns 1 because simulate on and verbose off, nothing created but link added as created"""
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        target = os.path.join(self.utils.prod_dir, 'uncmp_link')
+        link.manager.set_simulate(True)
+        link.manager.set_verbose(False)
+        link._prepare_links(source=source, target=target)
+        self.assertEqual(1, link._make_links(links=[(source, target)]))
+
+    @attr('links')
+    @attr('links.makelinks')
+    def test_LinksMakeLinksPathNotExistsHardTrueThrowsError(self):
+        """Check the method throws an exception (OSError=>SystemExit) with (hard=True)"""
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        target = os.path.join(self.utils.prod_dir, 'uncmp_link')
+        link._prepare_links(source=source, target=target)
+        # We delete the source directory to raise an OSError
+        os.removedirs(target)
+        with self.assertRaises(SystemExit):
+            link._make_links(links=[(source, target)], hard=True)
+
+    @attr('links')
+    @attr('links.makelinks')
+    def test_LinksMakeLinksPathNotExistsHardFalseThrowsError(self):
+        """Check the method throws an exception (OSError=>SystemExit) with (hard=False)"""
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        target = os.path.join(self.utils.prod_dir, 'uncmp_link')
+        link._prepare_links(source=source, target=target)
+        # We delete the source directory to raise an OSError
+        os.removedirs(target)
+        with self.assertRaises(SystemExit):
+            link._make_links(links=[(source, target)])
+
+    @attr('links')
+    @attr('links.generatefileslink')
+    def test_LinksGenerateFilesLink_PrepareLinksReturns0(self):
+        """Check _preparelinks returns 1 so generate_files_link return 0"""
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'not_found')
+        target = os.path.join(self.utils.conf_dir, 'not_link')
+        self.assertEqual(0, link._generate_files_link(source=source, target=target))
 
 
 

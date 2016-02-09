@@ -226,13 +226,14 @@ class Links(object):
                 else:
                     try:
                         if not Manager.get_simulate():
+                            source_link = os.path.relpath(slink, start=self.target)
                             if hard:
-                                os.link(os.path.relpath(slink, start=self.target), tlink)
+                                os.link(source_link, tlink)
                             else:
-                                os.symlink(os.path.relpath(slink, start=self.target), tlink)
+                                os.symlink(source_link, tlink)
                     except OSError as err:
                         Utils.error("[%s] Can't create %slink %s: %s" %(self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
-                self.add_link()
+                    self.add_link()
         return self.created_links
 
     def _prepare_links(self, source=None, target=None, use_deepest=False, fallback=None):
