@@ -768,7 +768,7 @@ class Manager(object):
         return history
 
     @user_granted
-    def restart_stopped_jobs(self, args=args):
+    def restart_stopped_jobs(self, args=None):
         """
         Restart jobs stopped by calling 'stop_running_jobs'. This must be set in manager.properties
         configuration file, section 'JOBS'.
