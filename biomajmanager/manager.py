@@ -770,19 +770,22 @@ class Manager(object):
     @user_granted
     def restart_stopped_jobs(self):
         """
-        Restart jobs stopped by calling 'stop_running_jobs'
+        Restart jobs stopped by calling 'stop_running_jobs'. This must be set in manager.properties
+        configuration file, section 'JOBS'.
 
-        :return:
+        :return: Boolean
         """
-        if not self.config.has_option('MANAGER', 'jobs.restart.exe'):
-            Utils.warn("[jobs.restart] jobs.restart.exe not set in configuration file. Action aborted.")
-            return False
-
-        script = self.config.get('MANAGER', 'jobs.restart.exe')
-        if not os.path.exists(script):
-            Utils.error("[jobs.restart] script (%s) not found! Action aborted." % script)
-        args = self.config.get('MANAGER', 'jobs.restart.args')
-        return self._run_command(exe=script, args=[args])
+        return self._submit_job('restart.stopped.jobs')
+        # if not self.config.has_option('MANAGER', 'jobs.restart.exe'):
+        #     Utils.warn("[jobs.restart] jobs.restart.exe not set in configuration file. Action aborted.")
+        #     return False
+        #
+        # script = self.config.get('MANAGER', 'jobs.restart.exe')
+        # if not os.path.exists(script):
+        #     Utils.error("[jobs.restart] script (%s) not found! Action aborted." % script)
+        #args = self.config.get('MANAGER', 'jobs.restart.args')
+        #script = self.config.get('MANAGER', 'jobs.restart.exe')
+        #return self._run_command(exe=script, args=args)
 
     @user_granted
     def save_banks_version(self, file=None):
@@ -922,19 +925,20 @@ class Manager(object):
     def stop_running_jobs(self):
         """
         Stop running jobs using bank(s). This calls an external script which must be set
-        in the manager.properties configuration file.
+        in the manager.properties configuration file, section JOBS.
 
         :return: Boolean
         """
-        if not self.config.has_option('MANAGER', 'jobs.stop.exe'):
-            Utils.warn("[jobs.stop] jobs.stops.exe not set in configuration file. Action aborted.")
-            return False
-
-        script = self.config.get('MANAGER', 'jobs.stop.exe')
-        if not os.path.exists(script):
-            Utils.error("[jobs.stop] script (%s) not found! Action aborted." % script)
-        args = self.config.get('MANAGER', 'jobs.stop.args')
-        return self._run_command(exe=script, args=[args])
+        return self._submit_job('stop.running.jobs')
+        # if not self.config.has_option('MANAGER', 'jobs.stop.exe'):
+        #     Utils.warn("[jobs.stop] jobs.stops.exe not set in configuration file. Action aborted.")
+        #     return False
+        #
+        # script = self.config.get('MANAGER', 'jobs.stop.exe')
+        # if not os.path.exists(script):
+        #     Utils.error("[jobs.stop] script (%s) not found! Action aborted." % script)
+        # args = self.config.get('MANAGER', 'jobs.stop.args')
+        # return self._run_command(exe=script, args=[args])
 
     @bank_required
     def update_ready(self):
@@ -995,6 +999,40 @@ class Manager(object):
         #if not current_user:
         #    Utils.error("Can't find current user name")
         #return current_user
+
+    def _check_config_jobs(self, name):
+        """
+        Check that the config for the jobs submission is OK
+
+        :param name: Name of the config value to check. Will be '<name>.exe' in section 'JOBS
+        :type name: String
+        :return: Boolean
+        """
+        if not self.config.has_section('JOBS'):
+            Utils.error("[jobs] No JOBS section defined")
+        exe = "%s.exe" % name
+        if not self.config.has_option('JOBS', exe):
+            Utils.warn("[jobs: %s] %s not set in configuration file. Action aborted." % (name, exe))
+            return False
+        script = self.config.get('JOBS', exe)
+        if not os.path.exists(script):
+            Utils.error("[jobs: %s] script (%s) not found! Action aborted." % (name, exe))
+        return True
+
+    def _get_config_jobs(self, name):
+        """
+        Get the values from the config for a particular job key
+
+        :param name: Name of the job type
+        :type name: String
+        :return: Tuple, (exe, [args])
+        """
+        args = []
+        if self.config.has_option('JOBS', "%s.args" % name):
+            for arg in self.config.get('JOBS', "%s.args" % name).split(" "):
+                args.append(arg)
+        script = self.config.get('JOBS', "%s.exe" % name)
+        return script, args
 
     def _get_formats_for_release(self, path=None):
         """
@@ -1059,8 +1097,8 @@ class Manager(object):
         #     stderr = subprocess.PIPE
         stdout = subprocess.PIPE
         stderr = subprocess.PIPE
-        if self.config.has_option('MANAGER', 'jobs.sleep.time'):
-            sleep = float(self.config.get('MANAGER', 'jobs.sleep.time'))
+        if self.config.has_option('JOBS', 'jobs.sleep.time'):
+            sleep = float(self.config.get('JOBS', 'jobs.sleep.time'))
         command = [exe] + args
         try:
             proc = subprocess.Popen(command, stdout=stdout, stderr=stderr)
@@ -1087,5 +1125,17 @@ class Manager(object):
                 Utils.error("[run command] command %s FAILED with exit code %d!" % (command, proc.returncode))
         except OSError as err:
             Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
-
         return True
+
+    def _submit_job(self, name):
+        """
+        Submit a job.
+
+        :param name: Name of the defined job in the manager.properties file, section 'JOBS'
+        :type name: String
+        :return: Boolean
+        """
+        if not self._check_config_jobs(name):
+            return False
+        script, args = self._get_config_jobs(name)
+        return self._run_command(exe=script, args=args)

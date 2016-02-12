@@ -740,12 +740,78 @@ class TestBiomajManagerLinks(unittest.TestCase):
     @attr('links')
     @attr('links.generatefileslink')
     def test_LinksGenerateFilesLink_PrepareLinksReturns0(self):
-        """Check _preparelinks returns 1 so generate_files_link return 0"""
+        """Check _generate_files_link returns 0 because prepare_links returns > 0"""
         link = Links(manager=self.utils.manager)
         source = os.path.join(self.utils.data_dir, 'not_found')
         target = os.path.join(self.utils.conf_dir, 'not_link')
         self.assertEqual(0, link._generate_files_link(source=source, target=target))
 
+    @attr('links')
+    @attr('links.generatefileslink')
+    def test_LinksGenerateFilesLinkNotNoExtCreatedLinksOKVerboseOn(self):
+        """Check method returns correct number of created links (no_ext=False)"""
+        link = Links(manager=self.utils.manager)
+        # Set our manager verbose mode to on
+        link.manager.set_verbose(True)
+        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat')
+        target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
+        files = ['file1.txt', 'file2.txt']
+        # Create list of file to link
+        for ifile in files:
+            open(os.path.join(source_dir, ifile), 'w').close()
+        # We check we've created 2 link, for file1 and file2
+        self.assertEqual(2, link._generate_files_link(source='flat', target='flat_symlink'))
+        # We can also check link.source and link.target are equal to our source_dir and target_dir
+        self.assertEqual(source_dir, link.source)
+        self.assertEqual(target_dir, link.target)
+
+    @attr('links')
+    @attr('links.generatefileslink')
+    def test_LinksGenerateFilesLinkNotNoExtCreatedLinksOKVerboseOnSmulateOn(self):
+        """Check method returns correct number of created links (no_ext=False)"""
+        link = Links(manager=self.utils.manager)
+        # Set our manager verbose mode to on
+        link.manager.set_verbose(True)
+        link.manager.set_simulate(True)
+        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat')
+        target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
+        files = ['file1.txt', 'file2.txt']
+        # Create list of file to link
+        for ifile in files:
+            open(os.path.join(source_dir, ifile), 'w').close()
+        # We check we've created 2 link, for file1 and file2
+        self.assertEqual(0, link._generate_files_link(source='flat', target='flat_symlink'))
+        # We can also check link.source and link.target are equal to our source_dir and target_dir
+        self.assertEqual(source_dir, link.source)
+        self.assertEqual(target_dir, link.target)
+
+    @attr('links')
+    @attr('links.generatefileslink')
+    def test_LinksGenerateFilesLinkNotNoExtCreatedLinksOKVerboseOnRemoveExtTrue(self):
+        """Check method returns correct number of created links (remove_ext=True)"""
+        link = Links(manager=self.utils.manager)
+        # Set our manager verbose mode to on
+        link.manager.set_verbose(True)
+        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat')
+        target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
+        files = ['file1.txt', 'file2.txt']
+        # Create list of file to link
+        for ifile in files:
+            open(os.path.join(source_dir, ifile), 'w').close()
+        # We check we've created 4 link, for file1 and file2 twice (with and without extension)
+        self.assertEqual(4, link._generate_files_link(source='flat', target='flat_symlink', remove_ext=True))
+        # We check the created links are OK without the extention (.txt)
+        self.assertTrue(os.path.islink(os.path.join(target_dir, 'file1')))
+        self.assertTrue(os.path.islink(os.path.join(target_dir, 'file2')))
+
+    @attr('links')
+    @attr('links.generatedirlink')
+    def test_LinksGenerateDirLink_PrepareLinksReturns0(self):
+        """Check _generate_files_link returns 0 because prepare_links returns > 0"""
+        link = Links(manager=self.utils.manager)
+        source = os.path.join(self.utils.data_dir, 'not_found')
+        target = os.path.join(self.utils.conf_dir, 'not_link')
+        self.assertEqual(0, link._generate_dir_link(source=source, target=target))
 
 
 class TestBiomajManagerNews(unittest.TestCase):
@@ -957,7 +1023,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Clean"""
         self.utils.clean()
 
-
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerNoConfigRaisesException(self):
@@ -965,14 +1030,12 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             Manager(cfg="/no_manager_cfg", global_cfg="/no_global_cfg")
 
-
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerGlobalConfigException(self):
         """Check an exception is raised config loading"""
         with self.assertRaises(SystemExit):
             Manager(global_cfg="/no_global_cfg")
-
 
     @attr('manager')
     @attr('manager.loadconfig')
@@ -982,7 +1045,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file=no_sec, todir=self.utils.conf_dir)
         cfg = Manager.load_config(cfg=os.path.join(self.utils.conf_dir, no_sec))
         self.assertFalse(cfg.has_section('MANAGER'))
-
 
     @attr('manager')
     @attr('manager.loadconfig')
@@ -994,7 +1056,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             self.assertTrue(cfg.has_section('MANAGER'))
             self.assertEqual(cfg.get('MANAGER', 'file.name'), file)
 
-
     @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerLoadConfigNOTOK(self):
@@ -1002,7 +1063,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.remove(os.path.join(self.utils.conf_dir, 'manager.properties'))
         with self.assertRaises(SystemExit):
             Manager.load_config(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
-
 
     @attr('manager')
     @attr('manager.bankinfo')
@@ -1031,7 +1091,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertDictEqual(returned, expected)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.bankpublished')
     def test_ManagerBankPublishedTrue(self):
@@ -1044,7 +1103,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.bank_is_published())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.bankpublished')
     def test_ManagerBankPublishedFalse(self):
@@ -1056,7 +1114,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['current'] = None
         self.assertFalse(manager.bank_is_published())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.lastsessionfailed')
@@ -1072,7 +1129,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank = data
         self.assertFalse(manager.last_session_failed())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.lastsessionfailed')
@@ -1091,7 +1147,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.last_session_failed())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedTrueNoPendingFalse(self):
@@ -1108,7 +1163,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.last_session_failed())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankHasFormatNoFormat(self):
@@ -1119,7 +1173,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.has_formats()
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankHasFormatsTrue(self):
@@ -1129,7 +1182,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.has_formats(fmt='blast'))
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankHasFormatsFalse(self):
@@ -1138,7 +1190,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         self.assertFalse(manager.has_formats(fmt='unknown'))
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.formats')
@@ -1151,7 +1202,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertListEqual(returned, expected)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankFormatsFlatTrueOK(self):
@@ -1163,7 +1213,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertDictEqual(returned, expected)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.formats')
     def test_ManagerBankFormatsAsStringOK(self):
@@ -1174,7 +1223,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         expected = {'blast': ['2.2.26'], 'fasta': ['3.6']}
         self.assertDictEqual(returned, expected)
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.getsessionfromid')
@@ -1189,7 +1237,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNotNone(manager.get_session_from_id(1))
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getsessionfromid')
     def test_ManagerGetSessionFromIDNotNone(self):
@@ -1202,7 +1249,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank = data
         self.assertIsNone(manager.get_session_from_id(3))
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.getsessionfromid')
@@ -1217,7 +1263,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.get_session_from_id(None)
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.getpendingsessions')
@@ -1235,7 +1280,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertDictEqual(expected, returned)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.showpendingsessions')
     def test_ManagerShowPendingSessionsOK(self):
@@ -1251,7 +1295,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             returned[item['release']] = item['session_id']
         self.assertDictEqual(expected, returned)
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.getpublishedrelease')
@@ -1270,7 +1313,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNotNone(rel)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseNone(self):
@@ -1287,7 +1329,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertIsNone(rel)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getpublishedrelease')
     def test_ManagerGetPublishedReleaseRaisesOK(self):
@@ -1303,7 +1344,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.get_published_release()
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetDictSections(self):
@@ -1315,7 +1355,6 @@ class TestBioMajManagerManager(unittest.TestCase):
                     'nuc': {'dbs': ['alunuc'], 'secs': ['alunuc1', 'alunuc2']}}
         self.assertDictContainsSubset(expected, dsections)
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.sections')
@@ -1329,7 +1368,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertDictContainsSubset(expected, sections)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetListSectionsGolden(self):
@@ -1339,7 +1377,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         lsections = manager.get_list_sections(tool='golden')
         self.assertListEqual(lsections, ['alunuc', 'alupro'])
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.sections')
@@ -1351,7 +1388,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertListEqual(lsections, ['alunuc', 'alupro', 'alunuc1', 'alunuc2', 'alupro1', 'alupro2'])
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.sections')
     def test_ManagerGetDictSectionsNoTool(self):
@@ -1361,7 +1397,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.get_dict_sections()
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.sections')
@@ -1373,7 +1408,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.get_list_sections()
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_CurrentSet(self):
@@ -1382,7 +1416,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager._current_release = str(54)
         self.assertEqual(str(54), manager.current_release())
-
 
     @attr('manager')
     @attr('manager.currentrelease')
@@ -1400,7 +1433,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(release, manager.current_release())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_ProductionRemoteRelease(self):
@@ -1415,7 +1447,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank = data
         self.assertEqual(release, manager.current_release())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.currentrelease')
@@ -1432,7 +1463,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(release, manager.current_release())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.currentuser')
     def test_ManagerCurrentUserTestUSEROK(self):
@@ -1447,7 +1477,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         if 'LOGNAME' not in os.environ:
             os.environ['LOGNAME'] = backlog
 
-
     @attr('manager')
     @attr('manager.currentuser')
     def test_ManagerCurrentUserTestUserIsNone(self):
@@ -1457,7 +1486,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.environ = {}
         self.assertIsNone(manager._current_user())
         os.environ = backup
-
 
     @attr('manager')
     @attr('manager.currentlink')
@@ -1469,7 +1497,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertNotEqual(cur_link, '/wrong_curent_link')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.currentlink')
     def test_ManagerGetCurrentLinkOK(self):
@@ -1479,7 +1506,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         cur_link = manager.get_current_link()
         self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'current'))
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.futurelink')
@@ -1491,7 +1517,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertNotEqual(cur_link, '/wrong_future_link')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.futurelink')
     def test_ManagerGetFutureLinkOK(self):
@@ -1502,7 +1527,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'future_release'))
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.hascurrentlink')
     def test_ManagerHasCurrentLinkFalse(self):
@@ -1511,7 +1535,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         self.assertFalse(manager.has_current_link())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.hascurrentlink')
@@ -1525,7 +1548,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.remove('test_link')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.hasfuturelink')
     def test_ManagerHasFutureLinkFalse(self):
@@ -1534,7 +1556,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         self.assertFalse(manager.has_future_link())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.hasfuturelink')
@@ -1548,7 +1569,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.remove('future_link')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_Raises(self):
@@ -1557,7 +1577,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
             manager.get_current_proddir()
-
 
     @attr('manager')
     @attr('manager.currentproddir')
@@ -1573,7 +1592,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['production'] = []
         with self.assertRaises(SystemExit):
             manager.get_current_proddir()
-
 
     @attr('manager')
     @attr('manager.currentproddir')
@@ -1591,7 +1609,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         expected = os.path.join(self.utils.data_dir, manager.bank.name, prod_dir)
         self.assertEqual(expected, returned)
 
-
     @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDir_RaisesNoProd(self):
@@ -1606,14 +1623,12 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.get_current_proddir()
 
-
     @attr('manager')
     @attr('manager.getverbose')
     def test_ManagerGetVerboseTrue(self):
         """Check manager.get_verbose() get True when Manager.verbose = True"""
         Manager.verbose = True
         self.assertTrue(Manager.get_verbose())
-
 
     @attr('manager')
     @attr('manager.getverbose')
@@ -1622,7 +1637,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         Manager.verbose = False
         self.assertFalse(Manager.get_verbose())
 
-
     @attr('manager')
     @attr('manager.getsimulate')
     def test_ManagerGetSimulateTrue(self):
@@ -1630,14 +1644,12 @@ class TestBioMajManagerManager(unittest.TestCase):
         Manager.simulate = True
         self.assertTrue(Manager.get_simulate())
 
-
     @attr('manager')
     @attr('manager.getsimulate')
     def test_ManagerGetSimulateFalse(self):
         """Check manager.get_simulate() get False when Manager.simulate = False"""
         Manager.simulate = False
         self.assertFalse(Manager.get_simulate())
-
 
     @attr('manager')
     @attr('manager.banklist')
@@ -1652,7 +1664,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         bank_list = Manager.get_bank_list()
         self.assertListEqual(bank_list, manual_list)
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.banklist')
@@ -1669,7 +1680,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             Manager.get_bank_list()
         os.environ["BIOMAJ_CONF"] = back_cfg
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.banklist')
@@ -1688,7 +1698,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         BiomajConfig.global_config = None
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getconfigregexp')
     def test_ManagerGetConfigRegExpOKWithValuesTrue(self):
@@ -1699,7 +1708,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertListEqual(my_values, sorted(expected))
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getconfigregexp')
     def test_ManagerGetConfigRegExpOKWithValuesFalse(self):
@@ -1709,7 +1717,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertListEqual(my_values, [self.utils.db_test, 'mongodb://localhost:27017'])
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getconfigregexp')
     def test_ManagerGetConfigRegExpNoRegExp(self):
@@ -1718,7 +1725,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
             manager.get_config_regex()
-
 
     @attr('manager')
     @attr('manager.getbankpackages')
@@ -1731,7 +1737,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertListEqual(packs, bank_packs)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getbankpackages')
     def test_ManagerGetBankPackagesNoneOK(self):
@@ -1741,7 +1746,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         bank_packs = manager.get_bank_packages()
         self.assertListEqual(bank_packs, [])
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.getformatsforrelease')
@@ -1757,7 +1761,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         returned = manager._get_formats_for_release(path=self.utils.data_dir)
         self.assertListEqual(expected, returned)
 
-
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleaseRaises(self):
@@ -1766,7 +1769,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager._get_formats_for_release()
 
-
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleasePathNotExistsEmptyList(self):
@@ -1774,7 +1776,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager()
         returned = manager._get_formats_for_release(path="/not_found")
         self.assertListEqual(returned, [])
-
 
     @attr('manager')
     @attr('manager.getlastsession')
@@ -1790,7 +1791,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertDictEqual(returned, {'id': now + 2, 'name': 'session3'})
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.getlastsession')
     def test_ManagerGetLastSessionThrows(self):
@@ -1801,7 +1801,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager._get_last_session()
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.history')
@@ -1814,7 +1813,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.history()
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryNoSessionsRaisesError(self):
@@ -1826,7 +1824,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.history()
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.history')
@@ -1842,7 +1839,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[0]['id'], 100)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryCheckStatusDeprecatedOK(self):
@@ -1857,7 +1853,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistoryStatusUnpublishedOK(self):
@@ -1871,7 +1866,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         history = manager.history()
         self.assertEqual(history[0]['status'], 'unpublished')
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.history')
@@ -1888,7 +1882,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[1]['status'], 'deleted')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryNoProductionRaisesError(self):
@@ -1899,7 +1892,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.mongo_history()
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.mongohistory')
@@ -1912,7 +1904,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.mongo_history()
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.mongohistory')
@@ -1929,7 +1920,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[0]['_id'], _id)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryCheckStatusDeprecatedOK(self):
@@ -1944,7 +1934,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistoryStatusUnpublishedOK(self):
@@ -1958,7 +1947,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         history = manager.mongo_history()
         self.assertEqual(history[0]['status'], 'unpublished')
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.mongohistory')
@@ -1976,7 +1964,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[1]['status'], 'deleted')
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsNotOK(self):
@@ -1991,7 +1978,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Reset to the right user name as previously
         os.environ["LOGNAME"] = back_log
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.bankversions')
@@ -2010,7 +1996,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Reset to the right user name as previously
         os.environ["LOGNAME"] = back_log
 
-
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsNoFileOK(self):
@@ -2027,8 +2012,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Reset to the right user name as previously
         self.utils.drop_db()
 
-
-    @attr('manager.1')
+    @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsFileContentOK(self):
         """Test exceptions"""
@@ -2052,7 +2036,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         Manager.SAVE_BANK_LINE_PATTERN = back_patt
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.bankversions')
     def test_ManagerSaveBankVersionsManagerVerboseOK(self):
@@ -2070,7 +2053,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.set_bank(False)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankOK(self):
@@ -2082,14 +2064,12 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.set_bank(bank=b))
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankNOTOK(self):
         """Check method checks are not ok"""
         manager = Manager()
         self.assertFalse(manager.set_bank())
-
 
     @attr('manager')
     @attr('manager.setbank')
@@ -2098,14 +2078,12 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager()
         self.assertFalse(manager.set_bank(bank=Manager()))
 
-
     @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankFromNameFalse(self):
         """Check method checks are not ok"""
         manager = Manager()
         self.assertFalse(manager.set_bank_from_name(""))
-
 
     @attr('manager')
     @attr('manager.setbank')
@@ -2116,13 +2094,11 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.set_bank_from_name("alu"))
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.setverbose')
     def test_ManagerSetVerboseReturnsTrue(self):
         """Check set verbose set the correct boolean"""
         self.assertTrue(Manager.set_verbose("OK"))
-
 
     @attr('manager')
     @attr('manager.setverbose')
@@ -2130,20 +2106,17 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check set verbose set the correct boolean"""
         self.assertFalse(Manager.set_verbose(""))
 
-
     @attr('manager')
     @attr('manager.setsimulate')
     def test_ManagerSetSimulateReturnsTrue(self):
         """Check set simulate set the correct boolean"""
         self.assertTrue(Manager.set_simulate("OK"))
 
-
     @attr('manager')
     @attr('manager.setsimulate')
     def test_ManagerSetSimulateReturnsFalse(self):
         """Check set simulate set the correct boolean"""
         self.assertFalse(Manager.set_simulate(""))
-
 
     @attr('manager')
     @attr('manager.switch')
@@ -2157,7 +2130,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.remove(lock_file)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.showneedupdate')
     def test_ManagerShowNeedUpdate_CannotSwitch(self):
@@ -2168,7 +2140,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['current'] = None
         returned = manager.show_need_update()
         self.assertDictEqual(returned, {})
-
 
     @attr('manager')
     @attr('manager.showneedupdate')
@@ -2184,7 +2155,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         alu.bank.bank['last_update_session'] = now + 1
         returned = alu.show_need_update()
         self.assertDictEqual(returned, {'alu': alu.bank})
-
 
     @attr('manager')
     @attr('manager.showneedupdate')
@@ -2207,7 +2177,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(len(returned.items()), 2)
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_BankNotPublished(self):
@@ -2218,7 +2187,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['current'] = None
         self.assertFalse(manager.can_switch())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.switch')
@@ -2233,7 +2201,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['last_update_session'] = now
         self.assertFalse(manager.can_switch())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.switch')
@@ -2250,7 +2217,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertFalse(manager.can_switch())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.switch')
     def test_ManagerBankSwitch_SwitchTrue(self):
@@ -2265,7 +2231,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.can_switch())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyRaisesErrorOK(self):
@@ -2275,7 +2240,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.update_ready()
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.updateready')
@@ -2289,7 +2253,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.update_ready())
         self.utils.drop_db()
 
-
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyWithCurrentFalse(self):
@@ -2301,7 +2264,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['last_update_session'] = now
         self.assertFalse(manager.update_ready())
         self.utils.drop_db()
-
 
     @attr('manager')
     @attr('manager.updateready')
@@ -2317,32 +2279,38 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.update_ready())
         self.utils.drop_db()
 
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerCommandCheckConfigThrows(self):
+        """Check method that check config for jobs throws ok"""
+        manager = Manager()
+        manager.config.remove_section('JOBS')
+        with self.assertRaises(SystemExit):
+            manager._check_config_jobs('restart.stopped.jobs')
 
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandCheckConfigStop(self):
         """Check some config values are ok"""
         manager = Manager()
-        manager.config.remove_option('MANAGER', 'jobs.stop.exe')
+        manager.config.remove_option('JOBS', 'stop.running.jobs.exe')
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertFalse(manager.stop_running_jobs())
         os.environ["LOGNAME"] = back_log
 
-
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandCheckConfigRestart(self):
         """Check some config values are ok"""
         manager = Manager()
-        manager.config.remove_option('MANAGER', 'jobs.restart.exe')
+        manager.config.remove_option('JOBS', 'restart.stopped.jobs.exe')
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertFalse(manager.restart_stopped_jobs())
         os.environ["LOGNAME"] = back_log
-
 
     @attr('manager')
     @attr('manager.command')
@@ -2355,7 +2323,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.restart_stopped_jobs())
         os.environ["LOGNAME"] = back_log
 
-
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandRestartJobsScriptDoesNotExists(self):
@@ -2364,11 +2331,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
-        manager.config.set('MANAGER', 'jobs.restart.exe', '/nobin/cmd')
+        manager.config.set('JOBS', 'restart.stopped.jobs.exe', '/nobin/cmd')
         with self.assertRaises(SystemExit):
             manager.restart_stopped_jobs()
         os.environ["LOGNAME"] = back_log
-
 
     @attr('manager')
     @attr('manager.command')
@@ -2381,7 +2347,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.stop_running_jobs())
         os.environ["LOGNAME"] = back_log
 
-
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandStopScriptDoesNotExists(self):
@@ -2390,11 +2355,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Grant usage for current user
         back_log = os.environ["LOGNAME"]
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
-        manager.config.set('MANAGER', 'jobs.stop.exe', '/nobin/cmd')
+        manager.config.set('JOBS', 'stop.running.jobs.exe', '/nobin/cmd')
         with self.assertRaises(SystemExit):
             manager.stop_running_jobs()
         os.environ["LOGNAME"] = back_log
-
 
     @attr('manager')
     @attr('manager.command')
@@ -2402,7 +2366,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check a command started is OK"""
         manager = Manager()
         self.assertTrue(manager._run_command(exe='ls', args=['/tmp'], quiet=True))
-
 
     @attr('manager')
     @attr('manager.command')
@@ -2412,7 +2375,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager._run_command(exe='ls', args=['/notfound'], quiet=True)
 
-
     @attr('manager')
     @attr('manager.command')
     def test_ManagerRunCommandErrorNoExe(self):
@@ -2421,7 +2383,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager._run_command(args=['foobar'], quiet=True)
 
-
     @attr('manager')
     @attr('manager.command')
     def test_ManagerRunCommandErrorNoRights(self):
@@ -2429,7 +2390,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager()
         with self.assertRaises(SystemExit):
             manager._run_command(exe='chmod', args=['-x', '/bin/ls'], quiet=True)
-
 
     @attr('manager')
     @attr('manager.command')

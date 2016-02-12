@@ -152,9 +152,11 @@ class Links(object):
                     print("%s -> %s directory link done" % (self.target, self.source))
         return self.created_links
 
-    def _generate_files_link(self, source=None, target=None, msg=None, remove_ext=False, no_ext=False):
+    def _generate_files_link(self, source=None, target=None, remove_ext=False):
         """
         Links list of file from 'source' to 'target' directory
+        If remove_ext is set to True, then another link is created. This link is the same as the
+        target link, wihtout the file extension
 
         :param source: Source directory to link
         :type source: String
@@ -162,10 +164,6 @@ class Links(object):
         :type target: String
         :param remove_ext: Create another link of the file without the file name extension
         :type remove_ext: Boolean (default False)
-        :param no_ext: Create link only without file name extension
-        :type no_ext: Boolean (default False)
-        :param msg: Message to display at the end of the function call (simulate mode)
-        :type msg: String
         :return: Number of link(s) created
         :rtype: Integer
         """
@@ -179,30 +177,26 @@ class Links(object):
         for ffile in files:
             # Source file link
             slink = os.path.join(self.source, ffile)
-            if not no_ext:
-                tlink = os.path.join(self.target, ffile)
-                links.append((slink, tlink))
-                if Manager.get_verbose():
-                    print("[_generate_files_link] [no_ext=%s] append slink %s" % (str(no_ext), slink))
-                    print("[_generate_files_link] [no_ext=%s] append tlink %s" % (str(no_ext), tlink))
+            #if not no_ext:
+            tlink = os.path.join(self.target, ffile)
+            links.append((slink, tlink))
+            if Manager.get_verbose():
+                print("[_generate_files_link] append slink %s" % slink)
+                print("[_generate_files_link] append tlink %s" % tlink)
 
             # If asked to create another symbolic link without extension name
-            if remove_ext or no_ext:
+            if remove_ext: #  or no_ext:
                 new_file = os.path.splitext(os.path.basename(ffile))[0]
                 tlink = os.path.join(self.target, new_file)
                 links.append((slink, tlink))
                 if Manager.get_verbose():
-                    print("[_generate_files_link] [rm_ext=%s] [no_ext=%s] append slink %s" % (str(remove_ext), str(no_ext), slink))
-                    print("[_generate_files_link] [rm_ext=%s] [no_ext=%s] append tlink %s" % (str(remove_ext), str(no_ext), tlink))
+                    print("[_generate_files_link] [rm_ext=%s] append slink %s" % (str(remove_ext), slink))
+                    print("[_generate_files_link] [rm_ext=%s] append tlink %s" % (str(remove_ext), tlink))
 
         self._make_links(links=links)
 
-        if Manager.simulate:
-            if msg:
-                print(msg)
-            else:
-                if Manager.get_verbose():
-                    print("%s -> %s file link done" % (self.target, self.source))
+        if Manager.simulate and Manager.get_verbose():
+            print("%s -> %s file link done" % (self.target, self.source))
         return self.created_links
 
     def _make_links(self, links=None, hard=False):
