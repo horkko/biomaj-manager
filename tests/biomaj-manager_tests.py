@@ -1468,7 +1468,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     def test_ManagerCurrentUserTestUSEROK(self):
         """Check we can get USER from environ with LOGNAME unset"""
         backlog = ""
-        user = os.getlogin()
+        user = os.getenv('USER')
         if 'LOGNAME' in os.environ:
             backlog = os.environ['LOGNAME']
             del os.environ['LOGNAME']

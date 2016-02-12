@@ -768,14 +768,16 @@ class Manager(object):
         return history
 
     @user_granted
-    def restart_stopped_jobs(self):
+    def restart_stopped_jobs(self, args=args):
         """
         Restart jobs stopped by calling 'stop_running_jobs'. This must be set in manager.properties
         configuration file, section 'JOBS'.
 
+        :param args: List of args to pass to the command
+        :type args: List of string
         :return: Boolean
         """
-        return self._submit_job('restart.stopped.jobs')
+        return self._submit_job('restart.stopped.jobs', args=args)
         # if not self.config.has_option('MANAGER', 'jobs.restart.exe'):
         #     Utils.warn("[jobs.restart] jobs.restart.exe not set in configuration file. Action aborted.")
         #     return False
@@ -922,14 +924,16 @@ class Manager(object):
         return banks
 
     @user_granted
-    def stop_running_jobs(self):
+    def stop_running_jobs(self, args=None):
         """
         Stop running jobs using bank(s). This calls an external script which must be set
         in the manager.properties configuration file, section JOBS.
 
+        :param args: List of args to pass to the commande
+        :type args: List of string
         :return: Boolean
         """
-        return self._submit_job('stop.running.jobs')
+        return self._submit_job('stop.running.jobs', args=args)
         # if not self.config.has_option('MANAGER', 'jobs.stop.exe'):
         #     Utils.warn("[jobs.stop] jobs.stops.exe not set in configuration file. Action aborted.")
         #     return False
@@ -1040,7 +1044,7 @@ class Manager(object):
 
             :param path: Path of the release to search in
             :type path: String (path)
-            :return: List of formats
+            :return: List of sorted formats
         """
         formats = []
         if not path:
@@ -1056,6 +1060,7 @@ class Manager(object):
                 continue
             for d in dirs:
                 formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
+        formats.sort()
         return formats
 
     @bank_required
@@ -1127,15 +1132,19 @@ class Manager(object):
             Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
         return True
 
-    def _submit_job(self, name):
+    def _submit_job(self, name, args=None):
         """
         Submit a job.
 
         :param name: Name of the defined job in the manager.properties file, section 'JOBS'
         :type name: String
+        :param args: List of args to pass to the commande
+        :type args: List of string
         :return: Boolean
         """
         if not self._check_config_jobs(name):
             return False
-        script, args = self._get_config_jobs(name)
-        return self._run_command(exe=script, args=args)
+        script, cargs = self._get_config_jobs(name)
+        if args:
+            cargs = args
+        return self._run_command(exe=script, args=cargs)

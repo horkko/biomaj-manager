@@ -210,9 +210,10 @@ def main():
             # manager.bank.publish()
             manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
-            manager.load_plugins()
-            if not manager.plugins.bioweb.update_bioweb():
-                Utils.error("[%s] Can't update bioweb history" % manager.bank.name)
+            # This is done by a cron once a week
+            # manager.load_plugins()
+            # if not manager.plugins.bioweb.update_bioweb():
+            #     Utils.error("[%s] Can't update bioweb history" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
         sys.exit(0)

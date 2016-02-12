@@ -267,7 +267,7 @@ class Bioweb(BMPlugin):
             else:
                 res = self.getCollection(collection).update(search_params, {'$set': item},
                                                             upsert=upsert)
-            self._update_documents_count(res)
+            self._update_documents_counts(res)
         self._print_updated_documents()
         return True
 
