@@ -2291,7 +2291,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandCheckConfigStop(self):
-        """Check some config values are ok"""
+        """Check removing info from config file returns False"""
         manager = Manager()
         manager.config.remove_option('JOBS', 'stop.running.jobs.exe')
         # Grant usage for current user
@@ -2303,7 +2303,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandCheckConfigRestart(self):
-        """Check some config values are ok"""
+        """Check removing info from config file returns False"""
         manager = Manager()
         manager.config.remove_option('JOBS', 'restart.stopped.jobs.exe')
         # Grant usage for current user
@@ -2336,7 +2336,7 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.restart_stopped_jobs()
         os.environ["LOGNAME"] = back_log
 
-    @attr('manager')
+    @attr('manager.1')
     @attr('manager.command')
     def test_ManagerCommandStopJobsScriptOK(self):
         """Check restart jobs runs OK"""
@@ -2358,6 +2358,29 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.config.set('JOBS', 'stop.running.jobs.exe', '/nobin/cmd')
         with self.assertRaises(SystemExit):
             manager.stop_running_jobs()
+        os.environ["LOGNAME"] = back_log
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerRunCommandWithExtraArgsOK(self):
+        """Check the addition of extra args onto the command line is OK"""
+        manager = Manager()
+        # Grans usage for current user
+        back_log = os.environ["LOGNAME"]
+        os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
+        self.assertTrue(manager.stop_running_jobs(args=['EXTRA ARGS']))
+        os.environ["LOGNAME"] = back_log
+
+    @attr('manager')
+    @attr('manager.command')
+    def test_ManagerRunCommandWithExtraArgsNotListThrows(self):
+        """Check the method throws exception when extra Args for command line is not a List"""
+        manager = Manager()
+        # Grant usage for current user
+        back_log = os.environ["LOGNAME"]
+        os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
+        with self.assertRaises(SystemExit):
+            manager.stop_running_jobs(args="NOT A LIST FOR ARGS")
         os.environ["LOGNAME"] = back_log
 
     @attr('manager')

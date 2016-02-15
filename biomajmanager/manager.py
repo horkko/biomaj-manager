@@ -107,37 +107,6 @@ class Manager(object):
         """
         return self.bank.get_bank_release_info(full=True)
 
-    # @bank_required
-    # def bank_info(self):
-    #     """
-    #     Prints some information about the bank
-    #     :return:
-    #     """
-    #     props = self.bank.get_properties()
-    #     print("*** Bank %s ***" % self.bank.name)
-    #     Utils.title('Properties')
-    #     print("- Visibility : %s" % props['visibility'])
-    #     print("- Type(s) : %s" % ','.join(props['type']))
-    #     print("- Owner : %s" % props['owner'])
-    #     Utils.title('Releases')
-    #     print("- Current release: %s" % str(self.current_release()))
-    #     if 'production' in self.bank.bank:
-    #         Utils.title('Production')
-    #         for production in self.bank.bank['production']:
-    #             print("- Release %s (freeze:%s, size:%s, prod_dir:%s)" % (production['remoterelease'],
-    #                                                                       str(production['freeze']),
-    #                                                                       str(production['size']),
-    #                                                                       str(production['prod_dir'])))
-    #     pending = self.get_pending_sessions()
-    #     if pending:
-    #         for pend in pending:
-    #             release = pend['release']
-    #             session = pend['session_id']
-    #             if session:
-    #                 Utils.title('Pending')
-    #                 print("- Release %s (Last run %s)" %
-    #                       (str(release), Utils.time2datefmt(session['id'], Manager.DATE_FMT)))
-
     @bank_required
     def bank_is_published(self):
         """
@@ -778,16 +747,6 @@ class Manager(object):
         :return: Boolean
         """
         return self._submit_job('restart.stopped.jobs', args=args)
-        # if not self.config.has_option('MANAGER', 'jobs.restart.exe'):
-        #     Utils.warn("[jobs.restart] jobs.restart.exe not set in configuration file. Action aborted.")
-        #     return False
-        #
-        # script = self.config.get('MANAGER', 'jobs.restart.exe')
-        # if not os.path.exists(script):
-        #     Utils.error("[jobs.restart] script (%s) not found! Action aborted." % script)
-        #args = self.config.get('MANAGER', 'jobs.restart.args')
-        #script = self.config.get('MANAGER', 'jobs.restart.exe')
-        #return self._run_command(exe=script, args=args)
 
     @user_granted
     def save_banks_version(self, file=None):
@@ -934,15 +893,6 @@ class Manager(object):
         :return: Boolean
         """
         return self._submit_job('stop.running.jobs', args=args)
-        # if not self.config.has_option('MANAGER', 'jobs.stop.exe'):
-        #     Utils.warn("[jobs.stop] jobs.stops.exe not set in configuration file. Action aborted.")
-        #     return False
-        #
-        # script = self.config.get('MANAGER', 'jobs.stop.exe')
-        # if not os.path.exists(script):
-        #     Utils.error("[jobs.stop] script (%s) not found! Action aborted." % script)
-        # args = self.config.get('MANAGER', 'jobs.stop.args')
-        # return self._run_command(exe=script, args=[args])
 
     @bank_required
     def update_ready(self):
@@ -1146,5 +1096,8 @@ class Manager(object):
             return False
         script, cargs = self._get_config_jobs(name)
         if args:
-            cargs = args
+            if not isinstance(args, list):
+                Utils.error("'args' params must be a list")
+            else:
+                cargs = args
         return self._run_command(exe=script, args=cargs)
