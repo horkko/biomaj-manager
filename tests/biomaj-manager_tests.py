@@ -951,7 +951,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         """Test we've got a bank name set"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        sections = manager.get_dict_sections('blast2')
+        sections = manager.get_bank_sections('blast2')
         expected = {'nuc': {'dbs': ['alunuc'], 'secs': ['alunuc1', 'alunuc2']},
                     'pro': {'dbs': ['alupro'], 'secs': ['alupro1', 'alupro2']}}
         self.assertDictContainsSubset(expected, sections)
@@ -965,7 +965,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager()
         with self.assertRaises(SystemExit):
-            manager.get_dict_sections('blast2')
+            manager.get_bank_sections('blast2')
         self.utils.drop_db()
 
 
@@ -975,7 +975,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         """Test the user is granted"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        manager.save_banks_version(file=self.utils.test_dir + '/saved_versions.txt')
+        manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         self.utils.drop_db()
 
 
@@ -989,7 +989,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         cuser = os.environ.get('LOGNAME')
         os.environ['LOGNAME'] = "fakeuser"
         with self.assertRaises(SystemExit):
-            manager.save_banks_version(file=self.utils.test_dir + '/saved_versions.txt')
+            manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         # Reset to the right user name as previously
         os.environ['LOGNAME'] = cuser
         self.utils.drop_db()
@@ -1005,7 +1005,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         manager.config.set('GENERAL', 'admin', '')
         manager.bank.bank['properties']['owner'] = ''
         with self.assertRaises(SystemExit):
-            manager.save_banks_version(file=self.utils.test_dir + '/saved_versions.txt')
+            manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         self.utils.drop_db()
 
 
@@ -1350,10 +1350,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Get sections for a bank"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        dsections = manager.get_dict_sections(tool='blast2')
+        returned = manager.get_bank_sections(tool='blast2')
         expected = {'pro': {'dbs': ['alupro'], 'secs': ['alupro1', 'alupro2']},
                     'nuc': {'dbs': ['alunuc'], 'secs': ['alunuc1', 'alunuc2']}}
-        self.assertDictContainsSubset(expected, dsections)
+        self.assertDictContainsSubset(expected, returned)
         self.utils.drop_db()
 
     @attr('manager')
@@ -1362,30 +1362,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Test we've got only sections not db from bank properties"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        sections = manager.get_dict_sections('golden')
+        returned = manager.get_bank_sections(tool='golden')
         expected = {'nuc': {'secs': ['alunuc']},
                     'pro': {'secs': ['alupro']}}
-        self.assertDictContainsSubset(expected, sections)
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.sections')
-    def test_ManagerGetListSectionsGolden(self):
-        """Check we get rigth sections tool bank name for bank"""
-        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        lsections = manager.get_list_sections(tool='golden')
-        self.assertListEqual(lsections, ['alunuc', 'alupro'])
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.sections')
-    def test_ManagerGetListSectionsBlast2(self):
-        """Check we get rigth sections bank and subsection for bank"""
-        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        lsections = manager.get_list_sections(tool='blast2')
-        self.assertListEqual(lsections, ['alunuc', 'alupro', 'alunuc1', 'alunuc2', 'alupro1', 'alupro2'])
+        self.assertDictContainsSubset(expected, returned)
         self.utils.drop_db()
 
     @attr('manager')
@@ -1395,17 +1375,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
-            manager.get_dict_sections()
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.sections')
-    def test_ManagerGetListSectionsNoTool(self):
-        """Get sections for a bank"""
-        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        with self.assertRaises(SystemExit):
-            manager.get_list_sections()
+            manager.get_bank_sections()
         self.utils.drop_db()
 
     @attr('manager')
@@ -1464,8 +1434,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
-    @attr('manager.currentuser')
-    def test_ManagerCurrentUserTestUSEROK(self):
+    @attr('manager.getcurrentuser')
+    def test_ManagerGetCurrentUserTestUSEROK(self):
         """Check we can get USER from environ with LOGNAME unset"""
         backlog = ""
         user = os.getenv('USER')
@@ -1473,18 +1443,18 @@ class TestBioMajManagerManager(unittest.TestCase):
             backlog = os.environ['LOGNAME']
             del os.environ['LOGNAME']
         manager = Manager()
-        self.assertEqual(manager._current_user(), user)
+        self.assertEqual(manager.get_current_user(), user)
         if 'LOGNAME' not in os.environ:
             os.environ['LOGNAME'] = backlog
 
     @attr('manager')
-    @attr('manager.currentuser')
-    def test_ManagerCurrentUserTestUserIsNone(self):
+    @attr('manager.getcurrentuser')
+    def test_ManagerGetCurrentUserTestUserIsNone(self):
         """Check method throws exception when env LOGNAME and USER not found"""
         manager = Manager()
         backup = os.environ.copy()
         os.environ = {}
-        self.assertIsNone(manager._current_user())
+        self.assertIsNone(manager.get_current_user())
         os.environ = backup
 
     @attr('manager')
@@ -1974,7 +1944,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         back_log = os.environ["LOGNAME"]
         os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
-            manager.save_banks_version(file='/not_found/saved_versions.txt')
+            manager.save_banks_version(bank_file='/not_found/saved_versions.txt')
         # Reset to the right user name as previously
         os.environ["LOGNAME"] = back_log
         self.utils.drop_db()
@@ -1992,7 +1962,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.chmod(outputfile, 0000)
         os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
-            manager.save_banks_version(file=outputfile)
+            manager.save_banks_version(bank_file=outputfile)
         # Reset to the right user name as previously
         os.environ["LOGNAME"] = back_log
 
@@ -2026,7 +1996,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Prints on output using simulate mode
         back_patt = Manager.SAVE_BANK_LINE_PATTERN
         Manager.SAVE_BANK_LINE_PATTERN = "%s_%s_%s_%s_%s"
-        manager.save_banks_version(file=outputfile)
+        manager.save_banks_version(bank_file=outputfile)
         line = Manager.SAVE_BANK_LINE_PATTERN % ('alu', "Release " + '54', Utils.time2datefmt(now, Manager.DATE_FMT),
                                                  '100Mo', manager.bank.config.get('server'))
         with open(outputfile, 'r') as of:

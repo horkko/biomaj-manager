@@ -12,7 +12,7 @@ def bank_required(func):
     :return:
     """
     def _check_bank_required(*args, **kwargs):
-        """ Small function to check a bank object is set in BioMAJ Manager instance """
+        """Small function to check a bank object is set in BioMAJ Manager instance"""
         self = args[0]
         if self.bank is None:
             Utils.error("A bank name is required")
@@ -32,7 +32,7 @@ def user_granted(func):
         Check the user has enough right to perform action(s)
         If a bank is set, we first set the user as the owner of
         the current bank. Otherwise we try to find it from the
-        config file, we search for 'user.admin' property
+        config file, we search for 'admin' property
 
         :return: Boolean
         """

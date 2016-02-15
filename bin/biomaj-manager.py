@@ -31,24 +31,24 @@ def main():
     # Options without value
     parser.add_argument('-C', '--clean_links', dest="clean_links", help="Remove old links (Permissions required)",
                         action="store_true", default=False)
-    parser.add_argument('-D', '--save_versions', dest="save_versions", help="Prints info about all banks into version file.\
-                                                                             (Requires permissions)",
+    parser.add_argument('-D', '--save_versions', dest="save_versions",
+                        help="Prints info about all banks into version file. (Requires permissions)",
                         action="store_true", default=False)
     parser.add_argument('-H', '--history', dest="history", help="Prints banks releases history. [-b] available.",
                         action="store_true", default=False)
     parser.add_argument('-i', '--info', dest="info", help="Print info about a bank. [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-J', '--check_links', dest="check_links", help="Check if the bank required symlinks to be created\
-                                                                         (Permissions required). [-b REQUIRED]",
+    parser.add_argument('-J', '--check_links', dest="check_links",
+                        help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-l', '--links', dest="links", help="Just (re)create symlink, don't do any bank switch.\
-                                                             (Permissions required). [-b REQUIRED]",
+    parser.add_argument('-l', '--links', dest="links",
+                        help="Just (re)create symlink, don't do any bank switch. (Permissions required). [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-L', '--bank_formats', dest="bank_formats", help="List supported formats and index for each banks.\
-                                                                           [-b] available.",
+    parser.add_argument('-L', '--bank_formats', dest="bank_formats",
+                        help="List supported formats and index for each banks. [-b] available.",
                         action="store_true", default=False)
-    parser.add_argument('-M', '--to_mongo', dest="to_mongo", help="[SPECIFIC] Load bank(s) history into mongo database (bioweb).\
-                                                                   [-b and --db_type REQUIRED]",
+    parser.add_argument('-M', '--to_mongo', dest="to_mongo",
+                        help="[SPECIFIC] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
                         action="store_true", default=False)
     parser.add_argument('-N', '--news', dest="news", help="Create news to display at BiomajWatcher. [Default output txt]",
                         action="store_true", default=False)
@@ -60,9 +60,9 @@ def main():
                         action="store_true", default=False)
     parser.add_argument('-X', '--test', dest="test", help="Test method. [-b REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-U', '--show_update', dest="show_update", help="If -b passed prints if bank needs to be updated.\
-                                                                         Otherwise, prints all bank that need to be updated.\
-                                                                          [-b] available.",
+    parser.add_argument('-U', '--show_update', dest="show_update",
+                        help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that\
+                              need to be updated. [-b] available.",
                         action="store_true", default=False)
     parser.add_argument('-v', '--version', dest="version", help="Show version",
                         action="store_true", default=False)
@@ -76,7 +76,6 @@ def main():
     parser.add_argument('-F', '--format', dest="oformat", help="Output format. Supported [csv, html, json, txt]")
     parser.add_argument('-T', '--templates', dest="template_dir", help="Template directory. Overwrites template_dir")
     parser.add_argument('-S', '--section', dest="tool", help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
-
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -164,28 +163,34 @@ def main():
         sys.exit(0)
 
     if options.pending:
+        # if not options.bank:
+        #     Utils.error("A bank name is required")
+        # manager = Manager(bank=options.bank)
+        bank_list = []
         if not options.bank:
-            Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank)
-
-        # Support output to stdout
-        pending = manager.get_pending_sessions()
-        if options.oformat:
-            writer = Writer(config=manager.config, output_format=options.oformat)
-            writer.write(file='pending' + '.' + options.oformat, data={'pending': pending})
+            bank_list = Manager.get_bank_list()
         else:
+            bank_list.append(options.bank)
+
+        info = []
+        for bank in bank_list:
+            manager = Manager(bank=bank)
+            pending = manager.get_pending_sessions()
             if pending:
-                info = []
-                for pend in pending:
-                    release = pend['release']
-                    sess_id = pend['session_id']
-                    date = Utils.time2datefmt(sess_id, Manager.DATE_FMT)
-                    info.append(["Release", "Run time"])
-                    info.append([str(release), str(date)])
-                print("[%s] Pending session" % manager.bank.name)
-                print(tabulate(info, headers="firstrow", tablefmt='psql'))
-            else:
-                print("[%s] No pending session" % manager.bank.name)
+                if options.oformat:
+                    writer = Writer(config=manager.config, output_format=options.oformat)
+                    writer.write(file='pending' + '.' + options.oformat, data={'pending': pending})
+                else:
+                    for pend in pending:
+                        release = pend['release']
+                        sess_id = pend['session_id']
+                        date = Utils.time2datefmt(sess_id, Manager.DATE_FMT)
+                        info.append([bank, str(release), str(date)])
+        if info:
+            info.insert(0, ["Bank", "Release", "Run time"])
+            print(tabulate(info, headers='firstrow', tablefmt='psql'))
+        else:
+            print("No pending session")
         sys.exit(0)
 
     if options.save_versions:
@@ -210,10 +215,6 @@ def main():
             # manager.bank.publish()
             manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
-            # This is done by a cron once a week
-            # manager.load_plugins()
-            # if not manager.plugins.bioweb.update_bioweb():
-            #     Utils.error("[%s] Can't update bioweb history" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
         sys.exit(0)
@@ -228,7 +229,6 @@ def main():
     if options.to_mongo:
         if not options.db_type:
             Utils.error("--db_type required")
-
         bank_list = []
         if not options.bank:
             bank_list = Manager.get_bank_list()
@@ -250,9 +250,14 @@ def main():
         if not options.bank:
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
-        sections = manager.get_list_sections(tool=options.tool)
+        sections = manager.get_bank_sections(tool=options.tool)
         print("%s section(s) for %s:" % (str(options.tool), options.bank))
-        print("\n".join(sections))
+        for alpha in sections.keys():
+            if 'dbs' in sections[alpha]:
+                print("db : %s" % ",".join(sections[alpha]['dbs']))
+            if 'secs' in sections[alpha]:
+                print("section(s) : %s" % ",".join(sections[alpha]['secs']))
+
         sys.exit(0)
 
     if options.version:

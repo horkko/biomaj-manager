@@ -34,7 +34,10 @@ class Manager(object):
         Manager instance creation
 
         :param bank: Bank name
-        :param config: Configuration file (global.properties)
+        :param cfg: Manager Configuration file (manager.properties)
+        :type cfg: String
+        :param globa_cfg: Global configuration file (global.properties)
+        :type global_cfg: String
         :return:
         """
         # Our bank
@@ -270,6 +273,50 @@ class Manager(object):
         return packages
 
     @bank_required
+    def get_bank_sections(self, tool=None):
+        """
+        Get the 'supported' indexes sections available for the bank. Each defined indexes section may have its own
+        subsection(s). By default, it returns the info as a dictionary.
+
+        :param tool: Name of the index to search section(s) for
+        :type tool: String
+        :return: Dict of List
+        """
+        if tool is None:
+            Utils.error("A tool name is required to retrieve section(s) info")
+        dbs = {}
+        ndbs = 'db.%s.nuc' % tool
+        pdbs = 'db.%s.pro' % tool
+        nsec = ndbs + '.sections'
+        psec = pdbs + '.sections'
+
+        if self.bank.config.get(ndbs):
+            dbs['nuc'] = {'dbs': []}
+            for sec in self.bank.config.get(ndbs).replace('\\', '').replace('\n', '').split(','):
+                if sec and sec != '':
+                    dbs['nuc']['dbs'].append(sec)
+        if self.bank.config.get(pdbs):
+            dbs['pro'] = {'dbs': []}
+            for sec in self.bank.config.get(pdbs).replace('\\', '').replace('\n', '').split(','):
+                if sec and sec != '':
+                    dbs['pro']['dbs'].append(sec)
+        if self.bank.config.get(nsec):
+            if 'nuc' not in dbs:
+                dbs['nuc'] = {}
+            dbs['nuc']['secs'] = []
+            for sec in self.bank.config.get(nsec).replace('\\', '').replace('\n', '').split(','):
+                if sec and sec != '':
+                    dbs['nuc']['secs'].append(sec)
+        if self.bank.config.get(psec):
+            if 'pro' not in dbs:
+                dbs['pro'] = {}
+            dbs['pro']['secs'] = []
+            for sec in self.bank.config.get(psec).replace('\\', '').replace('\n', '').split(','):
+                if sec and sec != '':
+                    dbs['pro']['secs'].append(sec)
+        return dbs
+
+    @bank_required
     def get_current_link(self):
         """
         Return the the path of the bank 'current' version symlink
@@ -297,7 +344,8 @@ class Manager(object):
             elif 'data_dir' in prod and 'prod_dir' in prod:
                 return os.path.join(prod['data_dir'], self.bank.name, prod['prod_dir'])
             else:
-                Utils.error("Can't get current production directory, 'prod_dir' or 'data_dir' missing in production document field")
+                Utils.error("Can't get current production directory, 'prod_dir' or 'data_dir' " +
+                            "missing in production document field")
         else:
             Utils.error("Can't get current production directory: 'current_release' not available")
 
@@ -330,54 +378,14 @@ class Manager(object):
                         values.append(key)
         return values
 
-    @bank_required
-    def get_dict_sections(self, tool=None):
+    def get_current_user(self):
         """
-        Get the "supported" blast2/golden indexes for this bank
-        Each bank can have some sub sections. This method return
-        them as a dictionary
+        Get the user name from the environment
 
-        :param tool: Name of the index to search
-        :type tool: String
-        :return: If info defined,
-                 dictionary with section(s) and bank(s)
-                 sorted by type(nuc/pro)
-                 Otherwise empty dict
+        :return: Logname or None if not found
+        :rtype: String or None
         """
-        if tool is None:
-            Utils.error("A tool name is required to retrieve virtual info")
-
-        ndbs = 'db.%s.nuc' % tool
-        pdbs = 'db.%s.pro' % tool
-        nsec = ndbs + '.sections'
-        psec = pdbs + '.sections'
-        dbs = {}
-
-        if self.bank.config.get(ndbs):
-            dbs['nuc'] = {'dbs': []}
-            for sec in self.bank.config.get(ndbs).split(','):
-                if sec and sec != '':
-                    dbs['nuc']['dbs'].append(sec)
-        if self.bank.config.get(pdbs):
-            dbs['pro'] = {'dbs': []}
-            for sec in self.bank.config.get(pdbs).split(','):
-                if sec and sec != '':
-                    dbs['pro']['dbs'].append(sec)
-        if self.bank.config.get(nsec):
-            if 'nuc' not in dbs:
-                dbs['nuc'] = {}
-            dbs['nuc']['secs'] = []
-            for sec in self.bank.config.get(nsec).split(','):
-                if sec and sec != '':
-                    dbs['nuc']['secs'].append(sec)
-        if self.bank.config.get(psec):
-            if 'pro' not in dbs:
-                dbs['pro'] = {}
-            dbs['pro']['secs'] = []
-            for sec in self.bank.config.get(psec).split(','):
-                if sec and sec != '':
-                    dbs['pro']['secs'].append(sec)
-        return dbs
+        return self._current_user()
 
     @bank_required
     def get_future_link(self):
@@ -392,42 +400,6 @@ class Manager(object):
                             'future_release')
 
     @bank_required
-    def get_list_sections(self, tool=None):
-        """
-        Get the "supported" blast2/golden indexes for this bank
-        Each bank can have some sub sections.
-
-        :param tool: Name of the index to search
-        :type tool: String
-        :return: If info defined,
-                 list of bank(s)/section(s) found
-                 Otherwise empty list
-        """
-        if tool is None:
-            Utils.error("A tool name is required to retrieve virtual info")
-
-        ndbs = 'db.%s.nuc' % tool
-        pdbs = 'db.%s.pro' % tool
-        nsec = ndbs + '.sections'
-        psec = pdbs + '.sections'
-        dbs = []
-
-        if self.bank.config.get(ndbs):
-            for sec in self.bank.config.get(ndbs).split(','):
-                dbs.append(sec)
-        if self.bank.config.get(pdbs):
-            for sec in self.bank.config.get(pdbs).split(','):
-                dbs.append(sec)
-        if self.bank.config.get(nsec):
-            for sec in self.bank.config.get(nsec).split(','):
-                dbs.append(sec.replace('\\', '').replace('\n', ''))
-        if self.bank.config.get(psec):
-            for sec in self.bank.config.get(psec).split(','):
-                dbs.append(sec.replace('\\', '').replace('\n', ''))
-
-        return dbs
-
-    @bank_required
     def get_pending_sessions(self):
         """
         Request the database to check if some session(s) is/are pending to complete
@@ -439,7 +411,6 @@ class Manager(object):
             has_pending = self.bank.bank['pending']
             for k, v in has_pending.items():
                 pending.append({'release': k, 'session_id': v})
-
         return pending
 
     @bank_required
@@ -472,7 +443,7 @@ class Manager(object):
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             for session in self.bank.bank['sessions']:
                 if session_id == session['id']:
-                   sess = session
+                    sess = session
         return sess
 
     @staticmethod
@@ -749,21 +720,21 @@ class Manager(object):
         return self._submit_job('restart.stopped.jobs', args=args)
 
     @user_granted
-    def save_banks_version(self, file=None):
+    def save_banks_version(self, bank_file=None):
         """
         Save versions of bank when switching bank version (publish)
 
-        :param file: Path to save banks version (String)
+        :param bank_file: Path to save banks version (String)
         :return: 0
         :raise: Exception
         """
-        if not file:
-            file = os.path.join(self.bank_prod,
-                                'doc',
-                                'versions',
-                                'version.' + datetime.now().strftime("%Y-%m-%d"))
+        if not bank_file:
+            bank_file = os.path.join(self.bank_prod,
+                                     'doc',
+                                     'versions',
+                                     'version.' + datetime.now().strftime("%Y-%m-%d"))
         # Check path exists
-        directory = os.path.dirname(file)
+        directory = os.path.dirname(bank_file)
         if not os.path.isdir(directory):
             try:
                 os.makedirs(directory)
@@ -773,7 +744,7 @@ class Manager(object):
         try:
             banks = Manager.get_bank_list()
             FILE_PATTERN = Manager.SAVE_BANK_LINE_PATTERN
-            with open(file, mode='w') as fv:
+            with open(bank_file, mode='w') as fv:
                 for bank in banks:
                     bank = Bank(name=bank, no_log=True)
                     if 'current' in bank.bank and bank.bank['current'] and 'production' in bank.bank:
@@ -782,7 +753,7 @@ class Manager(object):
                                 # bank / release / creation / size / remote server
                                 file_line = FILE_PATTERN % (bank.name, "Release " + prod['release'],
                                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
-                                                            str(prod['size']) if 'size' in prod and prod['size'] else "NA",
+                                                            str(prod['size']) if 'size' in prod and prod['size'] else 'NA',
                                                             bank.config.get('server'))
                                 if Manager.simulate:
                                     print(file_line)
@@ -850,15 +821,11 @@ class Manager(object):
         return Manager.verbose
 
     @bank_required
-    def show_pending_sessions(self, show=False, fmt="psql"):
+    def show_pending_sessions(self):
         """
         Check if some session are pending
 
-        :param show: Print the results
-        :type show: Boolean, default=False
-        :param fmt: Output format for tabulate, default psql
-        :type fmt: String
-        :return: self.get_pending_sessions()
+        :return: See get_pending_sessions()
         """
         return self.get_pending_sessions()
 
@@ -949,10 +916,6 @@ class Manager(object):
         elif 'USER' in os.environ:
             logname = os.getenv('USER')
         return logname
-        #current_user = logname
-        #if not current_user:
-        #    Utils.error("Can't find current user name")
-        #return current_user
 
     def _check_config_jobs(self, name):
         """
