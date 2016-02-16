@@ -1363,8 +1363,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         returned = manager.get_bank_sections(tool='golden')
-        expected = {'nuc': {'secs': ['alunuc']},
-                    'pro': {'secs': ['alupro']}}
+        expected = {'nuc': {'secs': ['alunuc'], 'dbs': []},
+                    'pro': {'secs': ['alupro'], 'dbs': []}}
         self.assertDictContainsSubset(expected, returned)
         self.utils.drop_db()
 

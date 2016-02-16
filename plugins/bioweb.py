@@ -298,12 +298,7 @@ class Bioweb(BMPlugin):
     def _print_updated_documents(self):
         """
         Print a small report of action(s) done duinrg the update
-        :param matched: Number of documents matched based on filtering query
-        :type matched: Int
-        :param modified: Number of documents updated during update
-        :type modified: Int
-        :param upserted: Number of new documents created (using 'upsert') during update
-        :type upserted: Int
+
         :return: Boolean
         """
         if not self.get_manager().get_verbose():

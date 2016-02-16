@@ -284,37 +284,25 @@ class Manager(object):
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
-        dbs = {}
+        sections = {}
         ndbs = 'db.%s.nuc' % tool
         pdbs = 'db.%s.pro' % tool
         nsec = ndbs + '.sections'
         psec = pdbs + '.sections'
 
-        if self.bank.config.get(ndbs):
-            dbs['nuc'] = {'dbs': []}
-            for sec in self.bank.config.get(ndbs).replace('\\', '').replace('\n', '').split(','):
-                if sec and sec != '':
-                    dbs['nuc']['dbs'].append(sec)
-        if self.bank.config.get(pdbs):
-            dbs['pro'] = {'dbs': []}
-            for sec in self.bank.config.get(pdbs).replace('\\', '').replace('\n', '').split(','):
-                if sec and sec != '':
-                    dbs['pro']['dbs'].append(sec)
-        if self.bank.config.get(nsec):
-            if 'nuc' not in dbs:
-                dbs['nuc'] = {}
-            dbs['nuc']['secs'] = []
-            for sec in self.bank.config.get(nsec).replace('\\', '').replace('\n', '').split(','):
-                if sec and sec != '':
-                    dbs['nuc']['secs'].append(sec)
-        if self.bank.config.get(psec):
-            if 'pro' not in dbs:
-                dbs['pro'] = {}
-            dbs['pro']['secs'] = []
-            for sec in self.bank.config.get(psec).replace('\\', '').replace('\n', '').split(','):
-                if sec and sec != '':
-                    dbs['pro']['secs'].append(sec)
-        return dbs
+        for key in ['nuc', 'pro']:
+            dbname = 'db.%s.%s' % (tool, key)
+            secname = dbname + '.sections'
+            sections[key] = {'dbs': [], 'secs': []}
+            if self.bank.config.get(dbname):
+                for db in self.bank.config.get(dbname).replace('\\', '').replace('\n', '').split(','):
+                    if db and db != '':
+                        sections[key]['dbs'].append(db)
+            if self.bank.config.get(secname):
+                for db in self.bank.config.get(secname).replace('\\', '').replace('\n', '').split(','):
+                    if db and db != '':
+                        sections[key]['secs'].append(db)
+        return sections
 
     @bank_required
     def get_current_link(self):
