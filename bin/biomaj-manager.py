@@ -199,9 +199,19 @@ def main():
         sys.exit(0)
 
     if options.show_update:
-        manager = Manager()
+        manager = Manager(bank=options.bank)
         updates = manager.show_need_update()
-        print(updates)
+        if updates.keys():
+            info = []
+            #info.append(["Bank", "Current release", "Next release"])
+            for bank in sorted(updates.keys()):
+                info.append([bank, updates[bank]['current_release'], updates[bank]['next_release']])
+            if len(info):
+                info.insert(0, ["Bank", "Current release", "Next release"])
+                print(tabulate(info, headers='firstrow', tablefmt='psql'))
+        else:
+            print("No bank need to be updated")
+
         sys.exit(0)
 
     if options.switch:

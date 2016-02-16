@@ -52,6 +52,8 @@ class Manager(object):
         self.bank_prod = None
         # Current release of the bank
         self._current_release = None
+        # Next release of the bank
+        self._next_release = None
         # Previous release of the bank
         self._previous_release = None
         # Some messages to buffer
@@ -130,12 +132,14 @@ class Manager(object):
         """
         # Bank is updating?
         if self.bank.is_locked():
-            print("[%s] Can't switch, bank is being updated" % self.bank.name, file=sys.stderr)
+            if Manager.get_verbose():
+                print("[%s] Can't switch, bank is being updated" % self.bank.name, file=sys.stderr)
             return False
         # If there is no published bank yet, ask the user to do it first. Can't switch to new release version
         # if no bank is published yet
         if not self.bank_is_published():
-            print("[%s] There's no published bank yet. Publish it first" % self.bank.name, file=sys.stderr)
+            if Manager.get_verbose():
+                print("[%s] There's no published bank yet. Publish it first" % self.bank.name, file=sys.stderr)
             return False
 
         # Bank construction failed?
@@ -144,7 +148,8 @@ class Manager(object):
             return False
 
         if not self.update_ready():
-            print("[%s] Can't switch, bank is not ready" % self.bank.name, file=sys.stderr)
+            if Manager.get_verbose():
+                print("[%s] Can't switch, bank is not ready" % self.bank.name, file=sys.stderr)
             return False
         return True
 
@@ -163,10 +168,10 @@ class Manager(object):
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
             session = self.get_session_from_id(self.bank.bank['current'])
-            if session and 'release' in session and session['release']:
-                release = session['release']
-            elif session and 'remoterelease' in session and session['remoterelease']:
+            if session and 'remoterelease' in session and session['remoterelease']:
                 release = session['remoterelease']
+            elif session and 'release' in session and session['release']:
+                release = session['release']
             if release:
                 current = release
         # Then we fallback to production which handle release(s) that have been
@@ -284,12 +289,8 @@ class Manager(object):
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
-        sections = {}
-        ndbs = 'db.%s.nuc' % tool
-        pdbs = 'db.%s.pro' % tool
-        nsec = ndbs + '.sections'
-        psec = pdbs + '.sections'
 
+        sections = {}
         for key in ['nuc', 'pro']:
             dbname = 'db.%s.%s' % (tool, key)
             secname = dbname + '.sections'
@@ -374,6 +375,33 @@ class Manager(object):
         :rtype: String or None
         """
         return self._current_user()
+
+    @staticmethod
+    def get_formats_for_release(path=None):
+        """
+            Get all the formats supported for a bank (path).
+
+            :param path: Path of the release to search in
+            :type path: String (path)
+            :return: List of sorted formats
+        """
+        formats = []
+        if not path:
+            Utils.error("A path is required")
+        if not os.path.exists(path):
+            Utils.warn("Path %s does not exist" % path)
+            return formats
+
+        for pathdir, dirs, _ in os.walk(path):
+            if pathdir == path or not len(dirs):
+                continue
+            if pathdir == 'flat':
+                continue
+            for d in dirs:
+                formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
+        formats.sort()
+        return formats
+
 
     @bank_required
     def get_future_link(self):
@@ -583,8 +611,9 @@ class Manager(object):
         if pending and update_id:
             for pend in pending:
                 if pend['session_id'] == update_id:
-                    Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first!" %
-                               (self.bank.name, pend['release']))
+                    if Manager.get_verbose():
+                        Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first!" %
+                                    (self.bank.name, pend['release']))
                 has_failed = True
                 return has_failed
 
@@ -695,6 +724,34 @@ class Manager(object):
                             })
         return history
 
+    @bank_required
+    def next_release(self):
+        """
+        Get the next bank release version from the database if available
+
+        :return: String or None
+        """
+        if self._next_release:
+            return self._next_release
+        next_release = None
+        # If we have a current release set, we need to check the last session from sessions
+        # which are not current and not in production
+        if 'current' in self.bank.bank and self.bank.bank['current']:
+            if 'sessions' not in self.bank.bank:
+                Utils.error("Can't determine next_release, no sessions available!")
+            current_id = self.bank.bank['current']
+            rev_sessions = self.bank.bank['sessions']
+            rev_sessions.reverse()
+            for session in rev_sessions:
+                if session['id'] == current_id:
+                    continue
+                # Pending sessions are excluded
+                if 'status' in session and 'over' in session['status'] and session['status']['over']:
+                    next_release = session['remoterelease']
+                    break
+        self._next_release = next_release
+        return self._next_release
+
     @user_granted
     def restart_stopped_jobs(self, args=None):
         """
@@ -741,7 +798,8 @@ class Manager(object):
                                 # bank / release / creation / size / remote server
                                 file_line = FILE_PATTERN % (bank.name, "Release " + prod['release'],
                                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
-                                                            str(prod['size']) if 'size' in prod and prod['size'] else 'NA',
+                                                            str(prod['size']) if 'size' in prod and prod['size']
+                                                                              else 'NA',
                                                             bank.config.get('server'))
                                 if Manager.simulate:
                                     print(file_line)
@@ -826,14 +884,14 @@ class Manager(object):
         banks = {}
         if self.bank:
             if self.can_switch():
-                banks[self.bank.name] = self.bank
+                banks[self.bank.name] = {'current_release': self.current_release(), 'next_release': self.next_release()}
             return banks
 
         banks_list = Manager.get_bank_list()
         for bank in banks_list:
             self.bank = Bank(name=bank, no_log=True)
             if self.can_switch():
-                banks[self.bank.name] = self.bank
+                banks[bank] = {'current_release': self.current_release(), 'next_release': self.next_release()}
             self.bank = None
         return banks
 
@@ -852,11 +910,9 @@ class Manager(object):
     @bank_required
     def update_ready(self):
         """
-        Check the update is ready to be published. Do to this we search in this order:
-        - Check a release is already published. If so, check it is not the last updated session
-        - Check if we have a 'status' entry and its over.status is true, meaning update went ok
-        db.banks.current not 'null' and we search for the most recent completed session to
-        retrieve its release. Once found, we set it to the be the future release to be published
+        Check the bank release is ready to be published. To do this, we search for the last session that
+        completed OK. We then search in banks.status first, meaning the last ran session completed OK.
+        Otherwise, we loop over the session from the end, until we find a session that completed OK.
 
         :return: Boolean
         """
@@ -872,23 +928,42 @@ class Manager(object):
             # This means that we did not updated bank since last publish
             if current_id == last_update_id:
                 ready = False
-                Utils.warn("[%s] There is not update ready to be published. Last session is already online" % self.bank.name)
+                if Manager.get_verbose():
+                    Utils.warn(("[%s] There is not update ready to be published. " +
+                               "Last session is already online") % self.bank.name)
             else:
                 ready = True
+        # We then search from the last session
+        elif 'status' in self.bank.bank and self.bank.bank['status']:
+            if self.bank.bank['status']['over']:
+                ready = True
+        # We then search into sessions for a completed OK session
+        elif 'sessions' in self.bank.bank and len(self.bank.bank['sessions']):
+            sessions = self.bank.bank['sessions']
+            sessions.reverse()
+            for session in sessions:
+                if 'status' in session and 'over' in session['status'] and session['status']['over']:
+                    ready = True
+                    self._next_release = session['remoterelease']
+                    break
         # We first search for the last completed run. It should be in production
         # We can search on status. If not in status, then it could be coming from
         # a fresh migration (biomaj-migrate does not set status)
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
             # An entry in production means we've completed the update workflow
-            for production in self.bank.bank['production']:
-                if last_update_id == production['session']:
-                    session = self.get_session_from_id(last_update_id)
-                    if session:
-                        if 'over' in session['status']:
-                            ready = session['status']['over']
+            # In case of a fresh biomaj-migrate, status not set, we consider
+            ready = True
+            # for production in self.bank.bank['production']:
+            #     if last_update_id == production['session']:
+            #         session = self.get_session_from_id(last_update_id)
+            #         # We search for status in session
+            #         if session and 'over' in session['status']:
+            #             ready = session['status']['over']
+            #         # In case of a fresh biomaj-migrate, status not set, we consider
+            #         # production status to True
+            #         else:
+            #             ready = True
         return ready
-
-    """Private methods"""
 
     def _current_user(self):
         """
@@ -939,31 +1014,6 @@ class Manager(object):
         script = self.config.get('JOBS', "%s.exe" % name)
         return script, args
 
-    def _get_formats_for_release(self, path=None):
-        """
-            Get all the formats supported for a bank (path).
-
-            :param path: Path of the release to search in
-            :type path: String (path)
-            :return: List of sorted formats
-        """
-        formats = []
-        if not path:
-            Utils.error("A path is required")
-        if not os.path.exists(path):
-            Utils.warn("Path %s does not exist" % path)
-            return formats
-
-        for pathdir, dirs, _ in os.walk(path):
-            if pathdir == path or not len(dirs):
-                continue
-            if pathdir == 'flat':
-                continue
-            for d in dirs:
-                formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
-        formats.sort()
-        return formats
-
     @bank_required
     def _get_last_session(self):
         """
@@ -995,12 +1045,6 @@ class Manager(object):
 
         if exe is None:
             Utils.error("Can't run command, no exe provided")
-        # if quiet:
-        #     stdout = open(os.devnull, 'wb')
-        #     stderr = open(os.devnull, 'wb')
-        # else:
-        #     stdout = subprocess.PIPE
-        #     stderr = subprocess.PIPE
         stdout = subprocess.PIPE
         stderr = subprocess.PIPE
         if self.config.has_option('JOBS', 'jobs.sleep.time'):

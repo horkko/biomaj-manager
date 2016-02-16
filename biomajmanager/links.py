@@ -114,7 +114,7 @@ class Links(object):
         self._generate_files_link(source='blast2', target='index/blast2')
         self._generate_files_link(source='hmmer', target='index/hmmer')
         self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
-        self._generate_files_link(source='bdb', target='index/bdb', no_ext=True)
+        self._generate_files_link(source='bdb', target='index/bdb', remove_ext=True)
         return self.created_links
 
 
@@ -226,7 +226,8 @@ class Links(object):
                             else:
                                 os.symlink(source_link, tlink)
                     except OSError as err:
-                        Utils.error("[%s] Can't create %slink %s: %s" %(self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
+                        Utils.error("[%s] Can't create %slink %s: %s" %
+                                    (self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
                     self.add_link()
         return self.created_links
 

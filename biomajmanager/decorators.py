@@ -45,7 +45,7 @@ def user_granted(func):
         if not admin:
             Utils.error("Could not find admin user either in config nor in bank")
 
-        user = self._current_user()
+        user = self.get_current_user()
 
         if admin != user:
             Utils.error("[%s] User %s, permission denied" % (admin, user))

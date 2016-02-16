@@ -1727,24 +1727,21 @@ class TestBioMajManagerManager(unittest.TestCase):
             if directory == 'flat':
                 continue
             expected.append('@'.join(['pack'] + directory.split('/')))
-        manager = Manager()
-        returned = manager._get_formats_for_release(path=self.utils.data_dir)
+        returned = Manager.get_formats_for_release(path=self.utils.data_dir)
         self.assertListEqual(expected, returned)
 
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleaseRaises(self):
         """Check method throws error"""
-        manager = Manager()
         with self.assertRaises(SystemExit):
-            manager._get_formats_for_release()
+            Manager.get_formats_for_release()
 
     @attr('manager')
     @attr('manager.getformatsforrelease')
     def test_ManagerGetFormatsForReleasePathNotExistsEmptyList(self):
         """Check method throws error"""
-        manager = Manager()
-        returned = manager._get_formats_for_release(path="/not_found")
+        returned = Manager.get_formats_for_release(path="/not_found")
         self.assertListEqual(returned, [])
 
     @attr('manager')
@@ -2024,6 +2021,43 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.nextrelease')
+    def test_ManagerNextReleaseAlreadySet(self):
+        """Check we directly return next_release if already set"""
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager._next_release = '55'
+        self.assertEqual(manager.next_release(), '55')
+        self.utils.drop_db()
+
+    @attr('manager.1')
+    @attr('manager.nextrelease')
+    def test_ManagerNextReleaseThrowsNoSessions(self):
+        """Check method throws an exception if no 'sessions'"""
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        del manager.bank.bank['sessions']
+        with self.assertRaises(SystemExit):
+            manager.next_release()
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.nextrelease')
+    def test_ManagerNextReleasePassesContinue(self):
+        """Check method continue when session['id'] == 'current'"""
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
+        manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55', 'status': {'over': True}})
+        manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '56', 'status': {'over': True}})
+        self.assertEqual('55', manager.next_release())
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.setbank')
     def test_ManagerSetBankOK(self):
         """Check method checks are ok"""
@@ -2094,6 +2128,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check manager.can_switch returns False because bank is locked"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        manager.set_verbose(True)
         lock_file = os.path.join(manager.bank.config.get('lock.dir'), manager.bank.name + '.lock')
         with open(lock_file, 'a'):
             self.assertFalse(manager.can_switch())
@@ -2123,8 +2158,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         # setting current to None means no current bank published.
         alu.bank.bank['current'] = now
         alu.bank.bank['last_update_session'] = now + 1
+        alu.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
+        alu.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55', 'status': {'over': True}})
         returned = alu.show_need_update()
-        self.assertDictEqual(returned, {'alu': alu.bank})
+        self.assertDictEqual(returned, {'alu': {'current_release': '54', 'next_release': '55'}})
 
     @attr('manager')
     @attr('manager.showneedupdate')
@@ -2166,6 +2203,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         # We set 'current' field to avoid to return False with 'bank_is_published'
         now = time.time()
+        manager.set_verbose(True)
         # To be sure we set 'current' from MongoDB to null
         manager.bank.bank['current'] = now
         manager.bank.bank['last_update_session'] = now
@@ -2230,6 +2268,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
+        manager.set_verbose(True)
         manager.bank.bank['current'] = now
         manager.bank.bank['last_update_session'] = now
         self.assertFalse(manager.update_ready())
@@ -2238,14 +2277,42 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.updateready')
     def test_ManagerBankUpdateReadyWithProductionTrue(self):
-        """Check the method returns False"""
+        """Check the method returns False searching for production"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
         del manager.bank.bank['current']
         manager.bank.bank['last_update_session'] = now
         manager.bank.bank['production'].append({'session': now})
-        manager.bank.bank['sessions'].append({'id': now, 'status': {'over': True}})
+        self.assertTrue(manager.update_ready())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithStatusTrue(self):
+        """Check the method returns using 'status'"""
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        del manager.bank.bank['current']
+        manager.bank.bank['last_update_session'] = now
+        if 'status' not in manager.bank.bank:
+            manager.bank.bank['status'] = {'over': True}
+        self.assertTrue(manager.update_ready())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithSessionsTrue(self):
+        """Check the method returns using 'sessions'"""
+        self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        del manager.bank.bank['current']
+        manager.bank.bank['last_update_session'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
+        manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55',
+                                              'status': {'over': True}})
         self.assertTrue(manager.update_ready())
         self.utils.drop_db()
 
@@ -2306,7 +2373,7 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.restart_stopped_jobs()
         os.environ["LOGNAME"] = back_log
 
-    @attr('manager.1')
+    @attr('manager')
     @attr('manager.command')
     def test_ManagerCommandStopJobsScriptOK(self):
         """Check restart jobs runs OK"""
