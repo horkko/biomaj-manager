@@ -293,7 +293,7 @@ class Manager(object):
         for key in ['nuc', 'pro']:
             dbname = 'db.%s.%s' % (tool, key)
             secname = dbname + '.sections'
-            sections[key] = {'dbs': [], 'secs': []}
+            sections[key] = {'dbs': [], 'sections': []}
             if self.bank.config.get(dbname):
                 for db in self.bank.config.get(dbname).replace('\\', '').replace('\n', '').split(','):
                     if db and db != '':
@@ -301,7 +301,7 @@ class Manager(object):
             if self.bank.config.get(secname):
                 for db in self.bank.config.get(secname).replace('\\', '').replace('\n', '').split(','):
                     if db and db != '':
-                        sections[key]['secs'].append(db)
+                        sections[key]['sections'].append(db)
         return sections
 
     @bank_required

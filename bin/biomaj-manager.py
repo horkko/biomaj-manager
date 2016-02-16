@@ -251,13 +251,11 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
         sections = manager.get_bank_sections(tool=options.tool)
-        print("%s section(s) for %s:" % (str(options.tool), options.bank))
+        print("[%s] %s dbs and section(s):" % (options.bank, str(options.tool)))
         for alpha in sections.keys():
-            if 'dbs' in sections[alpha]:
-                print("db : %s" % ",".join(sections[alpha]['dbs']))
-            if 'secs' in sections[alpha]:
-                print("section(s) : %s" % ",".join(sections[alpha]['secs']))
-
+            for type_name in sections[alpha].keys():
+                if type_name in sections[alpha] and sections[alpha][type_name]:
+                    print("[%s] %s: %s" % (alpha, type_name, ", ".join(sections[alpha][type_name])))
         sys.exit(0)
 
     if options.version:

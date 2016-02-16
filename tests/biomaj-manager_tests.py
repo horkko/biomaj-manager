@@ -952,8 +952,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         sections = manager.get_bank_sections('blast2')
-        expected = {'nuc': {'dbs': ['alunuc'], 'secs': ['alunuc1', 'alunuc2']},
-                    'pro': {'dbs': ['alupro'], 'secs': ['alupro1', 'alupro2']}}
+        expected = {'nuc': {'dbs': ['alunuc'], 'sections': ['alunuc1', 'alunuc2']},
+                    'pro': {'dbs': ['alupro'], 'sections': ['alupro1', 'alupro2']}}
         self.assertDictContainsSubset(expected, sections)
         self.utils.drop_db()
 
@@ -1351,8 +1351,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         returned = manager.get_bank_sections(tool='blast2')
-        expected = {'pro': {'dbs': ['alupro'], 'secs': ['alupro1', 'alupro2']},
-                    'nuc': {'dbs': ['alunuc'], 'secs': ['alunuc1', 'alunuc2']}}
+        expected = {'pro': {'dbs': ['alupro'], 'sections': ['alupro1', 'alupro2']},
+                    'nuc': {'dbs': ['alunuc'], 'sections': ['alunuc1', 'alunuc2']}}
         self.assertDictContainsSubset(expected, returned)
         self.utils.drop_db()
 
@@ -1363,8 +1363,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         returned = manager.get_bank_sections(tool='golden')
-        expected = {'nuc': {'secs': ['alunuc'], 'dbs': []},
-                    'pro': {'secs': ['alupro'], 'dbs': []}}
+        expected = {'nuc': {'sections': ['alunuc'], 'dbs': []},
+                    'pro': {'sections': ['alupro'], 'dbs': []}}
         self.assertDictContainsSubset(expected, returned)
         self.utils.drop_db()
 
