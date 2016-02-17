@@ -379,11 +379,11 @@ class Manager(object):
     @staticmethod
     def get_formats_for_release(path=None):
         """
-            Get all the formats supported for a bank (path).
+        Get all the formats supported for a bank (path).
 
-            :param path: Path of the release to search in
-            :type path: String (path)
-            :return: List of sorted formats
+        :param path: Path of the release to search in
+        :type path: String (path)
+        :return: List of sorted formats
         """
         formats = []
         if not path:
