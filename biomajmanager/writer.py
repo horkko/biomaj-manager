@@ -11,14 +11,12 @@ class Writer(object):
 
     """Writer class for BioMAJ manager to create what's desired as output"""
 
-    def __init__(self, template_dir=None, output_format='txt', config=None, output=None):
+    def __init__(self, template_dir=None, config=None, output=None):
         """
         Create Writer object
 
         :param template_dir: Root directory where to find templates
         :type template_dir: String
-        :param output_format: Template format. Default 'txt'
-        :type output_format: String
         :param config: Global configuration file from BiomajConfig
         :type config: configparser
         :param output: Output file. Default STDOUT
@@ -26,7 +24,6 @@ class Writer(object):
         :return:
         """
         self.env = None
-        self.format = None
         self.output = None
         self.template_dir = None
 
@@ -44,7 +41,6 @@ class Writer(object):
         if self.template_dir is None:
             Utils.error("'template.dir' not set")
         self.env = Environment(loader=FileSystemLoader(os.path.join(self.template_dir)))
-        self.format = output_format
         self.output = output
 
     def write(self, template=None, data=None):

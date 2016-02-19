@@ -156,7 +156,7 @@ class Manager(object):
     @bank_required
     def current_release(self):
         """
-        Search the current available release ('online')
+        Search for the current available release ('online')
 
         :return: Release number if available or 'NA'
         :rtype: String or None
@@ -168,22 +168,22 @@ class Manager(object):
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
             session = self.get_session_from_id(self.bank.bank['current'])
-            if session and 'remoterelease' in session and session['remoterelease']:
-                release = session['remoterelease']
-            elif session and 'release' in session and session['release']:
+            if session and 'release' in session and session['release']:
                 release = session['release']
+            elif session and 'remoterelease' in session and session['remoterelease']:
+                release = session['remoterelease']
             if release:
                 current = release
         # Then we fallback to production which handle release(s) that have been
         # completed, workflow(s) over
-        elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
-            production = self.bank.bank['production'][-1]
-            if 'release' in production and production['release']:
-                release = production['release']
-            elif 'remoterelease'in production and production['remoterelease']:
-                release = production['remoterelease']
-            if release:
-                current = release
+        #elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
+        #    production = self.bank.bank['production'][-1]
+        #    if 'release' in production and production['release']:
+        #        release = production['release']
+        #    elif 'remoterelease'in production and production['remoterelease']:
+        #        release = production['remoterelease']
+        #    if release:
+        #        current = release
         if current:
             self._current_release = current
             return str(current)
@@ -334,6 +334,7 @@ class Manager(object):
         """
         release = self.current_release()
         if release:
+            Utils.ok("Current release is %s" % release)
             prod = self.bank.get_production(release)
             if not prod:
                 Utils.error("Can't find production for release %s" % str(release))

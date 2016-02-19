@@ -26,6 +26,7 @@ __author__ = 'tuco'
 
 def main():
     """This is the main function treating arguments passed on the command line."""
+
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
@@ -74,7 +75,8 @@ def main():
     parser.add_argument('-b', '--bank', dest="bank", help="Bank name")
     parser.add_argument('--db_type', dest="db_type", help="BioMAJ database type [MySQL, MongoDB]")
     parser.add_argument('-o', '--out', dest="out", help="Output file")
-    parser.add_argument('-F', '--format', dest="oformat", help="Output format. Supported [csv, html, json, txt]")
+    parser.add_argument('-F', '--format', dest="oformat", help="Output format. Supported [csv, html, json, tmpl[default]]",
+                        default="tmpl")
     parser.add_argument('-T', '--templates', dest="template_dir", help="Template directory. Overwrites template_dir")
     parser.add_argument('-S', '--section', dest="tool", help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
 
@@ -82,7 +84,7 @@ def main():
     parser.parse_args(namespace=options)
     Manager.simulate = options.simulate
     Manager.verbose = options.verbose
-
+    
     if options.bank_formats:
         formats = []
         banks = []
@@ -97,7 +99,7 @@ def main():
             formats.append({'name': bank, 'formats': manager.formats_as_string(),
                             'fullname': manager.bank.config.get('db.fullname').replace('"', '')})
         if options.oformat:
-            writer = Writer(output_format=options.oformat, config=manager.config, output=options.out)
+            writer = Writer(config=manager.config, output=options.out, template_dir=options.template_dir)
             writer.write(data={'banks': formats}, template='banks_formats' + '.' + options.oformat)
         else:
             info = []
@@ -183,7 +185,7 @@ def main():
         else:
             if options.oformat is None:
                 options.oformat = 'txt'
-            writer = Writer(config=config, output_format=options.oformat)
+            writer = Writer(config=config, template_dir=options.template_dir, output=options.out)
             writer.write(template='news' + '.' + options.oformat, data=news.data)
         sys.exit(0)
 
@@ -193,14 +195,13 @@ def main():
             bank_list = Manager.get_bank_list()
         else:
             bank_list.append(options.bank)
-
         info = []
         for bank in bank_list:
             manager = Manager(bank=bank)
             pending = manager.get_pending_sessions()
             if pending:
-                if options.oformat:
-                    writer = Writer(config=manager.config, output_format=options.oformat)
+                if options.oformat != 'tmpl':
+                    writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
                     writer.write(template='pending' + '.' + options.oformat, data={'pending': pending})
                 else:
                     for pend in pending:
@@ -210,6 +211,7 @@ def main():
                         info.append([bank, str(release), str(date)])
         if info:
             info.insert(0, ["Bank", "Release", "Run time"])
+            print("Pending banks:")
             print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No pending session")
@@ -232,7 +234,6 @@ def main():
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No bank need to be updated")
-
         sys.exit(0)
 
     if options.switch:
@@ -242,9 +243,11 @@ def main():
         if manager.can_switch():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
+            Utils.ok("Production dir is %s" % manager.get_current_proddir())
             manager.stop_running_jobs()
+            #manager.stop_running_jobs(args=manager.get_bank_data_dir())
             # manager.bank.publish()
-            manager.restart_stopped_jobs()
+            #manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
@@ -265,7 +268,6 @@ def main():
             bank_list = Manager.get_bank_list()
         else:
             bank_list.append(options.bank)
-
         for bank in bank_list:
             manager = Manager(bank=bank)
             manager.load_plugins()

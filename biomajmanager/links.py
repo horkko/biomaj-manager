@@ -88,33 +88,34 @@ class Links(object):
                 'golden': ['index/golden'], 'uncompressed': ['index/golden'], 'blast2': ['fasta', 'index/blast2'],
                 'hmmer': ['index/hmmer'], 'fasta': ['fasta'], 'bdb': ['index/bdb']
             }
-        # for source, targets in dirs.iteritems():
-        #     for target in targets:
-        #         self._generate_dir_link(source=source, target=target)
-        # for source, targets in files.iteritems():
-        #     for target in targets:
-        #         self._generate_files_link(source=source, target=target)
-        self._generate_dir_link(source='bowtie', target='index/bowtie')
-        self._generate_dir_link(source='bwa', target='index/bwa')
-        self._generate_dir_link(source='gatk', target='index/gatk')
-        self._generate_dir_link(source='picard', target='index/picard')
-        self._generate_dir_link(source='samtools', target='index/samtools')
-        self._generate_dir_link(source='fusioncatcher', target='index/fusioncatcher')
-        self._generate_dir_link(source='soap', target='index/soap')
-        self._generate_dir_link(source='blast2', target='index/blast2')
-        self._generate_dir_link(source='blast+', target='index/blast+')
-        # Ftp
-        self._generate_dir_link(source='flat', target='ftp')
-        # Release
-        self._generate_dir_link(source='uncompressed', target='release', fallback='flat')
-        # Golden
-        self._generate_files_link(source='golden', target='index/golden')
-        self._generate_files_link(source='uncompressed', target='index/golden')
-        self._generate_files_link(source='blast2', target='fasta')
-        self._generate_files_link(source='blast2', target='index/blast2')
-        self._generate_files_link(source='hmmer', target='index/hmmer')
-        self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
-        self._generate_files_link(source='bdb', target='index/bdb', remove_ext=True)
+        for source, targets in dirs.iteritems():
+            for target in targets:
+                self._generate_dir_link(source=source, target=target)
+        # TODO DO NOT FORGET CALL WITH 'remove_ext=True' and fallback='flat'
+        for source, targets in files.iteritems():
+            for target in targets:
+                self._generate_files_link(source=source, target=target)
+#        self._generate_dir_link(source='bowtie', target='index/bowtie')
+#        self._generate_dir_link(source='bwa', target='index/bwa')
+#        self._generate_dir_link(source='gatk', target='index/gatk')
+#        self._generate_dir_link(source='picard', target='index/picard')
+#        self._generate_dir_link(source='samtools', target='index/samtools')
+#        self._generate_dir_link(source='fusioncatcher', target='index/fusioncatcher')
+#        self._generate_dir_link(source='soap', target='index/soap')
+#        self._generate_dir_link(source='blast2', target='index/blast2')
+#        self._generate_dir_link(source='blast+', target='index/blast+')
+#        # Ftp
+#        self._generate_dir_link(source='flat', target='ftp')
+#        # Release
+#        self._generate_dir_link(source='uncompressed', target='release', fallback='flat')
+#        # Golden
+#        self._generate_files_link(source='golden', target='index/golden')
+#        self._generate_files_link(source='uncompressed', target='index/golden')
+#        self._generate_files_link(source='blast2', target='fasta')
+#        self._generate_files_link(source='blast2', target='index/blast2')
+#        self._generate_files_link(source='hmmer', target='index/hmmer')
+#        self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
+#        self._generate_files_link(source='bdb', target='index/bdb', remove_ext=True)
         return self.created_links
 
 
@@ -256,7 +257,7 @@ class Links(object):
 
         bank_name = self.manager.bank.name
         current_release = self.manager.current_release()
-        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name, 'alu_' + current_release)
+        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name, bank_name + '-' + current_release)
         target_dir = self.manager.config.get('MANAGER', 'production.dir')
         source = os.path.join(data_dir, source)
 
