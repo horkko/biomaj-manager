@@ -398,7 +398,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
 
     def tearDown(self):
         """Finish"""
-        self.utils.clean()
+        #self.utils.clean()
 
 
     @attr('writer')
@@ -465,7 +465,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
         """Check the method throws exception while template file does not exists"""
         writer = Writer(template_dir=self.utils.template_dir)
         with self.assertRaises(SystemExit):
-            writer.write(file="doesnotexist.txt")
+            writer.write(template="doesnotexist.txt")
 
     @attr('writer')
     @attr('writer.write')
@@ -473,27 +473,28 @@ class TestBiomajManagerWriter(unittest.TestCase):
         """Check the method throws exception while template file does not exists"""
         writer = Writer(template_dir=self.utils.template_dir)
         with self.assertRaises(SystemExit):
-            writer.write(file="wrong_syntax.txt")
+            writer.write(template="wrong_syntax.txt")
 
     @attr('writer')
     @attr('writer.write')
     def test_WriterWrtieTemplateFileOKOutputIsNoneOK(self):
         """Check method prints OK on STDOUT"""
+        #self.utils.copy_file("test.txt", todir=self.utils.template_dir)
         writer = Writer(template_dir=self.utils.template_dir)
         data = {'test': 'working test!'}
-        self.assertTrue(writer.write(file="test.txt", data=data))
+        self.assertTrue(writer.write(template="test.txt", data=data))
 
     @attr('writer')
     @attr('writer.write')
     def test_WriterWriteTemplateFileOKContentOK(self):
         """Check the output file written has right content"""
+        #self.utils.copy_file("test.txt", todir=self.utils.template_dir)
         output = os.path.join(self.utils.template_dir, "output.txt")
         data = {'test': 'working test!'}
         writer = Writer(template_dir=self.utils.template_dir, output=output)
-        self.assertTrue(writer.write(file="test.txt", data=data))
+        self.assertTrue(writer.write(template="test.txt", data=data))
         with open(output, 'r') as of:
             self.assertEqual("This is just a working test!", of.readline().strip())
-        os.remove(output)
 
     @attr('writer')
     @attr('writer.write')
@@ -503,7 +504,8 @@ class TestBiomajManagerWriter(unittest.TestCase):
         data = {'test': 'working test!'}
         writer = Writer(template_dir=self.utils.template_dir, output=output)
         with self.assertRaises(SystemExit):
-            writer.write(file="test.txt", data=data)
+            writer.write(template="test.txt", data=data)
+
 
 class TestBiomajManagerLinks(unittest.TestCase):
     """Class for testing biomajmanager.links"""
@@ -1623,6 +1625,13 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.banklist')
+    def test_ManagerGetBankListWrongVisibility(self):
+        """Check bank list throws OK with wrong visibility"""
+        with self.assertRaises(SystemExit):
+            Manager.get_bank_list(visibility="fake")
+
+    @attr('manager')
+    @attr('manager.banklist')
     def test_ManagerGetBankListOK(self):
         """Check bank list works OK"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
@@ -1972,7 +1981,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
                                                     '$push': {
-                                                        'production': {'session': now, 'release': '54', 'size': '100Mo'}}})
+                                                        'production': {'session': now, 'remoterelease': '54', 'size': '100Mo'}}})
         # Prints on output using simulate mode
 
         self.assertEqual(manager.save_banks_version(), 0)
@@ -1985,18 +1994,18 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Test exceptions"""
         self.utils.copy_file(file='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
-        outputfile = os.path.join(self.utils.data_dir, 'saved_version.txt')
+        output_file = os.path.join(self.utils.data_dir, 'saved_version.txt')
         manager = Manager(bank='alu')
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
                                                     '$push': {
-                                                        'production': {'session': now, 'release': '54', 'size': '100Mo'}}})
+                                                        'production': {'session': now, 'remoterelease': '54', 'size': '100Mo'}}})
         # Prints on output using simulate mode
         back_patt = Manager.SAVE_BANK_LINE_PATTERN
         Manager.SAVE_BANK_LINE_PATTERN = "%s_%s_%s_%s_%s"
-        manager.save_banks_version(bank_file=outputfile)
+        manager.save_banks_version(bank_file=output_file)
         line = Manager.SAVE_BANK_LINE_PATTERN % ('alu', "Release " + '54', Utils.time2datefmt(now, Manager.DATE_FMT),
                                                  '100Mo', manager.bank.config.get('server'))
-        with open(outputfile, 'r') as of:
+        with open(output_file, 'r') as of:
             for oline in of:
                 self.assertEqual(line, oline)
         # Restore default pattern
@@ -2012,7 +2021,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
                                                     '$push': {
-                                                        'production': {'session': now, 'release': '54', 'size': '100Mo'}}})
+                                                        'production': {'session': now, 'remoterelease': '54', 'size': '100Mo'}}})
         # Set verbose mode
         Manager.set_verbose(True)
         self.assertEqual(manager.save_banks_version(), 0)
@@ -2030,7 +2039,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(manager.next_release(), '55')
         self.utils.drop_db()
 
-    @attr('manager.1')
+    @attr('manager')
     @attr('manager.nextrelease')
     def test_ManagerNextReleaseThrowsNoSessions(self):
         """Check method throws an exception if no 'sessions'"""
@@ -2088,6 +2097,14 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method checks are not ok"""
         manager = Manager()
         self.assertFalse(manager.set_bank_from_name(""))
+
+    @attr('manager')
+    @attr('manager.setbank')
+    def test_ManagerSetBankFromNameThrowsWrongBankName(self):
+        """Check method throws excpetion with wrong bank name"""
+        manager = Manager()
+        with self.assertRaises(SystemExit):
+            manager.set_bank_from_name("no_bank")
 
     @attr('manager')
     @attr('manager.setbank')

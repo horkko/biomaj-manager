@@ -43,38 +43,38 @@ class Writer(object):
                 self.template_dir = config.get('MANAGER', 'template.dir')
         if self.template_dir is None:
             Utils.error("'template.dir' not set")
-
-        self.env = Environment(loader=FileSystemLoader(self.template_dir))
+        self.env = Environment(loader=FileSystemLoader(os.path.join(self.template_dir)))
         self.format = output_format
         self.output = output
 
-    def write(self, file=None, data=None):
+    def write(self, template=None, data=None):
         """
         Print template 'data' to stdout using template file 'file'
         data args can be left None, this way method can be used to render file
         from scratch
 
-        :param file: Template file name
-        :type file: String
+        :param template: Template file name
+        :type template: String
         :param data: Template data
         :type data: Dictionary
         :return: True, throws on error
         """
-        if file is None:
+        if template is None:
             Utils.error("A template name is required")
         try:
-            template = self.env.get_template(file)
+            template = self.env.get_template(template)
         except TemplateNotFound as err:
-            Utils.error("Template %s not found!" % err)
+            Utils.error("Template %s not found in %s" % (err, self.template_dir))
         except TemplateSyntaxError as err:
             Utils.error("Syntax error found in template '%s', line %d: %s" % (err.name, err.lineno, err.message))
 
         if self.output is None:
-            self.output = sys.stdout
+            ofile = sys.stdout
         else:
+            Utils.warn("We are opening new file %s" % self.output)
             try:
-                with open(self.output, "w") as ofile:
-                    print(template.render(data), file=ofile)
-            except (IOError, TemplateError) as err:
-                Utils.error("Rendering template '%s' encountered error: %s" % (file, str(err)))
+                ofile = open(self.output, 'w')
+            except IOError as err:
+                Utils.error("Can't open %s: %s" % (self.output, str(err)))
+        print(template.render(data), file=ofile)
         return True

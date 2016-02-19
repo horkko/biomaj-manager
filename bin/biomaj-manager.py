@@ -48,9 +48,10 @@ def main():
                         help="List supported formats and index for each banks. [-b] available.",
                         action="store_true", default=False)
     parser.add_argument('-M', '--to_mongo', dest="to_mongo",
-                        help="[SPECIFIC] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
+                        help="[PLUGIN] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
                         action="store_true", default=False)
-    parser.add_argument('-N', '--news', dest="news", help="Create news to display at BiomajWatcher. [Default output txt]",
+    parser.add_argument('-N', '--news', dest="news",
+                        help="Create news to display at BiomajWatcher. [Default output txt]",
                         action="store_true", default=False)
     parser.add_argument('-n', '--simulate', dest="simulate", help="Simulate action, don't do it really.",
                         action="store_true", default=False)
@@ -83,17 +84,41 @@ def main():
     Manager.verbose = options.verbose
 
     if options.bank_formats:
-        formats = {}
+        formats = []
+        banks = []
         Utils.start_timer()
+        manager = Manager()
         if options.bank:
-            manager = Manager(bank=options.bank)
-            formats[options.bank] = manager.formats_as_string()
+            banks.append(options.bank)
         else:
-            for bank in Manager.get_bank_list():
-                manager = Manager(bank=bank)
-                formats[bank] = manager.formats_as_string()
+            banks = Manager.get_bank_list()
+        for bank in banks:
+            manager.set_bank_from_name(name=bank)
+            formats.append({'name': bank, 'formats': manager.formats_as_string(),
+                            'fullname': manager.bank.config.get('db.fullname').replace('"', '')})
+        if options.oformat:
+            writer = Writer(output_format=options.oformat, config=manager.config, output=options.out)
+            writer.write(data={'banks': formats}, template='banks_formats' + '.' + options.oformat)
+        else:
+            info = []
+            supp_formats = ['bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'GenomeAnalysisTK', 'samtools',
+                            'soap', 'picard', 'raw', 'uncompressed']
+            for fmt in formats:
+                fmts = fmt['formats']
+                list_fmt = [fmt['name']]
+                for supp_fmt in supp_formats:
+                    supported = ''
+                    if supp_fmt in fmts or supp_fmt == 'raw':
+                        supported = 'ok'
+                    list_fmt.append(supported)
+                info.append(list_fmt)
+            if len(info):
+                info.insert(0, ['Bank', 'bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'gatk', 'samtools',
+                                'soap', 'picard', 'raw', 'uncompressed'])
+                print(tabulate(info, headers='firstrow', tablefmt='psql'))
+            else:
+                print("No formats supported")
         Utils.stop_timer()
-        print(formats)
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
         sys.exit(0)
 
@@ -159,13 +184,10 @@ def main():
             if options.oformat is None:
                 options.oformat = 'txt'
             writer = Writer(config=config, output_format=options.oformat)
-            writer.write(file='news' + '.' + options.oformat, data=news.data)
+            writer.write(template='news' + '.' + options.oformat, data=news.data)
         sys.exit(0)
 
     if options.pending:
-        # if not options.bank:
-        #     Utils.error("A bank name is required")
-        # manager = Manager(bank=options.bank)
         bank_list = []
         if not options.bank:
             bank_list = Manager.get_bank_list()
@@ -179,7 +201,7 @@ def main():
             if pending:
                 if options.oformat:
                     writer = Writer(config=manager.config, output_format=options.oformat)
-                    writer.write(file='pending' + '.' + options.oformat, data={'pending': pending})
+                    writer.write(template='pending' + '.' + options.oformat, data={'pending': pending})
                 else:
                     for pend in pending:
                         release = pend['release']
@@ -203,7 +225,6 @@ def main():
         updates = manager.show_need_update()
         if updates.keys():
             info = []
-            #info.append(["Bank", "Current release", "Next release"])
             for bank in sorted(updates.keys()):
                 info.append([bank, updates[bank]['current_release'], updates[bank]['next_release']])
             if len(info):

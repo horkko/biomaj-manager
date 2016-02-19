@@ -27,7 +27,7 @@ class Manager(object):
     verbose = False
     # Default date format string
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
-    SAVE_BANK_LINE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s"
+    SAVE_BANK_LINE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s\n"
 
     def __init__(self, bank=None, cfg=None, global_cfg=None):
         """
@@ -219,6 +219,7 @@ class Manager(object):
                     formats[name].append(version)
                 else:
                     formats.append("@".join([name, version]))
+
         return formats
 
     @bank_required
@@ -227,14 +228,18 @@ class Manager(object):
         return self.formats(flat=True)
 
     @staticmethod
-    def get_bank_list():
+    def get_bank_list(visibility="public"):
         """
         Get the list of bank available from the database
 
+        :param visibility: Type of bank visibility, default to 'public'. Supported ['all', 'public', 'private']
+        :type visibility: String
         :return: List of bank name
         :rtype: List of string
                 Thorws SystemExit exception
         """
+        if visibility not in ['all', 'public', 'private']:
+            Utils.error("Bank visibility '%s' not supported. Only one of ['all', 'public', 'private']" % visibility)
         # Don't read config again
         if BiomajConfig.global_config is None:
             try:
@@ -250,11 +255,12 @@ class Manager(object):
                 # cannot connect, 3.2 waits for a database access to connect to the server
                 MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),
                                BiomajConfig.global_config.get('GENERAL', 'db.name'))
-            banks = MongoConnector.banks.find({}, {'name': 1, '_id': 0})
+            banks = MongoConnector.banks.find({'properties.visibility': visibility}, {'name': 1, '_id': 0})
             for bank in banks:
                 # Avoid document without bank name
                 if 'name' in bank:
                     banks_list.append(bank['name'])
+            banks_list.sort()
             return banks_list
         except PyMongoError as err:
             Utils.error("Can't connect to MongoDB: %s" % str(err))
@@ -270,7 +276,8 @@ class Manager(object):
         # Check db.packages is set for the current bank
         packages = []
         if not self.bank.config.get('db.packages'):
-            Utils.warn("[%s] db.packages not set!" % self.bank.name)
+            if self.get_verbose():
+                Utils.warn("[%s] db.packages not set!" % self.bank.name)
         else:
             packs = self.bank.config.get('db.packages').replace('\\', '').replace('\n', '').strip().split(',')
             for pack in packs:
@@ -796,7 +803,7 @@ class Manager(object):
                         for prod in bank.bank['production']:
                             if bank.bank['current'] == prod['session']:
                                 # bank / release / creation / size / remote server
-                                file_line = FILE_PATTERN % (bank.name, "Release " + prod['release'],
+                                file_line = FILE_PATTERN % (bank.name, "Release " + prod['remoterelease'],
                                                             Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
                                                             str(prod['size']) if 'size' in prod and prod['size']
                                                                               else 'NA',
@@ -807,6 +814,7 @@ class Manager(object):
                                     fv.write(file_line)
         except Exception as e:
             Utils.error("Can't access file: %s" % str(e))
+        Utils.ok("Bank versions saved in %s" % bank_file)
         return 0
 
     def set_bank(self, bank=None):
@@ -833,7 +841,10 @@ class Manager(object):
         """
         if not name or name is None:
             return False
-        bank = Bank(name=name, no_log=True)
+        try:
+            bank = Bank(name=name, no_log=True)
+        except Exception as err:
+            Utils.error("Problem with bank %s: %s" % (name, str(err)))
         return self.set_bank(bank=bank)
 
     @staticmethod
