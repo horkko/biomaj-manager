@@ -522,11 +522,11 @@ class TestBiomajManagerLinks(unittest.TestCase):
         manager = Manager(bank='alu')
         manager._current_release = '54'
         manager.bank.bank['production'].append({'release': '54', 'data_dir': self.utils.data_dir,
-                                                'prod_dir': 'alu_54'})
+                                                'prod_dir': 'alu-54'})
         self.utils.manager = manager
-        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat'))
-        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
-        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'flat'))
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed'))
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
 
     def tearDown(self):
         """Clean all"""
@@ -583,6 +583,16 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.assertEqual(link.created_links, 6)
 
     @attr('links')
+    @attr('links.checklinks')
+    def test_LinksCheckLinksSimulateTrueVeboseFalseOK(self):
+        """Check method returns right number of simulated created links"""
+        links = Links(manager=self.utils.manager)
+        Manager.set_simulate(True)
+        Manager.set_verbose(False)
+        # Check setUp, it creates 3 dirs
+        self.assertEqual(links.check_links(), 3)
+
+    @attr('links')
     @attr('links.dolinks')
     def test_LinksDoLinksThrowsWrongUser(self):
         """Check method throws exception because user not authorized"""
@@ -590,6 +600,33 @@ class TestBiomajManagerLinks(unittest.TestCase):
         os.environ['USER'] = 'fakeuser'
         with self.assertRaises(SystemExit):
             links.do_links()
+
+    @attr('links')
+    @attr('links.dolinks')
+    def test_LinksDoLinksArgsDirsAndFilesNone(self):
+        """Check method with args set to None, creates the right number of links"""
+        links = Links(manager=self.utils.manager)
+        self.assertEqual(links.do_links(dirs=None, files=None), 3)
+
+    @attr('links')
+    @attr('links.dolinks')
+    def test_LinksDoLinksArgsDirsMatchesSetUp(self):
+        """Check method creates the right number of link passing a list of dirs matching setUp"""
+        links = Links(manager=self.utils.manager)
+        exp_dirs = {'flat': ['ftp'], 'uncompressed': ['release'], 'blast2': ['index/blast2']}
+        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 3)
+
+    @attr('links')
+    @attr('links.dolinks')
+    def test_LinksDoLinksArgsFilesMatchesSetUp(self):
+        """Check method creates the right number of link passing a list of dirs matching setUp"""
+        links = Links(manager=self.utils.manager)
+        # We copy 3 files into a source dir to have 3 more created links calling generate_files_link
+        self.utils.copy_file(file='news1.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
+        self.utils.copy_file(file='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
+        self.utils.copy_file(file='news3.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
+        exp_files = {'blast2': ['index/blast2']}
+        self.assertEqual(links.do_links(dirs=None, files=exp_files), 6)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -639,7 +676,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method passes OK if fallback given"""
         link = Links(manager=self.utils.manager)
         # Remove uncompressed directory, and fallback to flat
-        os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
+        os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed'))
         self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', fallback='flat'), 0)
 
     @attr('links')
@@ -683,7 +720,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksMakeLinksPathAlreadyExistsReturns0(self):
         """Check the method returns 0 because source and target already exist"""
         link = Links(manager=self.utils.manager)
-        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed')
         target = os.path.join(self.utils.prod_dir, 'uncmp_link')
         os.symlink(os.path.relpath(source, start=target), target)
         self.assertEqual(0, link._make_links(links=[(source, target)]))
@@ -694,7 +731,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksMakeLinksPathNotExistsSimulateOnVerboseOnReturns0(self):
         """Check the method returns 0 because simulate and verbose mode on"""
         link = Links(manager=self.utils.manager)
-        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed')
         target = os.path.join(self.utils.prod_dir, 'uncmp_link')
         link.manager.set_simulate(True)
         link.manager.set_verbose(True)
@@ -706,7 +743,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksMakeLinksPathNotExistsSimulateOnVerboseOffReturns1(self):
         """Check the method returns 1 because simulate on and verbose off, nothing created but link added as created"""
         link = Links(manager=self.utils.manager)
-        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed')
         target = os.path.join(self.utils.prod_dir, 'uncmp_link')
         link.manager.set_simulate(True)
         link.manager.set_verbose(False)
@@ -718,7 +755,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksMakeLinksPathNotExistsHardTrueThrowsError(self):
         """Check the method throws an exception (OSError=>SystemExit) with (hard=True)"""
         link = Links(manager=self.utils.manager)
-        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed')
         target = os.path.join(self.utils.prod_dir, 'uncmp_link')
         link._prepare_links(source=source, target=target)
         # We delete the source directory to raise an OSError
@@ -731,7 +768,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksMakeLinksPathNotExistsHardFalseThrowsError(self):
         """Check the method throws an exception (OSError=>SystemExit) with (hard=False)"""
         link = Links(manager=self.utils.manager)
-        source = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed')
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed')
         target = os.path.join(self.utils.prod_dir, 'uncmp_link')
         link._prepare_links(source=source, target=target)
         # We delete the source directory to raise an OSError
@@ -755,10 +792,10 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link = Links(manager=self.utils.manager)
         # Set our manager verbose mode to on
         link.manager.set_verbose(True)
-        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat')
+        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'flat')
         target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
         files = ['file1.txt', 'file2.txt']
-        # Create list of file to link
+        # Create files to link
         for ifile in files:
             open(os.path.join(source_dir, ifile), 'w').close()
         # We check we've created 2 link, for file1 and file2
@@ -775,7 +812,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         # Set our manager verbose mode to on
         link.manager.set_verbose(True)
         link.manager.set_simulate(True)
-        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat')
+        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'flat')
         target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
         files = ['file1.txt', 'file2.txt']
         # Create list of file to link
@@ -794,7 +831,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link = Links(manager=self.utils.manager)
         # Set our manager verbose mode to on
         link.manager.set_verbose(True)
-        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat')
+        source_dir = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'flat')
         target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
         files = ['file1.txt', 'file2.txt']
         # Create list of file to link
@@ -813,6 +850,18 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link = Links(manager=self.utils.manager)
         source = os.path.join(self.utils.data_dir, 'not_found')
         target = os.path.join(self.utils.conf_dir, 'not_link')
+        self.assertEqual(0, link._generate_dir_link(source=source, target=target))
+
+    @attr('links.1')
+    @attr('links.generatedirlink')
+    def test_LinksGenerateDirLink_PrepareLinksReturns0SimulateOnVerobseOn(self):
+        """Check _generate_files_link returns 0 because prepare_links returns > 0"""
+        link = Links(manager=self.utils.manager)
+        # Set our manager verbose mode to on
+        link.manager.set_verbose(True)
+        link.manager.set_simulate(True)
+        source = os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2')
+        target = os.path.join(self.utils.conf_dir, 'blast2_link')
         self.assertEqual(0, link._generate_dir_link(source=source, target=target))
 
 

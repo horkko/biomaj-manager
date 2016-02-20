@@ -118,8 +118,7 @@ class Links(object):
 #        self._generate_files_link(source='bdb', target='index/bdb', remove_ext=True)
         return self.created_links
 
-
-    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, msg=None):
+    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None):
         """
         Create a symbolic link between 'source' and 'target' for a directory
 
@@ -131,9 +130,7 @@ class Links(object):
         :type hard: Boolean (default False)
         :param fallback: Alternative source if source does not exist
         :type fallback: String
-        :param msg: Message to display at the end of the function call (simulate mode)
-        :type msg: String
-        :return: Number of link(s) created
+        :return: Number of created link(s)
         :rtype: Integer
         """
         if self._prepare_links(source=source, target=target, fallback=fallback):
@@ -142,15 +139,12 @@ class Links(object):
         # Final link name
         slink = os.path.join(self.source)
         tlink = os.path.join(self.target, self.manager.bank.name)
-
+        Utils.warn("1")
         self._make_links(links=[(slink, tlink)], hard=hard)
-
-        if Manager.get_simulate():
-            if msg:
-                print(msg)
-            else:
-                if Manager.get_verbose():
-                    print("%s -> %s directory link done" % (self.target, self.source))
+        Utils.warn("2")
+        if Manager.get_simulate() and Manager.get_verbose():
+            print("%s -> %s directory link done" % (self.target, self.source))
+        Utils.warn("3")
         return self.created_links
 
     def _generate_files_link(self, source=None, target=None, remove_ext=False):
@@ -165,7 +159,7 @@ class Links(object):
         :type target: String
         :param remove_ext: Create another link of the file without the file name extension
         :type remove_ext: Boolean (default False)
-        :return: Number of link(s) created
+        :return: Number of created link(s)
         :rtype: Integer
         """
         if self._prepare_links(source=source, target=target, use_deepest=True):
@@ -196,7 +190,7 @@ class Links(object):
 
         self._make_links(links=links)
 
-        if Manager.simulate and Manager.get_verbose():
+        if Manager.get_simulate() and Manager.get_verbose():
             print("%s -> %s file link done" % (self.target, self.source))
         return self.created_links
 

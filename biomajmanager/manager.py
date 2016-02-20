@@ -334,7 +334,6 @@ class Manager(object):
         """
         release = self.current_release()
         if release:
-            Utils.ok("Current release is %s" % release)
             prod = self.bank.get_production(release)
             if not prod:
                 Utils.error("Can't find production for release %s" % str(release))
