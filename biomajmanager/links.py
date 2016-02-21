@@ -88,11 +88,11 @@ class Links(object):
                 'golden': ['index/golden'], 'uncompressed': ['index/golden'], 'blast2': ['fasta', 'index/blast2'],
                 'hmmer': ['index/hmmer'], 'fasta': ['fasta'], 'bdb': ['index/bdb']
             }
-        for source, targets in dirs.iteritems():
+        for source, targets in list(dirs.items()):
             for target in targets:
                 self._generate_dir_link(source=source, target=target)
         # TODO DO NOT FORGET CALL WITH 'remove_ext=True' and fallback='flat'
-        for source, targets in files.iteritems():
+        for source, targets in list(files.items()):
             for target in targets:
                 self._generate_files_link(source=source, target=target)
 #        self._generate_dir_link(source='bowtie', target='index/bowtie')
