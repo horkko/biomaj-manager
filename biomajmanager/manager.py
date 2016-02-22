@@ -1081,7 +1081,7 @@ class Manager(object):
             proc = subprocess.Popen(command, stdout=stdout, stderr=stderr)
             inputs = [proc.stdout, proc.stderr]
             while proc.poll() is None:
-                readable, _, exceptional = select.select(inputs, [], [], 1)
+                readable, _, _ = select.select(inputs, [], [], 1)
                 while readable and inputs:
                     for flow in readable:
                         data = flow.read()
@@ -1096,7 +1096,7 @@ class Manager(object):
                         elif flow is proc.stderr:
                             if not quiet:
                                 Utils.warn("[STDERR] %s" % data)
-                    readable, writable, exceptional = select.select(inputs, [], [], 1)
+                    readable, _, _ = select.select(inputs, [], [], 1)
                 time.sleep(sleep)
             if proc.returncode != 0:
                 Utils.error("[run command] command %s FAILED with exit code %d!" % (command, proc.returncode))

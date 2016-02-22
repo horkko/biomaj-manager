@@ -6,7 +6,6 @@ BioMAJ Manager - Swiss knife around BioMAJ 3
 This script is used to use take advantage of functions developed around BioMAJ3 API
 To see what's possible, just type biomaj-manager.py --help
 """
-__author__ = 'tuco'
 from __future__ import print_function
 from future import standard_library
 from pprint import pprint
@@ -24,6 +23,7 @@ from biomajmanager.news import News
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 from tabulate import tabulate
+__author__ = 'tuco'
 
 def main():
     """This is the main function treating arguments passed on the command line."""
