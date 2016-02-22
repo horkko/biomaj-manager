@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 """
-This script is used to use take advantage of functions developed as Swiss knife around BioMAJ3 API
+BioMAJ Manager - Swiss knife around BioMAJ 3
+
+This script is used to use take advantage of functions developed around BioMAJ3 API
 To see what's possible, just type biomaj-manager.py --help
 """
 from __future__ import print_function
@@ -30,46 +32,39 @@ def main():
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
-    parser.add_argument('-C', '--clean_links', dest="clean_links", help="Remove old links (Permissions required)",
-                        action="store_true", default=False)
-    parser.add_argument('-D', '--save_versions', dest="save_versions",
-                        help="Prints info about all banks into version file. (Requires permissions)",
-                        action="store_true", default=False)
-    parser.add_argument('-H', '--history', dest="history", help="Prints banks releases history. [-b] available.",
-                        action="store_true", default=False)
-    parser.add_argument('-i', '--info', dest="info", help="Print info about a bank. [-b REQUIRED]",
-                        action="store_true", default=False)
-    parser.add_argument('-J', '--check_links', dest="check_links",
-                        help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]",
-                        action="store_true", default=False)
-    parser.add_argument('-l', '--links', dest="links",
-                        help="Just (re)create symlink, don't do any bank switch. (Permissions required). [-b REQUIRED]",
-                        action="store_true", default=False)
-    parser.add_argument('-L', '--bank_formats', dest="bank_formats",
-                        help="List supported formats and index for each banks. [-b] available.",
-                        action="store_true", default=False)
-    parser.add_argument('-M', '--to_mongo', dest="to_mongo",
-                        help="[PLUGIN] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]",
-                        action="store_true", default=False)
-    parser.add_argument('-N', '--news', dest="news",
-                        help="Create news to display at BiomajWatcher. [Default output txt]",
-                        action="store_true", default=False)
-    parser.add_argument('-n', '--simulate', dest="simulate", help="Simulate action, don't do it really.",
-                        action="store_true", default=False)
-    parser.add_argument('-P', '--show_pending', dest="pending", help="Show pending release(s). [-b] available",
-                        action="store_true", default=False)
-    parser.add_argument('-s', '--switch', dest="switch", help="Switch a bank to its new version. [-b REQUIRED]",
-                        action="store_true", default=False)
-    parser.add_argument('-X', '--test', dest="test", help="Test method. [-b REQUIRED]",
-                        action="store_true", default=False)
-    parser.add_argument('-U', '--show_update', dest="show_update",
+    parser.add_argument('-C', '--clean_links', dest="clean_links", action="store_true", default=False,
+                        help="Remove old links (Permissions required)")
+    parser.add_argument('-D', '--save_versions', dest="save_versions", action="store_true", default=False,
+                        help="Prints info about all banks into version file. (Requires permissions)")
+    parser.add_argument('-H', '--history', dest="history", action="store_true", default=False,
+                        help="Prints banks releases history. [-b] available.")
+    parser.add_argument('-i', '--info', dest="info", action="store_true", default=False,
+                        help="Print info about a bank. [-b REQUIRED]")
+    parser.add_argument('-J', '--check_links', dest="check_links", action="store_true", default=False,
+                        help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]")
+    parser.add_argument('-l', '--links', dest="links", action="store_true", default=False,
+                        help="Just (re)create symlink, don't do any bank switch. (Permissions required). [-b REQUIRED]")
+    parser.add_argument('-L', '--bank_formats', dest="bank_formats", action="store_true", default=False,
+                        help="List supported formats and index for each banks. [-b] available.")
+    parser.add_argument('-M', '--to_mongo', dest="to_mongo", action="store_true", default=False,
+                        help="[PLUGIN] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]")
+    parser.add_argument('-N', '--news', dest="news", action="store_true", default=False,
+                        help="Create news to display at BiomajWatcher. [Default output txt]")
+    parser.add_argument('-n', '--simulate', dest="simulate", action="store_true", default=False,
+                        help="Simulate action, don't do it really.")
+    parser.add_argument('-P', '--show_pending', dest="pending", action="store_true", default=False,
+                        help="Show pending release(s). [-b] available")
+    parser.add_argument('-s', '--switch', dest="switch", action="store_true", default=False,
+                        help="Switch a bank to its new version. [-b REQUIRED]")
+    parser.add_argument('-X', '--test', dest="test", action="store_true", default=False,
+                        help="Test method. [-b REQUIRED]")
+    parser.add_argument('-U', '--show_update', dest="show_update", action="store_true", default=False,
                         help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that\
-                              need to be updated. [-b] available.",
-                        action="store_true", default=False)
-    parser.add_argument('-v', '--version', dest="version", help="Show version",
-                        action="store_true", default=False)
-    parser.add_argument('-V', '--verbose', dest="verbose", help="Activate verbose mode",
-                        action="store_true", default=False)
+                              need to be updated. [-b] available.")
+    parser.add_argument('-v', '--version', dest="version", action="store_true", default=False,
+                        help="Show version")
+    parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
+                        help="Activate verbose mode")
 
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank", help="Bank name")
