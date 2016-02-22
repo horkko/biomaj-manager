@@ -46,8 +46,9 @@ class Links(object):
 
     def check_links(self):
         """
-        Check if some link(s) need to be (re)created. It uses do_links and set
-        simulate and verbose mode to True
+        Check if some link(s) need to be (re)created.
+
+        It uses do_links and set simulate and verbose mode to True
 
         :return: Number of links "virtually" created
         :rtype: Int
@@ -149,7 +150,8 @@ class Links(object):
 
     def _generate_files_link(self, source=None, target=None, remove_ext=False):
         """
-        Links list of file from 'source' to 'target' directory
+        Links list of file from 'source' to 'target' directory.
+
         If remove_ext is set to True, then another link is created. This link is the same as the
         target link, wihtout the file extension
 
@@ -251,7 +253,8 @@ class Links(object):
 
         bank_name = self.manager.bank.name
         current_release = self.manager.current_release()
-        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name, bank_name + '-' + current_release)
+        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name,
+                                bank_name + '-' + current_release)
         target_dir = self.manager.config.get('MANAGER', 'production.dir')
         source = os.path.join(data_dir, source)
 

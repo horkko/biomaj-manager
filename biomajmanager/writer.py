@@ -1,7 +1,7 @@
 """Writer class to be used with Jinja2 templates"""
 from __future__ import print_function
 from jinja2 import Environment, FileSystemLoader
-from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError, TemplateError
+from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 from biomajmanager.utils import Utils
 import os
 import sys
@@ -45,8 +45,9 @@ class Writer(object):
 
     def write(self, template=None, data=None):
         """
-        Print template 'data' to stdout using template file 'file'
-        data args can be left None, this way method can be used to render file
+        Print template 'data' to stdout using template file 'template'.
+
+        'data' arg can be left None, this way method can be used to render file
         from scratch
 
         :param template: Template file name

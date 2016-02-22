@@ -75,9 +75,11 @@ class Manager(object):
     @staticmethod
     def load_config(cfg=None, global_cfg=None):
         """
-        Load biomaj-manager configuration file (manager.properties). It uses BiomajConfig.load_config()
-        to first load global.properties and determine where the config.dir is. manager.properties must
-        be located at the same place as global.properties or file parameter must point to manager.properties
+        Load biomaj-manager configuration file (manager.properties).
+        
+        It uses BiomajConfig.load_config() to first load global.properties and determine
+        where the config.dir is. manager.properties must be located at the same place as
+        global.properties or file parameter must point to manager.properties
 
         :param cfg: Path to config file to load
         :type cfg: String
@@ -194,6 +196,7 @@ class Manager(object):
     def formats(self, flat=False):
         """
         Check the "supported formats" for a specific bank.
+
         This is done simply by getting the variable 'db.packages' from the bank
         configuration file.
 
@@ -287,8 +290,10 @@ class Manager(object):
     @bank_required
     def get_bank_sections(self, tool=None):
         """
-        Get the 'supported' indexes sections available for the bank. Each defined indexes section may have its own
-        subsection(s). By default, it returns the info as a dictionary.
+        Get the 'supported' indexes sections available for the bank.
+        
+        Each defined indexes section may have its own subsection(s).
+        By default, it returns the info as a dictionary of lists.
 
         :param tool: Name of the index to search section(s) for
         :type tool: String
@@ -348,6 +353,7 @@ class Manager(object):
     def get_config_regex(self, section='GENERAL', regex=None, with_values=True):
         """
         Pick up values from the configuration file based on a regular expression.
+
         By default it returns the corresponding list of values found. If with_values
         set to False, it returns only the keys.
 
@@ -599,7 +605,8 @@ class Manager(object):
     @bank_required
     def last_session_failed(self):
         """
-        Check if the last building bank session failed
+        Check if the last building bank session failed.
+
         - If we find a pending session, we return False and warn the user to finish it
         - Then, we look into session and check that the last session.status.over is True/False
 
@@ -762,8 +769,11 @@ class Manager(object):
     @user_granted
     def restart_stopped_jobs(self, args=None):
         """
-        Restart jobs stopped by calling 'stop_running_jobs'. This must be set in manager.properties
-        configuration file, section 'JOBS'.
+        Restarts jobs stopped by calling 'stop_running_jobs'.
+
+        This must be set in manager.properties configuration file, section 'JOBS'.
+        You must set 'restart.stopped.jobs.exe' [MANDATORY] and 'restart.stopped.jobs.args'
+        [OPTIONAL]
 
         :param args: List of args to pass to the command
         :type args: List of string
@@ -909,8 +919,12 @@ class Manager(object):
     @user_granted
     def stop_running_jobs(self, args=None):
         """
-        Stop running jobs using bank(s). This calls an external script which must be set
-        in the manager.properties configuration file, section JOBS.
+        Stop running jobs using bank(s).
+
+        This calls an external script which must be set in the manager.properties
+        configuration file, section JOBS.
+        You must set 'stop.running.jobs.exe' [MANDATORY] and 'stop.running.jobs.args'
+        [OPTIONAL]
 
         :param args: List of args to pass to the commande
         :type args: List of string
@@ -921,8 +935,9 @@ class Manager(object):
     @bank_required
     def update_ready(self):
         """
-        Check the bank release is ready to be published. To do this, we search for the last session that
-        completed OK. We then search in banks.status first, meaning the last ran session completed OK.
+        Check the bank release is ready to be published.
+        To do this, we search for the last session that completed OK. We then search in
+        banks.status first, meaning the last ran session completed OK.
         Otherwise, we loop over the session from the end, until we find a session that completed OK.
 
         :return: Boolean
@@ -978,8 +993,9 @@ class Manager(object):
 
     def _current_user(self):
         """
-        Determine user running the actual manager. We search for login name
-        in enviroment 'LOGNAME' and 'USER' variable
+        Determine user running the actual manager.
+
+        We search for login name in enviroment 'LOGNAME' and 'USER' variable
 
         :return: String or None
         """
@@ -1065,7 +1081,7 @@ class Manager(object):
             proc = subprocess.Popen(command, stdout=stdout, stderr=stderr)
             inputs = [proc.stdout, proc.stderr]
             while proc.poll() is None:
-                readable, writable, exceptional = select.select(inputs, [], [], 1)
+                readable, _, exceptional = select.select(inputs, [], [], 1)
                 while readable and inputs:
                     for flow in readable:
                         data = flow.read()

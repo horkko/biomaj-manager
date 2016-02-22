@@ -1,4 +1,4 @@
-""" Global decoratores for BioMAJ Manager """
+"""Global decoratores for BioMAJ Manager"""
 from biomajmanager.utils import Utils
 __author__ = 'tuco'
 
@@ -29,7 +29,8 @@ def user_granted(func):
     """
     def _check_user_granted(*args, **kwargs):
         """
-        Check the user has enough right to perform action(s)
+        Check the user has enough right to perform action(s).
+
         If a bank is set, we first set the user as the owner of
         the current bank. Otherwise we try to find it from the
         config file, we search for 'admin' property

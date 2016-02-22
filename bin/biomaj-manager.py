@@ -6,6 +6,7 @@ BioMAJ Manager - Swiss knife around BioMAJ 3
 This script is used to use take advantage of functions developed around BioMAJ3 API
 To see what's possible, just type biomaj-manager.py --help
 """
+__author__ = 'tuco'
 from __future__ import print_function
 from future import standard_library
 from pprint import pprint
@@ -24,11 +25,8 @@ from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 from tabulate import tabulate
 
-__author__ = 'tuco'
-
 def main():
     """This is the main function treating arguments passed on the command line."""
-
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
@@ -65,15 +63,19 @@ def main():
                         help="Show version")
     parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
                         help="Activate verbose mode")
-
     # Options with value required
-    parser.add_argument('-b', '--bank', dest="bank", help="Bank name")
-    parser.add_argument('--db_type', dest="db_type", help="BioMAJ database type [MySQL, MongoDB]")
-    parser.add_argument('-o', '--out', dest="out", help="Output file")
-    parser.add_argument('-F', '--format', dest="oformat", help="Output format. Supported [csv, html, json, tmpl[default]]",
-                        default="tmpl")
-    parser.add_argument('-T', '--templates', dest="template_dir", help="Template directory. Overwrites template_dir")
-    parser.add_argument('-S', '--section', dest="tool", help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
+    parser.add_argument('-b', '--bank', dest="bank",
+                        help="Bank name")
+    parser.add_argument('--db_type', dest="db_type",
+                        help="BioMAJ database type [MySQL, MongoDB]")
+    parser.add_argument('-o', '--out', dest="out",
+                        help="Output file")
+    parser.add_argument('-F', '--format', dest="oformat", default="tmpl",
+                        help="Output format. Supported [csv, html, json, tmpl[default]]")
+    parser.add_argument('-T', '--templates', dest="template_dir",
+                        help="Template directory. Overwrites template_dir")
+    parser.add_argument('-S', '--section', dest="tool",
+                        help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
 
     options = Options()
     parser.parse_args(namespace=options)
