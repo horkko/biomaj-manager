@@ -613,31 +613,37 @@ class Manager(object):
         :return: Boolean
         """
         has_failed = False
-        update_id = None
+        last_update_id = None
 
         # We have to be careful as pending session have over.status to false
         pending = self.get_pending_sessions()
 
         if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
-            update_id = self.bank.bank['last_update_session']
+            last_update_id = self.bank.bank['last_update_session']
+        # If no last_update_session, this mean not last session ran. We return False
+        else:
+            return has_failed
 
         # Check the last updated session is not pending
-        if pending and update_id:
+        if pending and last_update_id:
             for pend in pending:
-                if pend['session_id'] == update_id:
+                if pend['session_id'] == last_update_id:
                     if Manager.get_verbose():
-                        Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first!" %
-                                    (self.bank.name, pend['release']))
-                has_failed = True
-                return has_failed
+                        Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first,"
+                                   " or update bank" % (self.bank.name, pend['release']))
+                    has_failed = True
+                    return has_failed
 
-        if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
-            for session in self.bank.bank['sessions']:
-                if update_id and session['id'] == update_id:
-                    # If session terminated OK, status.over should be True
-                    if 'status' in session and 'over' in session['status']:
-                        has_failed = not session['status']['over']
-                        break
+        session = self.get_session_from_id(last_update_id)
+        if session is None:
+            return has_failed
+        # If session terminated OK, status.over should be True
+        # biomaj >= 3.0.14, new field 'workflow_status' which tells if the update workflow went ok
+        if 'status' in session and 'over' in session['status'] and not session['status']['over']:
+            if 'workflow_status' in session:
+                has_failed = not session['workflow_status']
+            else:
+                has_failed = True
         return has_failed
 
     def list_plugins(self):
