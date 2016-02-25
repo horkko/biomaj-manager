@@ -2428,7 +2428,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
         manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55',
                                               'status': {'over': False}})
-        self.assertTrue(manager.update_ready())
+        self.assertFalse(manager.update_ready())
         self.utils.drop_db()
 
     @attr('manager')
