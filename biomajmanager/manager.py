@@ -406,9 +406,7 @@ class Manager(object):
             return formats
 
         for pathdir, dirs, _ in os.walk(path):
-            if pathdir == path or not len(dirs):
-                continue
-            if pathdir == 'flat':
+            if pathdir == path or not len(dirs) or os.path.basename(pathdir) == 'flat':
                 continue
             for d in dirs:
                 formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
@@ -605,7 +603,7 @@ class Manager(object):
     @bank_required
     def last_session_failed(self):
         """
-        Check if the last building bank session failed.
+        Check if the last building bank session failed, base on 'last_update_session' field.
 
         - If we find a pending session, we return False and warn the user to finish it
         - Then, we look into session and check that the last session.status.over is True/False
@@ -624,7 +622,7 @@ class Manager(object):
         else:
             return has_failed
 
-        # Check the last updated session is not pending
+        # Check the last updated session is not pending.We consider pending session has failed because not ended
         if pending and last_update_id:
             for pend in pending:
                 if pend['session_id'] == last_update_id:
@@ -634,6 +632,7 @@ class Manager(object):
                     has_failed = True
                     return has_failed
 
+        # We then search in the session, base on 'last_update_session' field
         session = self.get_session_from_id(last_update_id)
         if session is None:
             return has_failed
@@ -942,6 +941,7 @@ class Manager(object):
     def update_ready(self):
         """
         Check the bank release is ready to be published.
+
         To do this, we search for the last session that completed OK. We then search in
         banks.status first, meaning the last ran session completed OK.
         Otherwise, we loop over the session from the end, until we find a session that completed OK.
@@ -951,7 +951,9 @@ class Manager(object):
         ready = False
 
         if 'last_update_session' not in self.bank.bank:
-            Utils.error("No last session recorded")
+            if self.get_verbose():
+                Utils.warn("No last session recorded")
+            return ready
         last_update_id = self.bank.bank['last_update_session']
 
         # We're ok there's already a published release
@@ -965,25 +967,33 @@ class Manager(object):
                                "Last session is already online") % self.bank.name)
             else:
                 ready = True
+            return ready
         # We then search from the last session
         elif 'status' in self.bank.bank and self.bank.bank['status']:
-            if self.bank.bank['status']['over']:
+            if 'over' in self.bank.bank['status'] and self.bank.bank['status']['over']:
                 ready = True
+            else:
+                ready = False
         # We then search into sessions for a completed OK session
         elif 'sessions' in self.bank.bank and len(self.bank.bank['sessions']):
             sessions = self.bank.bank['sessions']
+            # We then start from the last session ran
             sessions.reverse()
             for session in sessions:
-                if 'status' in session and 'over' in session['status'] and session['status']['over']:
+                if ('status' in session and 'over' in session['status'] and session['status']['over']) or \
+                        ('workflow_status' in session and session['workflow_status']):
+                    # biomaj >= 3.014: New field 'workflow_status' reporting status of all workflow status
                     ready = True
                     self._next_release = session['remoterelease']
                     break
+                else:
+                    ready = False
         # We first search for the last completed run. It should be in production
         # We can search on status. If not in status, then it could be coming from
         # a fresh migration (biomaj-migrate does not set status)
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
             # An entry in production means we've completed the update workflow
-            # In case of a fresh biomaj-migrate, status not set, we consider
+            # In case of a fresh biomaj-migrate, status not set, we consider it ok
             ready = True
             # for production in self.bank.bank['production']:
             #     if last_update_id == production['session']:

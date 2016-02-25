@@ -1142,6 +1142,47 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.lastsessionfailed')
+    def test_ManagerLastSessionFailedNoLastUpdateSession(self):
+        """Check method returns False when no 'last_update_session' field in database"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertFalse(manager.last_session_failed())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.lastsessionfailed')
+    def test_ManagerLastSessionFailedStatusOverWorkflowStatusTrue(self):
+        """Check method returns False when no 'last_update_session' field in database"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        data = {'name': 'alu',
+                'sessions': [{'id': 0, 'status': {'over': False}},
+                             {'id': now, 'status': {'over': False}, 'workflow_status': True}],
+                'last_update_session': now,
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertFalse(manager.last_session_failed())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.lastsessionfailed')
+    def test_ManagerLastSessionFailedStatusOverWorkflowStatusFalse(self):
+        """Check method returns False when no 'last_update_session' field in database"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        data = {'name': 'alu',
+                'sessions': [{'id': 0, 'status': {'over': False}},
+                             {'id': now, 'status': {'over': False}, 'workflow_status': False}],
+                'last_update_session': now,
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertTrue(manager.last_session_failed())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedFalseNoPendingFalse(self):
         """Check we have a failed session and no pending session(s)"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -1757,10 +1798,11 @@ class TestBioMajManagerManager(unittest.TestCase):
         expected = []
         for directory in ['flat', 'blast2/2.2.21', 'fasta/3.6', 'golden/3.0']:
             os.makedirs(os.path.join(self.utils.data_dir, directory))
-            if directory == 'flat':
-                continue
             expected.append('@'.join(['pack'] + directory.split('/')))
         returned = Manager.get_formats_for_release(path=self.utils.data_dir)
+        expected.pop(0)
+        Utils.warn(expected)
+        Utils.warn(returned)
         self.assertListEqual(expected, returned)
 
     @attr('manager')
@@ -2289,8 +2331,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check the method raises exception"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        with self.assertRaises(SystemExit):
-            manager.update_ready()
+        #with self.assertRaises(SystemExit):
+        self.assertFalse(manager.update_ready())
         self.utils.drop_db()
 
     @attr('manager')
@@ -2347,6 +2389,20 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithStatusFalse(self):
+        """Check the method returns using 'status'"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        del manager.bank.bank['current']
+        manager.bank.bank['last_update_session'] = now
+        if 'status' not in manager.bank.bank:
+            manager.bank.bank['status'] = {'over': False}
+        self.assertFalse(manager.update_ready())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
     def test_ManagerBankUpdateReadyWithSessionsTrue(self):
         """Check the method returns using 'sessions'"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -2357,6 +2413,21 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
         manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55',
                                               'status': {'over': True}})
+        self.assertTrue(manager.update_ready())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.updateready')
+    def test_ManagerBankUpdateReadyWithSessionsFalse(self):
+        """Check the method returns using 'sessions'"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        del manager.bank.bank['current']
+        manager.bank.bank['last_update_session'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
+        manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55',
+                                              'status': {'over': False}})
         self.assertTrue(manager.update_ready())
         self.utils.drop_db()
 
