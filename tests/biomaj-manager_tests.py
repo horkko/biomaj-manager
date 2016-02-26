@@ -579,7 +579,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         Manager.set_simulate(True)
         Manager.set_verbose(False)
         # Check setUp, it creates 3 dirs
-        self.assertEqual(links.check_links(), 3)
+        self.assertEqual(links.check_links(), 2)
 
     @attr('links')
     @attr('links.dolinks')
@@ -595,14 +595,15 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksDoLinksArgsDirsAndFilesNone(self):
         """Check method with args set to None, creates the right number of links"""
         links = Links(manager=self.utils.manager)
-        self.assertEqual(links.do_links(dirs=None, files=None), 3)
+        self.assertEqual(links.do_links(dirs=None, files=None), 2)
 
     @attr('links')
     @attr('links.dolinks')
     def test_LinksDoLinksArgsDirsMatchesSetUp(self):
         """Check method creates the right number of link passing a list of dirs matching setUp"""
         links = Links(manager=self.utils.manager)
-        exp_dirs = {'flat': ['ftp'], 'uncompressed': ['release'], 'blast2': ['index/blast2']}
+        exp_dirs = {'flat': [{'target':'ftp'}], 'uncompressed': [{'target': 'release'}],
+                    'blast2': [{'target': 'index/blast2'}]}
         self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 3)
 
     @attr('links')
@@ -614,8 +615,8 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.copy_file(ofile='news1.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
         self.utils.copy_file(ofile='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
         self.utils.copy_file(ofile='news3.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'blast2'))
-        exp_files = {'blast2': ['index/blast2']}
-        self.assertEqual(links.do_links(dirs=None, files=exp_files), 6)
+        exp_files = {'blast2': [{'target': 'index/blast2'}]}
+        self.assertEqual(links.do_links(dirs=None, files=exp_files), 5)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -653,10 +654,11 @@ class TestBiomajManagerLinks(unittest.TestCase):
 
     @attr('links')
     @attr('links.preparelinks')
-    def test_LinksPrepareLinksArgsOKSourceNotDirThrows(self):
+    def test_LinksPrepareLinksArgsOKSourceNotDirReturns1(self):
         """Check method throws if source given is not a directory"""
         link = Links(manager=self.utils.manager)
         link.manager.config.set('GENERAL', 'data.dir', '/dir/does_not/')
+        link.manager.set_verbose(True)
         self.assertEqual(link._prepare_links(source='/exist', target="link_test"), 1)
 
     @attr('links')
@@ -666,6 +668,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link = Links(manager=self.utils.manager)
         # Remove uncompressed directory, and fallback to flat
         os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu-54', 'uncompressed'))
+        link.manager.set_verbose(True)
         self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', fallback='flat'), 0)
 
     @attr('links')
@@ -1801,8 +1804,6 @@ class TestBioMajManagerManager(unittest.TestCase):
             expected.append('@'.join(['pack'] + directory.split('/')))
         returned = Manager.get_formats_for_release(path=self.utils.data_dir)
         expected.pop(0)
-        Utils.warn(expected)
-        Utils.warn(returned)
         self.assertListEqual(expected, returned)
 
     @attr('manager')
