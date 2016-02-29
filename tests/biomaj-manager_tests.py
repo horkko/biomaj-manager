@@ -428,7 +428,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
         manager = Manager()
         manager.config.remove_section('MANAGER')
         with self.assertRaises(SystemExit):
-            Writer(template_dir=self.utils.template_dir, config=manager.config)
+            Writer(config=manager.config)
 
     @attr('writer')
     @attr('writer.init')
@@ -440,7 +440,7 @@ class TestBiomajManagerWriter(unittest.TestCase):
         manager = Manager()
         manager.config.remove_option('MANAGER', 'template.dir')
         with self.assertRaises(SystemExit):
-            Writer(template_dir=self.utils.template_dir, config=manager.config)
+            Writer(config=manager.config)
 
     @attr('writer')
     @attr('writer.write')
