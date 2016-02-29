@@ -76,11 +76,14 @@ def main():
                         help="Template directory. Overwrites template_dir")
     parser.add_argument('-S', '--section', dest="tool",
                         help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
+    parser.add_argument('--virtual_dbs', dest="virtual_dbs",
+                        help="Create virtual database HTML pages for tool. [-b REQUIRED]")
+
 
     options = Options()
     parser.parse_args(namespace=options)
-    Manager.simulate = options.simulate
-    Manager.verbose = options.verbose
+    Manager.set_simulate(options.simulate)
+    Manager.set_verbose(options.verbose)
     
     if options.bank_formats:
         formats = []
@@ -292,6 +295,28 @@ def main():
         version = pkg_resources.require('biomajmanager')[0].version
         biomaj_version = pkg_resources.require('biomaj')[0].version
         print("Biomaj-manager: %s (Biomaj: %s)" % (str(version), str(biomaj_version)))
+        sys.exit(0)
+
+    if options.virtual_dbs:
+        banks_list = []
+        if options.bank:
+            banks_list.append(options.bank)
+        else:
+            banks_list = Manager.get_bank_list()
+        virtual_banks = {}
+        for bank in banks_list:
+            manager = Manager(bank=bank)
+            info = manager.get_bank_sections(tool=options.virtual_dbs)
+            info['info'] = {'version': manager.current_release(),
+                            'description': manager.bank.config.get('db.fullname')}
+            virtual_banks[bank] = info
+        if virtual_banks.items():
+            virtual_banks['tool'] = options.virtual_dbs
+            writer = Writer(template_dir=options.template_dir, config=manager.config, output=options.out)
+            writer.write(template='virtual_banks.j2.html',
+                         data={'banks': virtual_banks, 'prod_dir': manager.config.get('GENERAL', 'data.dir')})
+        else:
+            print("No sections found in bank(s)")
         sys.exit(0)
 
     # Not yet implemented options

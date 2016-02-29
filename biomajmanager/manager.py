@@ -68,7 +68,7 @@ class Manager(object):
             Utils.error("Can't load configuration file. Exit with code %s" % str(err))
 
         if bank is not None:
-            self.bank = Bank(name=bank, no_log=True)
+            self.bank = Bank(bank, no_log=True)
             if self.bank.config.get('data.dir'):
                 self.bank_prod = self.bank.config.get('data.dir')
 
@@ -239,7 +239,7 @@ class Manager(object):
         :type visibility: String
         :return: List of bank name
         :rtype: List of string
-                Thorws SystemExit exception
+                Throws SystemExit exception
         """
         if visibility not in ['all', 'public', 'private']:
             Utils.error("Bank visibility '%s' not supported. Only one of ['all', 'public', 'private']" % visibility)
@@ -250,7 +250,7 @@ class Manager(object):
             except Exception as err:
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
         try:
-            banks_list = []
+            bank_list = []
             if MongoConnector.db is None:
                 from pymongo.errors import PyMongoError
                 # We  surrounded this block of code with a try/except because there's a behavior
@@ -262,9 +262,9 @@ class Manager(object):
             for bank in banks:
                 # Avoid document without bank name
                 if 'name' in bank:
-                    banks_list.append(bank['name'])
-            banks_list.sort()
-            return banks_list
+                    bank_list.append(bank['name'])
+            bank_list.sort()
+            return bank_list
         except PyMongoError as err:
             Utils.error("Can't connect to MongoDB: %s" % str(err))
 
@@ -298,6 +298,9 @@ class Manager(object):
         :param tool: Name of the index to search section(s) for
         :type tool: String
         :return: Dict of List
+                 {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]},
+                  'pro': {'dbs': [ ... ], 'sections': ['sec1', 'sec2', ..] }
+                 }
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
