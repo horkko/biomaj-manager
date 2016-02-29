@@ -1,7 +1,7 @@
 """Writer class to be used with Jinja2 templates"""
 from __future__ import print_function
 from jinja2 import Environment, FileSystemLoader
-from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError, TemplateError
+from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 from biomajmanager.utils import Utils
 import os
 import sys
@@ -31,7 +31,7 @@ class Writer(object):
             if not os.path.isdir(template_dir):
                 Utils.error("Template dir %s is not a directory" % template_dir)
             self.template_dir = template_dir
-        if config is not None:
+        elif config is not None:
             if not config.has_section('MANAGER'):
                 Utils.error("Configuration has no 'MANAGER' section.")
             elif not config.has_option('MANAGER', 'template.dir'):
@@ -40,13 +40,16 @@ class Writer(object):
                 self.template_dir = config.get('MANAGER', 'template.dir')
         if self.template_dir is None:
             Utils.error("'template.dir' not set")
-        self.env = Environment(loader=FileSystemLoader(os.path.join(self.template_dir)))
+        self.env = Environment(loader=FileSystemLoader(os.path.join(self.template_dir)),
+                               trim_blocks=True, lstrip_blocks=True,
+                               extensions=['jinja2.ext.with_'])
         self.output = output
 
     def write(self, template=None, data=None):
         """
-        Print template 'data' to stdout using template file 'file'
-        data args can be left None, this way method can be used to render file
+        Print template 'data' to stdout using template file 'template'.
+
+        'data' arg can be left None, this way method can be used to render file
         from scratch
 
         :param template: Template file name

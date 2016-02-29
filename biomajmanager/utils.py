@@ -18,7 +18,8 @@ class Utils(object):
     @staticmethod
     def elapsed_time():
         """
-        Get the elapsed time between start and stop timer
+        Get the elapsed time between start and stop timer.
+
         Stop timer call is not required. If not set, it is automatically called
         as soon as the method is called
 

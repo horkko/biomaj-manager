@@ -23,7 +23,6 @@ class News(object):
         :type max_news: int (default 5)
         :return:
         """
-
         self.news_dir = None
         self.max_news = News.MAX_NEWS
         self.data = None
@@ -51,7 +50,6 @@ class News(object):
         :param news_dir:
         :return: news_files, list of news files found into 'news' directory
         """
-
         if news_dir is not None:
             if not os.path.isdir(news_dir):
                 Utils.error("News dir %s is not a directory" % news_dir)

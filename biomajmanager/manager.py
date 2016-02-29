@@ -68,16 +68,18 @@ class Manager(object):
             Utils.error("Can't load configuration file. Exit with code %s" % str(err))
 
         if bank is not None:
-            self.bank = Bank(name=bank, no_log=True)
+            self.bank = Bank(bank, no_log=True)
             if self.bank.config.get('data.dir'):
                 self.bank_prod = self.bank.config.get('data.dir')
 
     @staticmethod
     def load_config(cfg=None, global_cfg=None):
         """
-        Load biomaj-manager configuration file (manager.properties). It uses BiomajConfig.load_config()
-        to first load global.properties and determine where the config.dir is. manager.properties must
-        be located at the same place as global.properties or file parameter must point to manager.properties
+        Load biomaj-manager configuration file (manager.properties).
+        
+        It uses BiomajConfig.load_config() to first load global.properties and determine
+        where the config.dir is. manager.properties must be located at the same place as
+        global.properties or file parameter must point to manager.properties
 
         :param cfg: Path to config file to load
         :type cfg: String
@@ -194,6 +196,7 @@ class Manager(object):
     def formats(self, flat=False):
         """
         Check the "supported formats" for a specific bank.
+
         This is done simply by getting the variable 'db.packages' from the bank
         configuration file.
 
@@ -236,7 +239,7 @@ class Manager(object):
         :type visibility: String
         :return: List of bank name
         :rtype: List of string
-                Thorws SystemExit exception
+                Throws SystemExit exception
         """
         if visibility not in ['all', 'public', 'private']:
             Utils.error("Bank visibility '%s' not supported. Only one of ['all', 'public', 'private']" % visibility)
@@ -247,7 +250,7 @@ class Manager(object):
             except Exception as err:
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
         try:
-            banks_list = []
+            bank_list = []
             if MongoConnector.db is None:
                 from pymongo.errors import PyMongoError
                 # We  surrounded this block of code with a try/except because there's a behavior
@@ -259,9 +262,9 @@ class Manager(object):
             for bank in banks:
                 # Avoid document without bank name
                 if 'name' in bank:
-                    banks_list.append(bank['name'])
-            banks_list.sort()
-            return banks_list
+                    bank_list.append(bank['name'])
+            bank_list.sort()
+            return bank_list
         except PyMongoError as err:
             Utils.error("Can't connect to MongoDB: %s" % str(err))
 
@@ -287,12 +290,17 @@ class Manager(object):
     @bank_required
     def get_bank_sections(self, tool=None):
         """
-        Get the 'supported' indexes sections available for the bank. Each defined indexes section may have its own
-        subsection(s). By default, it returns the info as a dictionary.
+        Get the 'supported' indexes sections available for the bank.
+        
+        Each defined indexes section may have its own subsection(s).
+        By default, it returns the info as a dictionary of lists.
 
         :param tool: Name of the index to search section(s) for
         :type tool: String
         :return: Dict of List
+                 {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]},
+                  'pro': {'dbs': [ ... ], 'sections': ['sec1', 'sec2', ..] }
+                 }
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
@@ -348,6 +356,7 @@ class Manager(object):
     def get_config_regex(self, section='GENERAL', regex=None, with_values=True):
         """
         Pick up values from the configuration file based on a regular expression.
+
         By default it returns the corresponding list of values found. If with_values
         set to False, it returns only the keys.
 
@@ -400,9 +409,7 @@ class Manager(object):
             return formats
 
         for pathdir, dirs, _ in os.walk(path):
-            if pathdir == path or not len(dirs):
-                continue
-            if pathdir == 'flat':
+            if pathdir == path or not len(dirs) or os.path.basename(pathdir) == 'flat':
                 continue
             for d in dirs:
                 formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
@@ -599,38 +606,46 @@ class Manager(object):
     @bank_required
     def last_session_failed(self):
         """
-        Check if the last building bank session failed
+        Check if the last building bank session failed, base on 'last_update_session' field.
+
         - If we find a pending session, we return False and warn the user to finish it
         - Then, we look into session and check that the last session.status.over is True/False
 
         :return: Boolean
         """
         has_failed = False
-        update_id = None
+        last_update_id = None
 
         # We have to be careful as pending session have over.status to false
         pending = self.get_pending_sessions()
 
         if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
-            update_id = self.bank.bank['last_update_session']
+            last_update_id = self.bank.bank['last_update_session']
+        # If no last_update_session, this mean not last session ran. We return False
+        else:
+            return has_failed
 
-        # Check the last updated session is not pending
-        if pending and update_id:
+        # Check the last updated session is not pending.We consider pending session has failed because not ended
+        if pending and last_update_id:
             for pend in pending:
-                if pend['session_id'] == update_id:
+                if pend['session_id'] == last_update_id:
                     if Manager.get_verbose():
-                        Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first!" %
-                                    (self.bank.name, pend['release']))
-                has_failed = True
-                return has_failed
+                        Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first,"
+                                   " or update bank" % (self.bank.name, pend['release']))
+                    has_failed = True
+                    return has_failed
 
-        if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
-            for session in self.bank.bank['sessions']:
-                if update_id and session['id'] == update_id:
-                    # If session terminated OK, status.over should be True
-                    if 'status' in session and 'over' in session['status']:
-                        has_failed = not session['status']['over']
-                        break
+        # We then search in the session, base on 'last_update_session' field
+        session = self.get_session_from_id(last_update_id)
+        if session is None:
+            return has_failed
+        # If session terminated OK, status.over should be True
+        # biomaj >= 3.0.14, new field 'workflow_status' which tells if the update workflow went ok
+        if 'status' in session and 'over' in session['status'] and not session['status']['over']:
+            if 'workflow_status' in session:
+                has_failed = not session['workflow_status']
+            else:
+                has_failed = True
         return has_failed
 
     def list_plugins(self):
@@ -762,8 +777,11 @@ class Manager(object):
     @user_granted
     def restart_stopped_jobs(self, args=None):
         """
-        Restart jobs stopped by calling 'stop_running_jobs'. This must be set in manager.properties
-        configuration file, section 'JOBS'.
+        Restarts jobs stopped by calling 'stop_running_jobs'.
+
+        This must be set in manager.properties configuration file, section 'JOBS'.
+        You must set 'restart.stopped.jobs.exe' [MANDATORY] and 'restart.stopped.jobs.args'
+        [OPTIONAL]
 
         :param args: List of args to pass to the command
         :type args: List of string
@@ -909,8 +927,12 @@ class Manager(object):
     @user_granted
     def stop_running_jobs(self, args=None):
         """
-        Stop running jobs using bank(s). This calls an external script which must be set
-        in the manager.properties configuration file, section JOBS.
+        Stop running jobs using bank(s).
+
+        This calls an external script which must be set in the manager.properties
+        configuration file, section JOBS.
+        You must set 'stop.running.jobs.exe' [MANDATORY] and 'stop.running.jobs.args'
+        [OPTIONAL]
 
         :param args: List of args to pass to the commande
         :type args: List of string
@@ -921,8 +943,10 @@ class Manager(object):
     @bank_required
     def update_ready(self):
         """
-        Check the bank release is ready to be published. To do this, we search for the last session that
-        completed OK. We then search in banks.status first, meaning the last ran session completed OK.
+        Check the bank release is ready to be published.
+
+        To do this, we search for the last session that completed OK. We then search in
+        banks.status first, meaning the last ran session completed OK.
         Otherwise, we loop over the session from the end, until we find a session that completed OK.
 
         :return: Boolean
@@ -930,7 +954,9 @@ class Manager(object):
         ready = False
 
         if 'last_update_session' not in self.bank.bank:
-            Utils.error("No last session recorded")
+            if self.get_verbose():
+                Utils.warn("No last session recorded")
+            return ready
         last_update_id = self.bank.bank['last_update_session']
 
         # We're ok there's already a published release
@@ -944,25 +970,33 @@ class Manager(object):
                                "Last session is already online") % self.bank.name)
             else:
                 ready = True
+            return ready
         # We then search from the last session
         elif 'status' in self.bank.bank and self.bank.bank['status']:
-            if self.bank.bank['status']['over']:
+            if 'over' in self.bank.bank['status'] and self.bank.bank['status']['over']:
                 ready = True
+            else:
+                ready = False
         # We then search into sessions for a completed OK session
         elif 'sessions' in self.bank.bank and len(self.bank.bank['sessions']):
             sessions = self.bank.bank['sessions']
+            # We then start from the last session ran
             sessions.reverse()
             for session in sessions:
-                if 'status' in session and 'over' in session['status'] and session['status']['over']:
+                if ('status' in session and 'over' in session['status'] and session['status']['over']) or \
+                        ('workflow_status' in session and session['workflow_status']):
+                    # biomaj >= 3.014: New field 'workflow_status' reporting status of all workflow status
                     ready = True
                     self._next_release = session['remoterelease']
                     break
+                else:
+                    ready = False
         # We first search for the last completed run. It should be in production
         # We can search on status. If not in status, then it could be coming from
         # a fresh migration (biomaj-migrate does not set status)
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
             # An entry in production means we've completed the update workflow
-            # In case of a fresh biomaj-migrate, status not set, we consider
+            # In case of a fresh biomaj-migrate, status not set, we consider it ok
             ready = True
             # for production in self.bank.bank['production']:
             #     if last_update_id == production['session']:
@@ -978,8 +1012,9 @@ class Manager(object):
 
     def _current_user(self):
         """
-        Determine user running the actual manager. We search for login name
-        in enviroment 'LOGNAME' and 'USER' variable
+        Determine user running the actual manager.
+
+        We search for login name in enviroment 'LOGNAME' and 'USER' variable
 
         :return: String or None
         """
@@ -1065,7 +1100,7 @@ class Manager(object):
             proc = subprocess.Popen(command, stdout=stdout, stderr=stderr)
             inputs = [proc.stdout, proc.stderr]
             while proc.poll() is None:
-                readable, writable, exceptional = select.select(inputs, [], [], 1)
+                readable, _, _ = select.select(inputs, [], [], 1)
                 while readable and inputs:
                     for flow in readable:
                         data = flow.read()
@@ -1080,7 +1115,7 @@ class Manager(object):
                         elif flow is proc.stderr:
                             if not quiet:
                                 Utils.warn("[STDERR] %s" % data)
-                    readable, writable, exceptional = select.select(inputs, [], [], 1)
+                    readable, _, _ = select.select(inputs, [], [], 1)
                 time.sleep(sleep)
             if proc.returncode != 0:
                 Utils.error("[run command] command %s FAILED with exit code %d!" % (command, proc.returncode))
