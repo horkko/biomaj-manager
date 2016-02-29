@@ -1,5 +1,5 @@
 appnope==0.1.0
-biomaj==3.0.13
+biomaj==3.0.14
 capture==0.1
 coverage==4.0.3
 decorator==4.0.4
