@@ -26,7 +26,6 @@ class Manager(object):
     # Verbose mode
     verbose = False
     # Default date format string
-    DATE_FMT = "%Y-%m-%d %H:%M:%S"
     SAVE_BANK_LINE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s\n"
 
     def __init__(self, bank=None, cfg=None, global_cfg=None):
@@ -569,7 +568,7 @@ class Manager(object):
                     status = 'deprecated'
             history.append({
                 # Convert the time stamp from time() to a date
-                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                'created': Utils.time2datefmt(prod['session']),
                 'id': prod['session'],
                 'removed': None,
                 'status': status,
@@ -590,7 +589,7 @@ class Manager(object):
                     continue
                 path = os.path.join(sess['data_dir'], str(sess['dir_version']), str(sess['prod_dir']))
                 history.append({
-                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
+                    'created': Utils.time2datefmt(sess['id']),
                     'id': sess['id'],
                     'removed': True,
                     'status': 'deleted',
@@ -705,7 +704,7 @@ class Manager(object):
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              str(prod['remoterelease']),
-                                             str(Utils.time2datefmt(prod['session'], Manager.DATE_FMT))]),
+                                             str(Utils.time2datefmt(prod['session']))]),
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(prod['remoterelease']),
@@ -723,14 +722,14 @@ class Manager(object):
             new_id = '@'.join(['bank',
                                self.bank.name,
                                str(sess['remoterelease']),
-                               str(Utils.time2datefmt(sess['id'], Manager.DATE_FMT))])
+                               str(Utils.time2datefmt(sess['id']))]),
             if new_id in map(lambda d: d['_id'], history):
                 continue
 
             history.append({'_id': '@'.join(['bank',
                                              self.bank.name,
                                              str(sess['remoterelease']),
-                                             str(Utils.time2datefmt(sess['id'], Manager.DATE_FMT))]),
+                                             str(Utils.time2datefmt(sess['id']))]),
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
@@ -822,7 +821,7 @@ class Manager(object):
                             if bank.bank['current'] == prod['session']:
                                 # bank / release / creation / size / remote server
                                 file_line = FILE_PATTERN % (bank.name, "Release " + prod['remoterelease'],
-                                                            Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                                                            Utils.time2datefmt(prod['session']),
                                                             str(prod['size']) if 'size' in prod and prod['size']
                                                                               else 'NA',
                                                             bank.config.get('server'))
@@ -910,18 +909,21 @@ class Manager(object):
 
         :return:
         """
-        banks = {}
+        banks = []
         if self.bank:
             if self.can_switch():
-                banks[self.bank.name] = {'current_release': self.current_release(), 'next_release': self.next_release()}
+                banks.append({ 'name': self.bank.name,
+                               'current_release': self.current_release(),
+                               'next_release': self.next_release()})
             return banks
 
         banks_list = Manager.get_bank_list()
         for bank in banks_list:
-            self.bank = Bank(name=bank, no_log=True)
+            self.set_bank_from_name(name=bank)
             if self.can_switch():
-                banks[bank] = {'current_release': self.current_release(), 'next_release': self.next_release()}
-            self.bank = None
+                banks.append({'name': bank,
+                              'current_release': self.current_release(),
+                              'next_release': self.next_release()})
         return banks
 
     @user_granted

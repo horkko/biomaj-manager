@@ -304,6 +304,13 @@ class TestBiomajManagerUtils(unittest.TestCase):
             Utils.get_files(path='/not_found')
 
     @attr('utils')
+    @attr('utils.getnow')
+    def test_UtilsGetNow(self):
+        """Check method returns right time"""
+        now = Utils.time2datefmt(time.time())
+        self.assertEqual(now, Utils.get_now())
+
+    @attr('utils')
     @attr('utils.elapsedtime')
     def test_ElapsedTimeError(self):
         """Check this method throw an error"""
@@ -361,7 +368,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
     @attr('utils.time2datefmt')
     def test_Time2datefmtReturnedOK(self):
         """Check value returned is right object"""
-        self.assertIsInstance(Utils.time2datefmt(time.time(), Manager.DATE_FMT), str)
+        self.assertIsInstance(Utils.time2datefmt(time.time()), str)
 
     @attr('utils')
     @attr('utils.user')
@@ -1107,9 +1114,9 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank = manager.bank.banks.find_one({'name': 'alu'})
         returned = manager.bank_info()
         expected = {'info': [["Name", "Type(s)", "Last update status", "Published release"],
-                             ["alu", "nucleic,protein", Utils.time2datefmt(now, Manager.DATE_FMT), '54']],
+                             ["alu", "nucleic,protein", Utils.time2datefmt(now), '54']],
                     'prod': [["Session", "Remote release", "Release", "Directory", "Freeze", "Pending"],
-                             [Utils.time2datefmt(now, Manager.DATE_FMT), '54', '54',
+                             [Utils.time2datefmt(now), '54', '54',
                               os.path.join(manager.bank.config.get('data.dir'),
                                            manager.bank.config.get('dir.version'), "alu"),
                               'no']],
@@ -1954,11 +1961,11 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check bank has right session id"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        _id = "@".join(['bank', 'alu', '12', Utils.time2datefmt(100, Manager.DATE_FMT)])
+        _id = "@".join(['bank', 'alu', '12', Utils.time2datefmt(100)])
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
         manager.bank.bank['current'] = 100
-        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12})
+        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
         history = manager.mongo_history()
         self.assertEqual(history[0]['_id'], _id)
         self.utils.drop_db()
@@ -1972,7 +1979,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
         manager.bank.bank['current'] = 100 + 1
-        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12})
+        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
         history = manager.mongo_history()
         self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
@@ -1985,7 +1992,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12})
+        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
         del manager.bank.bank['current']
         history = manager.mongo_history()
         self.assertEqual(history[0]['status'], 'unpublished')
@@ -2072,7 +2079,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         back_patt = Manager.SAVE_BANK_LINE_PATTERN
         Manager.SAVE_BANK_LINE_PATTERN = "%s_%s_%s_%s_%s"
         manager.save_banks_version(bank_file=output_file)
-        line = Manager.SAVE_BANK_LINE_PATTERN % ('alu', "Release " + '54', Utils.time2datefmt(now, Manager.DATE_FMT),
+        line = Manager.SAVE_BANK_LINE_PATTERN % ('alu', "Release " + '54', Utils.time2datefmt(now),
                                                  '100Mo', manager.bank.config.get('server'))
         with open(output_file, 'r') as of:
             for oline in of:
@@ -2231,7 +2238,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         # setting current to None means no current bank published.
         manager.bank.bank['current'] = None
         returned = manager.show_need_update()
-        self.assertDictEqual(returned, {})
+        self.assertListEqual(returned, [])
 
     @attr('manager')
     @attr('manager.showneedupdate')
@@ -2248,7 +2255,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         alu.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
         alu.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55', 'status': {'over': True}})
         returned = alu.show_need_update()
-        self.assertDictEqual(returned, {'alu': {'current_release': '54', 'next_release': '55'}})
+        self.assertListEqual(returned, [{'name': 'alu', 'current_release': '54', 'next_release': '55'}])
 
     @attr('manager')
     @attr('manager.showneedupdate')
@@ -2268,7 +2275,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         # We reload the banks
         manager = Manager()
         returned = manager.show_need_update()
-        self.assertEqual(len(returned.items()), 2)
+        self.assertEqual(len(returned), 2)
         self.utils.drop_db()
 
     @attr('manager')

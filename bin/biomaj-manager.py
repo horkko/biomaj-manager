@@ -70,13 +70,13 @@ def main():
                         help="BioMAJ database type [MySQL, MongoDB]")
     parser.add_argument('-o', '--out', dest="out",
                         help="Output file")
-    parser.add_argument('-F', '--format', dest="oformat", default="tmpl",
+    parser.add_argument('-F', '--format', dest="oformat",
                         help="Output format. Supported [csv, html, json, tmpl[default]]")
     parser.add_argument('-T', '--templates', dest="template_dir",
                         help="Template directory. Overwrites template_dir")
     parser.add_argument('-S', '--section', dest="tool",
                         help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
-    parser.add_argument('--virtual_dbs', dest="virtual_dbs",
+    parser.add_argument('--vdbs', dest="vdbs",
                         help="Create virtual database HTML pages for tool. [-b REQUIRED]")
 
 
@@ -100,7 +100,10 @@ def main():
                             'fullname': manager.bank.config.get('db.fullname').replace('"', '')})
         if options.oformat:
             writer = Writer(config=manager.config, output=options.out, template_dir=options.template_dir)
-            writer.write(data={'banks': formats}, template='banks_formats' + '.' + options.oformat)
+            writer.write(template='banks_formats.j2.' + options.oformat,
+                         data={'banks': formats, 'generated': Utils.get_now(),
+                               'elapsed': "%.3f" % Utils.elapsed_time()})
+            sys.exit(0)
         else:
             info = []
             supp_formats = ['bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'GenomeAnalysisTK', 'samtools',
@@ -120,7 +123,6 @@ def main():
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
             else:
                 print("No formats supported")
-        Utils.stop_timer()
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
         sys.exit(0)
 
@@ -224,11 +226,19 @@ def main():
 
     if options.show_update:
         manager = Manager(bank=options.bank)
+        Utils.start_timer()
         updates = manager.show_need_update()
-        if updates.keys():
+        if options.oformat:
+            writer = Writer(config=manager.config, output=options.out)
+            writer.write(template='banks_update.j2.' + options.oformat,
+                         data={'banks': updates,
+                               'generated': Utils.get_now(),
+                               'elapsed': "%.3f" % Utils.elapsed_time()})
+            sys.exit(0)
+        elif len(updates) > 0:
             info = []
-            for bank in sorted(updates.keys()):
-                info.append([bank, updates[bank]['current_release'], updates[bank]['next_release']])
+            for bank in updates:
+                info.append([bank['name'], bank['current_release'], bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
@@ -297,7 +307,7 @@ def main():
         print("Biomaj-manager: %s (Biomaj: %s)" % (str(version), str(biomaj_version)))
         sys.exit(0)
 
-    if options.virtual_dbs:
+    if options.vdbs:
         banks_list = []
         if options.bank:
             banks_list.append(options.bank)
@@ -306,15 +316,17 @@ def main():
         virtual_banks = {}
         for bank in banks_list:
             manager = Manager(bank=bank)
-            info = manager.get_bank_sections(tool=options.virtual_dbs)
+            info = manager.get_bank_sections(tool=options.vdbs)
             info['info'] = {'version': manager.current_release(),
                             'description': manager.bank.config.get('db.fullname')}
             virtual_banks[bank] = info
         if virtual_banks.items():
-            virtual_banks['tool'] = options.virtual_dbs
+            virtual_banks['tool'] = options.vdbs
             writer = Writer(template_dir=options.template_dir, config=manager.config, output=options.out)
             writer.write(template='virtual_banks.j2.html',
-                         data={'banks': virtual_banks, 'prod_dir': manager.config.get('GENERAL', 'data.dir')})
+                         data={'banks': virtual_banks,
+                               'prod_dir': manager.config.get('GENERAL', 'data.dir'),
+                               'generated': Utils.get_now()})
         else:
             print("No sections found in bank(s)")
         sys.exit(0)
