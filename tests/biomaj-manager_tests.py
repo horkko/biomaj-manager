@@ -2252,7 +2252,7 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.nextswitch')
-    def test_ManagerNextSwitchDateConfigThrows(self):
+    def test_ManagerNextSwitchDateNoConfigThrows(self):
         """Check the method throws when wrong arg passed"""
         manager = Manager()
         manager.config.remove_option('MANAGER', 'switch.week')
@@ -2268,18 +2268,14 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.next_switch_date()
 
-    @attr('manager')
+    @attr('manager.1')
     @attr('manager.nextswitch')
-    def test_ManagerNextSwitchWithConfigThisWeek(self):
+    def test_ManagerNextSwitchWithConfigEachWeek(self):
         """Check the method gives the right next bank switch date. We are expecting the same week as today"""
         manager = Manager()
         # Get the current week
         week_num = datetime.today().isocalendar()[1]
-        if not week_num % 2:
-            # We are in an even week, we set the param to 'odd' to week number to next week
-            manager.config.set('MANAGER', 'switch.week', 'even')
-        else:
-            manager.config.set('MANAGER', 'switch.week', 'odd')
+        manager.config.set('MANAGER', 'switch.week', 'each')
         returned = manager.next_switch_date()
         self.assertEqual(week_num, returned.isocalendar()[1])
 

@@ -736,8 +736,8 @@ class Manager(object):
                 week_number += 2
             week = 3
         else:
-            # It must always have a rest
-            week = 0.1
+            # For each week, it must be the same week as today
+            week = week_number
         if week_number % week:
             return today + datetime.timedelta(days=(14 - today.isoweekday()))
         else:
