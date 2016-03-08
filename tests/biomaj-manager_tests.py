@@ -2253,6 +2253,15 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.nextswitch')
     def test_ManagerNextSwitchDateConfigThrows(self):
+        """Check the method throws when wrong arg passed"""
+        manager = Manager()
+        manager.config.remove_option('MANAGER', 'switch.week')
+        with self.assertRaises(SystemExit):
+            manager.next_switch_date()
+
+    @attr('manager')
+    @attr('manager.nextswitch')
+    def test_ManagerNextSwitchDateConfigThrows(self):
         """Check the method throws when wrong config"""
         manager = Manager()
         manager.config.set('MANAGER', 'switch.week', 'wrong')
@@ -2261,21 +2270,34 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.nextswitch')
-    def test_ManagerNextSwitchWithConfigOK(self):
-        """Check the method get the value from the config and method returns right value"""
+    def test_ManagerNextSwitchWithConfigThisWeek(self):
+        """Check the method gives the right next bank switch date. We are expecting the same week as today"""
         manager = Manager()
         # Get the current week
         week_num = datetime.today().isocalendar()[1]
-        delta = 0
-        if week_num % 2:
+        if not week_num % 2:
             # We are in an even week, we set the param to 'odd' to week number to next week
             manager.config.set('MANAGER', 'switch.week', 'even')
-            delta = 0
         else:
             manager.config.set('MANAGER', 'switch.week', 'odd')
-            delta = 1
         returned = manager.next_switch_date()
-        self.assertEqual(week_num, returned.isocalendar()[1] + delta)
+        self.assertEqual(week_num, returned.isocalendar()[1])
+
+    @attr('manager')
+    @attr('manager.nextswitch')
+    def test_ManagerNextSwitchWithConfigNextWeek(self):
+        """Check the method gives the right next bank switch date. We are expecting next week"""
+        manager = Manager()
+        # Get the current week
+        week_num = datetime.today().isocalendar()[1]
+        # We are setting config value to get value for next week
+        if not week_num % 2:
+            manager.config.set('MANAGER', 'switch.week', 'odd')
+        else:
+            manager.config.set('MANAGER', 'switch.week', 'even')
+        returned = manager.next_switch_date()
+        # As the expected week must be next week, it is current week number + 1
+        self.assertEqual(week_num + 1, returned.isocalendar()[1])
 
     @attr('manager')
     @attr('manager.setbank')

@@ -685,7 +685,7 @@ class Manager(object):
         Read plugins set from the config manager.properties
 
         :return: List of plugins name
-        :rtype: List of plugins
+        :rtype: list
         """
         plugins_list = []
         if self.config.has_section('PLUGINS'):
@@ -704,31 +704,44 @@ class Manager(object):
         self.plugins = Plugins(manager=self)
         return self.plugins
 
-    def next_switch_date(self, week='even'):
+    def next_switch_date(self, week=None):
         """
         Returns the date of the next bank switch
 
         This method is used to guess when the next bank switch will occur. By default, we consider switching to new
         bank release every other sunday on even week. However, you can configure it with 'switch.week' parameter
-        in 'manager.properties' or even pass it as an argument to the method
+        from 'manager.properties' or even pass it as an argument to the method.
 
-        :param week: Week to perform the switch (Supported ['even', 'odd'])
-        :type week: String
-        :return: Datetime object
+        :param week: Week to perform the switch (Supported ['even', 'odd', 'each'])
+        :type week: str
+        :return: datetime.datetime object
         """
-        if week != 'even' and week != 'odd':
+        if week is None:
+            if self.config.has_option('MANAGER', 'switch.week'):
+                week = self.config.get('MANAGER', 'switch.week')
+            else:
+                Utils.error("Week type is required")
+
+        if week != 'even' and week != 'odd' and week != 'each':
             Utils.error("Wrong week type %s, supported ['even', 'odd']" % str(week))
-        elif self.config.has_option('MANAGER', 'switch.week'):
-            week = self.config.get('MANAGER', 'switch.week')
-            if week != 'even' and week != 'odd':
-                Utils.error("Wrong week type %s, supported ['even', 'odd']" % str(week))
-        week = 2 if week == 'even' else 1
+
         week_number = datetime.datetime.today().isocalendar()[1]
         today = datetime.datetime.today()
-        if week_number % week:
-            return today + datetime.timedelta(days=(7 - today.isoweekday()))
+
+        if week == 'even':
+            week = 2
+        elif week == 'odd':
+            # Special case for first week of the year
+            if week_number == 1:
+                week_number += 2
+            week = 3
         else:
+            # It must always have a rest
+            week = 0.1
+        if week_number % week:
             return today + datetime.timedelta(days=(14 - today.isoweekday()))
+        else:
+            return today + datetime.timedelta(days=(7 - today.isoweekday()))
 
     @bank_required
     def mongo_history(self):
