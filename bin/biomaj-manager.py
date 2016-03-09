@@ -82,6 +82,9 @@ def main():
 
     options = Options()
     parser.parse_args(namespace=options)
+    if not len(sys.argv) > 1:
+        parser.print_help()
+        sys.exit(1)
     Manager.set_simulate(options.simulate)
     Manager.set_verbose(options.verbose)
     
@@ -254,10 +257,12 @@ def main():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
             Utils.ok("Production dir is %s" % manager.get_current_proddir())
+            Utils.ok("Stopping running jobs ...")
             manager.stop_running_jobs()
-            #manager.stop_running_jobs(args=manager.get_bank_data_dir())
+            # manager.stop_running_jobs(args=manager.get_bank_data_dir())
             # manager.bank.publish()
-            #manager.restart_stopped_jobs()
+            Utils.ok("Restarting stopped jobs ...")
+            manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
         else:
             print("[%s] Not ready to switch" % manager.bank.name)
@@ -265,6 +270,7 @@ def main():
 
     if options.test:
         manager = Manager(bank=options.bank)
+        print(manager.get_bank_data_dir())
         #print("No test defined")
         sys.exit(0)
 
