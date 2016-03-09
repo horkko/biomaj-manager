@@ -2268,7 +2268,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.next_switch_date()
 
-    @attr('manager.1')
+    @attr('manager')
     @attr('manager.nextswitch')
     def test_ManagerNextSwitchWithConfigEachWeek(self):
         """Check the method gives the right next bank switch date. We are expecting the same week as today"""
@@ -2294,6 +2294,22 @@ class TestBioMajManagerManager(unittest.TestCase):
         returned = manager.next_switch_date()
         # As the expected week must be next week, it is current week number + 1
         self.assertEqual(week_num + 1, returned.isocalendar()[1])
+
+    @attr('manager')
+    @attr('manager.nextswitch')
+    def test_ManagerNextSwitchWithConfigThisWeek(self):
+        """Check the method gives the right next bank switch date. We are expecting next week"""
+        manager = Manager()
+        # Get the current week
+        week_num = datetime.today().isocalendar()[1]
+        # We are setting config value to get value for next week
+        if not week_num % 2:
+            manager.config.set('MANAGER', 'switch.week', 'even')
+        else:
+            manager.config.set('MANAGER', 'switch.week', 'odd')
+        returned = manager.next_switch_date()
+        # As the expected week must be next week, it is current week number + 1
+        self.assertEqual(week_num, returned.isocalendar()[1])
 
     @attr('manager')
     @attr('manager.setbank')

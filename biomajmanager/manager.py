@@ -723,7 +723,7 @@ class Manager(object):
                 Utils.error("Week type is required")
 
         if week != 'even' and week != 'odd' and week != 'each':
-            Utils.error("Wrong week type %s, supported ['even', 'odd']" % str(week))
+            Utils.error("Wrong week type %s, supported ['even', 'odd', 'each']" % str(week))
 
         week_number = datetime.datetime.today().isocalendar()[1]
         today = datetime.datetime.today()
@@ -775,10 +775,9 @@ class Manager(object):
                     status = 'online'
                 else:
                     status = 'deprecated'
-            history.append({'_id': '@'.join(['bank',
-                                             self.bank.name,
-                                             str(prod['remoterelease']),
-                                             str(Utils.time2datefmt(prod['session']))]),
+            hid = '@'.join(['bank', self.bank.name, str(prod['remoterelease']),
+                            str(Utils.time2datefmt(prod['session']))])
+            history.append({'_id': hid,
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(prod['remoterelease']),
@@ -796,13 +795,10 @@ class Manager(object):
             new_id = '@'.join(['bank',
                                self.bank.name,
                                str(sess['remoterelease']),
-                               str(Utils.time2datefmt(sess['id']))]),
+                               str(Utils.time2datefmt(sess['id']))])
             if new_id in map(lambda d: d['_id'], history):
                 continue
-            history.append({'_id': '@'.join(['bank',
-                                             self.bank.name,
-                                             str(sess['remoterelease']),
-                                             str(Utils.time2datefmt(sess['id']))]),
+            history.append({'_id': new_id,
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-BioMAJ Manager - Swiss knife around BioMAJ 3
+BioMAJ Manager - Swiss knife for BioMAJ 3
 
 This script is used to use take advantage of functions developed around BioMAJ3 API
 To see what's possible, just type biomaj-manager.py --help
@@ -24,6 +24,7 @@ from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 from tabulate import tabulate
 __author__ = 'tuco'
+
 
 def main():
     """This is the main function treating arguments passed on the command line."""
@@ -78,7 +79,6 @@ def main():
                         help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
     parser.add_argument('--vdbs', dest="vdbs",
                         help="Create virtual database HTML pages for tool. [-b REQUIRED]")
-
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -158,8 +158,8 @@ def main():
         if not options.bank:
             Utils.error("Getting info required a bank name")
         manager = Manager(bank=options.bank)
-        manager.bank_info()
-        print(manager.get_config_regex(regex='^db.version.*'))
+        info = manager.bank_info()
+        pprint(info)
         print(manager.bank.config.get('db.packages'))
         sys.exit(0)
 
