@@ -70,7 +70,6 @@ class Writer(object):
         if self.output is None:
             ofile = sys.stdout
         else:
-            Utils.warn("We are opening new file %s" % self.output)
             try:
                 ofile = open(self.output, 'w')
             except IOError as err:

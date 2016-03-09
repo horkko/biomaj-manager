@@ -229,6 +229,27 @@ class Manager(object):
         """Returns the formats as a List of string"""
         return self.formats(flat=True)
 
+    @bank_required
+    def get_bank_data_dir(self):
+        """
+        Returns the complete path where the bank data_dir is located
+
+        :return: Path to the current bank data dir
+        :rtype: String
+        """
+        release = self.current_release()
+        if release:
+            prod = self.bank.get_production(release)
+            if not prod:
+                Utils.error("Can't find production for release %s" % str(release))
+            elif 'data_dir' in prod:
+                return os.path.join(prod['data_dir'], self.bank.name)
+            else:
+                Utils.error("Can't get current production directory, 'data_dir' " +
+                            "missing in production document field")
+        else:
+            Utils.error("Can't get current production directory: 'current_release' not available")
+
     @staticmethod
     def get_bank_list(visibility="public"):
         """

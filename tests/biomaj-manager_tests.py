@@ -1648,6 +1648,59 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getbankdatadir')
+    def test_ManagerGetBankDataDirRaises(self):
+        """Check method raises "Can't get current production directory: 'current_release' ..."""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        with self.assertRaises(SystemExit):
+            manager.get_bank_data_dir()
+
+    @attr('manager')
+    @attr('manager.getbankdatadir')
+    def test_ManagerGetBankDataDirRaisesNoCurrentRelease(self):
+        """Check method raises "Can't get current production directory: 'current_release' ..."
+         release ok, prod not ok
+        """
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'release': '54'})
+        manager.bank.bank['production'] = []
+        with self.assertRaises(SystemExit):
+            manager.get_bank_data_dir()
+
+    @attr('manager')
+    @attr('manager.getbankdatadir')
+    def test_ManagerGetBankDataDirOK(self):
+        """Check method returns path to production dir"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        prod_dir = 'alu_54'
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'release': '54'})
+        manager.bank.bank['production'].append({'session': now, 'release': '54', 'data_dir': self.utils.data_dir})
+        returned = manager.get_bank_data_dir()
+        expected = os.path.join(self.utils.data_dir, manager.bank.name)
+        self.assertEqual(expected, returned)
+
+    @attr('manager')
+    @attr('manager.getbankdatadir')
+    def test_ManagerGetBankDataDirRaisesNoProd(self):
+        """Check method raises "Can't get current production directory, 'prod_dir' or 'data_dir' missing ..."""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        prod_dir = 'alu_54'
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['sessions'].append({'id': now, 'release': prod_dir})
+        manager.bank.bank['production'].append({'session': now, 'release': prod_dir})
+        with self.assertRaises(SystemExit):
+            manager.get_bank_data_dir()
+
+    @attr('manager')
     @attr('manager.currentproddir')
     def test_ManagerGetCurrentProdDirRaises(self):
         """Check method raises "Can't get current production directory: 'current_release' ..."""
