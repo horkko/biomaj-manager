@@ -2270,13 +2270,43 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.nextrelease')
+    def test_ManagerNextReleaseThrowsNoProduction(self):
+        """Check method throws an exception if no production yet"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        with self.assertRaises(SystemExit):
+            manager.next_release()
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.nextrelease')
     def test_ManagerNextReleaseThrowsNoSessions(self):
         """Check method throws an exception if no 'sessions'"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
         manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now, 'remoterelease': '55'})
+        manager.bank.bank['production'].append({'session': now + 1, 'remoterelease': '56'})
         del manager.bank.bank['sessions']
+        with self.assertRaises(SystemExit):
+            manager.next_release()
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.nextrelease')
+    def test_ManagerNextReleaseReturnsNone(self):
+        """Check method returns a None release because 'workflow_status' is False"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now})
+        manager.bank.bank['production'].append({'session': now + 1})
+        manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
+        manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55', 'workflow_status': False})
         self.assertIsNone(manager.next_release())
         self.utils.drop_db()
 

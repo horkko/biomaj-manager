@@ -845,27 +845,28 @@ class Manager(object):
         if self._next_release:
             return self._next_release
         next_release = None
+        session = None
+        production = None
         # If we have a current release set, we need to check the last session from sessions
         # which are not current and not in production
-        if 'current' in self.bank.bank and self.bank.bank['current']:
-            production = self.get_last_production_ok(current_id=self.bank.bank['current'])
-            if production is None:
-                return next_release
-            session = self.get_session_from_id(production['session'])
+        # if 'current' in self.bank.bank and self.bank.bank['current']:
+        #     current_id = self.bank.bank['current']
+        # elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
+        #     production = self.get_last_production_ok()
+        # else:
+        #     Utils.error("Can't determine next release, no production nor current release published!")
+
+        production = self.get_last_production_ok()
+        if production is None:
+            Utils.error("No 'production' release found searching for next release")
+        session = self.get_session_from_id(production['session'])
+        if session is not None:
             # Pending sessions are excluded
             if 'workflow_status' in session and session['workflow_status']:
                 next_release = session['remoterelease']
-        elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
-            prod = self.get_last_production_ok()
-            if prod is None:
-                Utils.error("No production release found searching for next release")
-            session = self.get_session_from_id(prod['session'])
-            if session is not None:
-                next_release = session['remoterelease']
-            else:
-                Utils.error("Can't find release in session '%s'" % str(session['id']))
         else:
-            Utils.error("Can't determine next release, no production nor current release published!")
+            Utils.error("Can't find release in session '%s'" % str(production['session']))
+
         self._next_release = next_release
         return self._next_release
 
