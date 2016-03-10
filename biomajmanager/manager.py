@@ -1,7 +1,7 @@
 """Main class of BioMAJ Manager"""
 
 from __future__ import print_function
-from datetime import datetime
+import datetime
 import re
 import os
 import select
@@ -26,7 +26,6 @@ class Manager(object):
     # Verbose mode
     verbose = False
     # Default date format string
-    DATE_FMT = "%Y-%m-%d %H:%M:%S"
     SAVE_BANK_LINE_PATTERN = "%-20s\t%-30s\t%-20s\t%-20s\t%-20s\n"
 
     def __init__(self, bank=None, cfg=None, global_cfg=None):
@@ -68,7 +67,7 @@ class Manager(object):
             Utils.error("Can't load configuration file. Exit with code %s" % str(err))
 
         if bank is not None:
-            self.bank = Bank(name=bank, no_log=True)
+            self.bank = Bank(bank, no_log=True)
             if self.bank.config.get('data.dir'):
                 self.bank_prod = self.bank.config.get('data.dir')
 
@@ -230,6 +229,27 @@ class Manager(object):
         """Returns the formats as a List of string"""
         return self.formats(flat=True)
 
+    @bank_required
+    def get_bank_data_dir(self):
+        """
+        Returns the complete path where the bank data_dir is located
+
+        :return: Path to the current bank data dir
+        :rtype: String
+        """
+        release = self.current_release()
+        if release:
+            prod = self.bank.get_production(release)
+            if not prod:
+                Utils.error("Can't find production for release %s" % str(release))
+            elif 'data_dir' in prod:
+                return os.path.join(prod['data_dir'], self.bank.name)
+            else:
+                Utils.error("Can't get current production directory, 'data_dir' " +
+                            "missing in production document field")
+        else:
+            Utils.error("Can't get current production directory: 'current_release' not available")
+
     @staticmethod
     def get_bank_list(visibility="public"):
         """
@@ -239,7 +259,7 @@ class Manager(object):
         :type visibility: String
         :return: List of bank name
         :rtype: List of string
-                Thorws SystemExit exception
+                Throws SystemExit exception
         """
         if visibility not in ['all', 'public', 'private']:
             Utils.error("Bank visibility '%s' not supported. Only one of ['all', 'public', 'private']" % visibility)
@@ -250,7 +270,7 @@ class Manager(object):
             except Exception as err:
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
         try:
-            banks_list = []
+            bank_list = []
             if MongoConnector.db is None:
                 from pymongo.errors import PyMongoError
                 # We  surrounded this block of code with a try/except because there's a behavior
@@ -262,9 +282,9 @@ class Manager(object):
             for bank in banks:
                 # Avoid document without bank name
                 if 'name' in bank:
-                    banks_list.append(bank['name'])
-            banks_list.sort()
-            return banks_list
+                    bank_list.append(bank['name'])
+            bank_list.sort()
+            return bank_list
         except PyMongoError as err:
             Utils.error("Can't connect to MongoDB: %s" % str(err))
 
@@ -298,6 +318,9 @@ class Manager(object):
         :param tool: Name of the index to search section(s) for
         :type tool: String
         :return: Dict of List
+                 {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]},
+                  'pro': {'dbs': [ ... ], 'sections': ['sec1', 'sec2', ..] }
+                 }
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
@@ -427,6 +450,38 @@ class Manager(object):
                             'future_release')
 
     @bank_required
+    def get_last_production_ok(self, current_id=None):
+        """
+        Search for the last release in production which ran ok
+
+        :param current_id:
+        :type current_id: Int
+        :return: Dict or None if empty 'production'
+        """
+        last_release = None
+        if current_id is None and 'current' in self.bank.bank:
+            current_id = self.bank.bank['current']
+        if 'production' not in self.bank.bank:
+            Utils.error("No 'production' found in database!")
+        productions = sorted(self.bank.bank['production'],
+                             key=lambda k: k['session']
+                                 if 'session' in k else Utils.error("No 'session' found  in 'production'"),
+                             reverse=True)
+        if len(productions) == 0:
+            return last_release
+        # In case, bank not published yet (no 'current' set in database), we consider last production ok
+        if current_id is None:
+            if 'session' in productions[0]:
+                last_release = productions[0]
+        else:
+            for prod in productions:
+                if prod['session'] == current_id:
+                    continue
+                last_release = prod
+                break
+        return last_release
+
+    @bank_required
     def get_pending_sessions(self):
         """
         Request the database to check if some session(s) is/are pending to complete
@@ -452,7 +507,7 @@ class Manager(object):
             if session and 'remoterelease' in session and session['remoterelease']:
                 return str(session['remoterelease'])
             else:
-                Utils.error("[%s] Cant find a 'remoterelease' for session %s" % (self.bank.name, session['id']))
+                Utils.error("[%s] Can't find a 'remoterelease' for session %s" % (self.bank.name, session['id']))
         return None
 
     @bank_required
@@ -566,7 +621,7 @@ class Manager(object):
                     status = 'deprecated'
             history.append({
                 # Convert the time stamp from time() to a date
-                'created': Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                'created': Utils.time2datefmt(prod['session']),
                 'id': prod['session'],
                 'removed': None,
                 'status': status,
@@ -587,7 +642,7 @@ class Manager(object):
                     continue
                 path = os.path.join(sess['data_dir'], str(sess['dir_version']), str(sess['prod_dir']))
                 history.append({
-                    'created': Utils.time2datefmt(sess['id'], Manager.DATE_FMT),
+                    'created': Utils.time2datefmt(sess['id']),
                     'id': sess['id'],
                     'removed': True,
                     'status': 'deleted',
@@ -613,16 +668,16 @@ class Manager(object):
         has_failed = False
         last_update_id = None
 
-        # We have to be careful as pending session have over.status to false
-        pending = self.get_pending_sessions()
-
         if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
             last_update_id = self.bank.bank['last_update_session']
         # If no last_update_session, this mean not last session ran. We return False
         else:
             return has_failed
 
-        # Check the last updated session is not pending.We consider pending session has failed because not ended
+        # We have to be careful as pending session have over.status to false
+        pending = self.get_pending_sessions()
+
+        # Check the last updated session is not pending. We consider pending session has failed because not ended
         if pending and last_update_id:
             for pend in pending:
                 if pend['session_id'] == last_update_id:
@@ -635,14 +690,15 @@ class Manager(object):
         # We then search in the session, base on 'last_update_session' field
         session = self.get_session_from_id(last_update_id)
         if session is None:
-            return has_failed
+            Utils.error("[%s] Can't find last_update_session %s in sessions! Please fix it!"
+                        % (self.bank.name, str(last_update_id)))
         # If session terminated OK, status.over should be True
         # biomaj >= 3.0.14, new field 'workflow_status' which tells if the update workflow went ok
-        if 'status' in session and 'over' in session['status'] and not session['status']['over']:
-            if 'workflow_status' in session:
-                has_failed = not session['workflow_status']
-            else:
-                has_failed = True
+        # We do not count on status.over anymore, we have new field 'workflow_status'
+        if 'workflow_status' in session:
+            has_failed = not session['workflow_status']
+        else:
+            has_failed = True
         return has_failed
 
     def list_plugins(self):
@@ -650,13 +706,14 @@ class Manager(object):
         Read plugins set from the config manager.properties
 
         :return: List of plugins name
-        :rtype: List of plugins
+        :rtype: list
         """
         plugins_list = []
         if self.config.has_section('PLUGINS'):
             plugins = self.config.get('PLUGINS', 'plugins.list')
             for plugin in plugins.split(','):
-                plugins_list.append(plugin)
+                if plugin != '':
+                    plugins_list.append(plugin)
         return plugins_list
 
     def load_plugins(self):
@@ -668,6 +725,45 @@ class Manager(object):
         self.plugins = Plugins(manager=self)
         return self.plugins
 
+    def next_switch_date(self, week=None):
+        """
+        Returns the date of the next bank switch
+
+        This method is used to guess when the next bank switch will occur. By default, we consider switching to new
+        bank release every other sunday on even week. However, you can configure it with 'switch.week' parameter
+        from 'manager.properties' or even pass it as an argument to the method.
+
+        :param week: Week to perform the switch (Supported ['even', 'odd', 'each'])
+        :type week: str
+        :return: datetime.datetime object
+        """
+        if week is None:
+            if self.config.has_option('MANAGER', 'switch.week'):
+                week = self.config.get('MANAGER', 'switch.week')
+            else:
+                Utils.error("Week type is required")
+
+        if week != 'even' and week != 'odd' and week != 'each':
+            Utils.error("Wrong week type %s, supported ['even', 'odd', 'each']" % str(week))
+
+        week_number = datetime.datetime.today().isocalendar()[1]
+        today = datetime.datetime.today()
+
+        if week == 'even':
+            week = 2
+        elif week == 'odd':
+            # Special case for first week of the year
+            if week_number == 1:
+                week_number += 2
+            week = 3
+        else:
+            # For each week, it must be the same week as today
+            week = week_number
+        if week_number % week:
+            return today + datetime.timedelta(days=(14 - today.isoweekday()))
+        else:
+            return today + datetime.timedelta(days=(7 - today.isoweekday()))
+
     @bank_required
     def mongo_history(self):
         """
@@ -675,6 +771,7 @@ class Manager(object):
 
         :return: history + extra info to be included into bioweb (Institut Pasteur only)
         """
+        ## TODO: During the sessions check, make sure the sessions.update is true, meaning that we'done something
         productions = sessions = None
         if 'production' in self.bank.bank and self.bank.bank['production']:
             productions = self.bank.bank['production']
@@ -699,10 +796,9 @@ class Manager(object):
                     status = 'online'
                 else:
                     status = 'deprecated'
-            history.append({'_id': '@'.join(['bank',
-                                             self.bank.name,
-                                             str(prod['remoterelease']),
-                                             str(Utils.time2datefmt(prod['session'], Manager.DATE_FMT))]),
+            hid = '@'.join(['bank', self.bank.name, str(prod['remoterelease']),
+                            str(Utils.time2datefmt(prod['session']))])
+            history.append({'_id': hid,
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(prod['remoterelease']),
@@ -720,14 +816,10 @@ class Manager(object):
             new_id = '@'.join(['bank',
                                self.bank.name,
                                str(sess['remoterelease']),
-                               str(Utils.time2datefmt(sess['id'], Manager.DATE_FMT))])
+                               str(Utils.time2datefmt(sess['id']))])
             if new_id in map(lambda d: d['_id'], history):
                 continue
-
-            history.append({'_id': '@'.join(['bank',
-                                             self.bank.name,
-                                             str(sess['remoterelease']),
-                                             str(Utils.time2datefmt(sess['id'], Manager.DATE_FMT))]),
+            history.append({'_id': new_id,
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
@@ -756,23 +848,24 @@ class Manager(object):
         # If we have a current release set, we need to check the last session from sessions
         # which are not current and not in production
         if 'current' in self.bank.bank and self.bank.bank['current']:
-            if 'sessions' not in self.bank.bank:
-                Utils.error("Can't determine next_release, no sessions available!")
-            current_id = self.bank.bank['current']
-            rev_sessions = self.bank.bank['sessions']
-            rev_sessions.reverse()
-            for session in rev_sessions:
-                if session['id'] == current_id:
-                    continue
-                # Pending sessions are excluded
-                if 'status' in session and 'over' in session['status'] and session['status']['over']:
-                    next_release = session['remoterelease']
-                    break
-        # In case no 'current' already set, for example new bank installed and not published yet
+            production = self.get_last_production_ok(current_id=self.bank.bank['current'])
+            if production is None:
+                return next_release
+            session = self.get_session_from_id(production['session'])
+            # Pending sessions are excluded
+            if 'workflow_status' in session and session['workflow_status']:
+                next_release = session['remoterelease']
         elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
-            prod = self.
+            prod = self.get_last_production_ok()
+            if prod is None:
+                Utils.error("No production release found searching for next release")
+            session = self.get_session_from_id(prod['session'])
+            if session is not None:
+                next_release = session['remoterelease']
+            else:
+                Utils.error("Can't find release in session '%s'" % str(session['id']))
         else:
-            Utils.error("Can't determine next_release, no production found nor current release published")
+            Utils.error("Can't determine next release, no production nor current release published!")
         self._next_release = next_release
         return self._next_release
 
@@ -804,7 +897,7 @@ class Manager(object):
             bank_file = os.path.join(self.bank_prod,
                                      'doc',
                                      'versions',
-                                     'version.' + datetime.now().strftime("%Y-%m-%d"))
+                                     'version.' + datetime.datetime.now().strftime("%Y-%m-%d"))
         # Check path exists
         directory = os.path.dirname(bank_file)
         if not os.path.isdir(directory):
@@ -824,7 +917,7 @@ class Manager(object):
                             if bank.bank['current'] == prod['session']:
                                 # bank / release / creation / size / remote server
                                 file_line = FILE_PATTERN % (bank.name, "Release " + prod['remoterelease'],
-                                                            Utils.time2datefmt(prod['session'], Manager.DATE_FMT),
+                                                            Utils.time2datefmt(prod['session']),
                                                             str(prod['size']) if 'size' in prod and prod['size']
                                                                               else 'NA',
                                                             bank.config.get('server'))
@@ -912,18 +1005,21 @@ class Manager(object):
 
         :return:
         """
-        banks = {}
+        banks = []
         if self.bank:
             if self.can_switch():
-                banks[self.bank.name] = {'current_release': self.current_release(), 'next_release': self.next_release()}
+                banks.append({'name': self.bank.name,
+                              'current_release': self.current_release(),
+                              'next_release': self.next_release()})
             return banks
 
         banks_list = Manager.get_bank_list()
         for bank in banks_list:
-            self.bank = Bank(name=bank, no_log=True)
+            self.set_bank_from_name(name=bank)
             if self.can_switch():
-                banks[bank] = {'current_release': self.current_release(), 'next_release': self.next_release()}
-            self.bank = None
+                banks.append({'name': bank,
+                              'current_release': self.current_release(),
+                              'next_release': self.next_release()})
         return banks
 
     @user_granted
@@ -947,9 +1043,11 @@ class Manager(object):
         """
         Check the bank release is ready to be published.
 
-        To do this, we search for the last session that completed OK. We then search in
-        banks.status first, meaning the last ran session completed OK.
-        Otherwise, we loop over the session from the end, until we find a session that completed OK.
+        We first check we have a last session recorded using 'last_update_session'. It must be here, otherwise, warning.
+        Then, if we've got a 'current', we check 'current' is not equal to'last_update_session', meaning no update has
+        been performed since last publish. If 'current' is not equal to 'last_update_session', we need to search for
+        the last update that went ok and is ok for publishing.
+        Otherwise, we warn the user and we return false.
 
         :return: Boolean
         """
@@ -961,6 +1059,7 @@ class Manager(object):
             return ready
         last_update_id = self.bank.bank['last_update_session']
 
+        current_id = None
         # We're ok there's already a published release
         if 'current' in self.bank.bank:
             current_id = self.bank.bank['current']
@@ -970,46 +1069,17 @@ class Manager(object):
                 if Manager.get_verbose():
                     Utils.warn(("[%s] There is not update ready to be published. " +
                                "Last session is already online") % self.bank.name)
-            else:
-                ready = True
+                return ready
+
+        production = self.get_last_production_ok(current_id=current_id)
+        if production is None:
             return ready
-        # We then search from the last session
-        elif 'status' in self.bank.bank and self.bank.bank['status']:
-            if 'over' in self.bank.bank['status'] and self.bank.bank['status']['over']:
-                ready = True
-            else:
-                ready = False
-        # We then search into sessions for a completed OK session
-        elif 'sessions' in self.bank.bank and len(self.bank.bank['sessions']):
-            sessions = self.bank.bank['sessions']
-            # We then start from the last session ran
-            sessions.reverse()
-            for session in sessions:
-                if ('status' in session and 'over' in session['status'] and session['status']['over']) or \
-                        ('workflow_status' in session and session['workflow_status']):
-                    # biomaj >= 3.014: New field 'workflow_status' reporting status of all workflow status
-                    ready = True
-                    self._next_release = session['remoterelease']
-                    break
-                else:
-                    ready = False
-        # We first search for the last completed run. It should be in production
-        # We can search on status. If not in status, then it could be coming from
-        # a fresh migration (biomaj-migrate does not set status)
-        elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
-            # An entry in production means we've completed the update workflow
-            # In case of a fresh biomaj-migrate, status not set, we consider it ok
-            ready = True
-            # for production in self.bank.bank['production']:
-            #     if last_update_id == production['session']:
-            #         session = self.get_session_from_id(last_update_id)
-            #         # We search for status in session
-            #         if session and 'over' in session['status']:
-            #             ready = session['status']['over']
-            #         # In case of a fresh biomaj-migrate, status not set, we consider
-            #         # production status to True
-            #         else:
-            #             ready = True
+        # We anyway double check in session if everything went ok
+        session = self.get_session_from_id(production['session'])
+        if session and 'workflow_status' in session:
+            ready = session['workflow_status']
+        else:
+            ready = False
         return ready
 
     def _current_user(self):
