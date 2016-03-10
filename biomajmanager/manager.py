@@ -768,6 +768,11 @@ class Manager(object):
                 if 'status' in session and 'over' in session['status'] and session['status']['over']:
                     next_release = session['remoterelease']
                     break
+        # In case no 'current' already set, for example new bank installed and not published yet
+        elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
+            prod = self.
+        else:
+            Utils.error("Can't determine next_release, no production found nor current release published")
         self._next_release = next_release
         return self._next_release
 
