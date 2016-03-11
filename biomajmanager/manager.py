@@ -479,7 +479,7 @@ class Manager(object):
         if current_id is None:
             last_release = last_production
         elif last_production['session'] != current_id:
-                last_release = last_production
+            last_release = last_production
         return last_release
 
     @bank_required
