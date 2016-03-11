@@ -1337,8 +1337,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check we retrieve the right session id (Not None)"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
-                'sessions': [{'id': 1, 'status': {'over': True}},
-                             {'id': 2, 'status': {'over': True}}]}
+                'sessions': [{'id': 1, 'workflow_status': True},
+                             {'id': 2, 'workflow_status': True}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertIsNotNone(manager.get_session_from_id(1))
@@ -1350,8 +1350,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check we retrieve the right session id (None)"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
-                'sessions': [{'id': 1, 'status': {'over': True}},
-                             {'id': 2, 'status': {'over': True}}]}
+                'sessions': [{'id': 1, 'workflow_status': True},
+                             {'id': 2, 'workflow_status': True}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         self.assertIsNone(manager.get_session_from_id(3))
@@ -1363,8 +1363,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method raises exception"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         data = {'name': 'alu',
-                'sessions': [{'id': 1, 'status': {'over': True}},
-                             {'id': 2, 'status': {'over': True}}]}
+                'sessions': [{'id': 1, 'workflow_status': True},
+                             {'id': 2, 'workflow_status': True}]}
         manager = Manager(bank='alu')
         manager.bank.bank = data
         with self.assertRaises(SystemExit):
@@ -1756,10 +1756,9 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.getlastproductionok')
-    def test_ManagerGetLastProductionokNoArgsNoProductionInBankThrows(self):
+    def test_ManagerGetLastProductionokNoProductionInBankThrows(self):
         """Check the method throws when no 'production' in bank"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        now = time.time()
         manager = Manager(bank='alu')
         del manager.bank.bank['production']
         with self.assertRaises(SystemExit):
@@ -1768,36 +1767,42 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.getlastproductionok')
-    def test_ManagerGetLastProductionokNoArgsNoSessionsInProductionThrows(self):
-        """Check the method throws when no 'session' in 'production'"""
+    def test_ManagerGetLastProductionOKProductionsEmptyReturnsNone(self):
+        """Check the method returns None if 'production' is empty"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        now = time.time()
         manager = Manager(bank='alu')
-        manager.bank.bank['current'] = now
-        manager.bank.bank['production'].append({'fakekey': now})
+        self.assertIsNone(manager.get_last_production_ok())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.getlastproductionok')
+    def test_ManagerGetLastProductionokNoSessionsThrows(self):
+        """Check the method throws when no 'sessions'"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['production'].append({'fakekey': 'ok'})
         with self.assertRaises(SystemExit):
             manager.get_last_production_ok()
         self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.getlastproductionok')
-    def test_ManagerGetLastProductionokNoArgsRightProductionOrder(self):
-        """Check the method sort ok 'production'"""
+    def test_ManagerGetLastProductionOkRightProductionWithCurrent(self):
+        """Check the method get last 'production' when a 'current' is set"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
-        manager.bank.bank['current'] = now + 2
-        manager.bank.bank['production'].append({'session': now + 1, 'remoterelease': '1'})
-        manager.bank.bank['production'].append({'session': now, 'remoterelease': '2'})
-        manager.bank.bank['production'].append({'session': now + 2, 'remoterelease': '3'})
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now, 'remoterelease': '1'})
+        manager.bank.bank['production'].append({'session': now + 1, 'remoterelease': '2'})
         prod = manager.get_last_production_ok()
-        self.assertEqual(prod['remoterelease'], '1')
+        self.assertEqual(prod['remoterelease'], '2')
         self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.getlastproductionok')
-    def test_ManagerGetLastProductionokNoArgsCurrentNotInBank(self):
-        """Check the method sort ok 'production'"""
+    def test_ManagerGetLastProductionOKRightProductionNoCurrent(self):
+        """Check the method return right production without 'current' set"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -1806,20 +1811,20 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['production'].append({'session': now + 2, 'remoterelease': '3'})
         manager.bank.bank['production'].append({'session': now + 1, 'remoterelease': '2'})
         prod = manager.get_last_production_ok()
-        self.assertEqual(prod['remoterelease'], '3')
+        self.assertEqual(prod['remoterelease'], '2')
         self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.getlastproductionok')
-    def test_ManagerGetLastProductionokNoArgsCurrentInBank(self):
-        """Check the method returns right production even without arg"""
+    def test_ManagerGetLastProductionOKLastProductionIsCurrent(self):
+        """Check the method returns None when 'current' is the last 'production'"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
         manager.bank.bank['current'] = now
-        manager.bank.bank['production'].append({'session': now + 1, 'remoterelease': '54'})
+        manager.bank.bank['production'].append({'session': now, 'remoterelease': '54'})
         prod = manager.get_last_production_ok()
-        self.assertEqual(prod['remoterelease'], '54')
+        self.assertIsNone(prod)
         self.utils.drop_db()
 
     @attr('manager')
@@ -2572,7 +2577,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         now = time.time()
         manager.set_verbose(True)
         manager.bank.bank['current'] = now
-        # To be sure we set 'current' from MongoDB to null
         manager.bank.bank['last_update_session'] = now
         manager.bank.bank['sessions'].append({'id': now, 'workflow_status': False})
         self.assertFalse(manager.can_switch())

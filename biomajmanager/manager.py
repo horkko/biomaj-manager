@@ -450,35 +450,36 @@ class Manager(object):
                             'future_release')
 
     @bank_required
-    def get_last_production_ok(self, current_id=None):
+    def get_last_production_ok(self):
         """
         Search for the last release in production which ran ok
 
-        :param current_id:
-        :type current_id: Int
-        :return: Dict or None if empty 'production'
+        :return: 'production' Dict or None if
+                                           production is empty
+                                           last production is the current
+                  Throws is no 'production' or no 'sessions' key
         """
         last_release = None
-        if current_id is None and 'current' in self.bank.bank:
-            current_id = self.bank.bank['current']
+        current_id = None
+
         if 'production' not in self.bank.bank:
             Utils.error("No 'production' found in database!")
-        productions = sorted(self.bank.bank['production'],
-                             key=lambda k: k['session']
-                                 if 'session' in k else Utils.error("No 'session' found  in 'production'"),
-                             reverse=True)
+        productions = self.bank.bank['production']
         if len(productions) == 0:
             return last_release
-        # In case, bank not published yet (no 'current' set in database), we consider last production ok
+
+        last_production = productions[-1]
+        # Then we have a problem
+        if 'session' not in last_production:
+            Utils.error("We could not find a 'session' in last production")
+        # If we already have a current release published we take into account
+        if 'current' in self.bank.bank and self.bank.bank['current']:
+            current_id = self.bank.bank['current']
+
         if current_id is None:
-            if 'session' in productions[0]:
-                last_release = productions[0]
-        else:
-            for prod in productions:
-                if prod['session'] == current_id:
-                    continue
-                last_release = prod
-                break
+            last_release = last_production
+        elif last_production['session'] != current_id:
+                last_release = last_production
         return last_release
 
     @bank_required
@@ -1068,11 +1069,11 @@ class Manager(object):
             if current_id == last_update_id:
                 ready = False
                 if Manager.get_verbose():
-                    Utils.warn(("[%s] There is not update ready to be published. " +
+                    Utils.warn(("[%s] There is no update ready to be published. " +
                                "Last session is already online") % self.bank.name)
                 return ready
 
-        production = self.get_last_production_ok(current_id=current_id)
+        production = self.get_last_production_ok()
         if production is None:
             return ready
         # We anyway double check in session if everything went ok
