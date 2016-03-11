@@ -148,6 +148,7 @@ def main():
         else:
             bank_list.append(options.bank)
 
+        Utils.start_timer()
         for bank in bank_list:
             manager = Manager(bank=bank)
             history.append({'name': bank, 'history': manager.mongo_history()})
@@ -157,7 +158,8 @@ def main():
             else:
                 writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
                 writer.write(template='history.j2.' + options.oformat,
-                             data={'history': history})
+                             data={'history': history, 'generated': Utils.get_now(),
+                                   'elapsed': "%.3f" % Utils.elapsed_time()})
                 sys.exit(0)
         else:
             pprint(history)
