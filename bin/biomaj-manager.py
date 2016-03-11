@@ -150,9 +150,15 @@ def main():
 
         for bank in bank_list:
             manager = Manager(bank=bank)
-            history.append(manager.mongo_history())
-        if options.oformat and options.oformat == 'json':
-            print(json.dumps([h for hist in history for h in hist]))
+            history.append({'name': bank, 'history': manager.mongo_history()})
+        if options.oformat:
+            if options.oformat == 'json':
+                print(json.dumps([h for hist in history for h in hist]))
+            else:
+                writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
+                writer.write(template='history.j2.' + options.oformat,
+                             data={'history': history})
+                sys.exit(0)
         else:
             pprint(history)
         sys.exit(0)
@@ -207,7 +213,7 @@ def main():
             if pending:
                 if options.oformat != 'tmpl':
                     writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
-                    writer.write(template='pending' + '.' + options.oformat, data={'pending': pending})
+                    writer.write(template='pending.j2.' + options.oformat, data={'pending': pending})
                 else:
                     for pend in pending:
                         release = pend['release']
