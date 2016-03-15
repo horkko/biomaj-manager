@@ -2396,7 +2396,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         else:
             manager.config.set('MANAGER', 'switch.week', 'odd')
         returned = manager.next_switch_date()
-        # As the expected week must be next week, it is current week number + 1
         self.assertEqual(week_num, returned.isocalendar()[1])
 
     @attr('manager')

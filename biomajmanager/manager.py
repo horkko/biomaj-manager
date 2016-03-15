@@ -749,21 +749,21 @@ class Manager(object):
 
         week_number = datetime.datetime.today().isocalendar()[1]
         today = datetime.datetime.today()
+	modulo = not week_number % 2
 
         if week == 'even':
-            week = 2
+            week = 1 if modulo else 0
         elif week == 'odd':
-            # Special case for first week of the year
-            if week_number == 1:
-                week_number += 2
-            week = 3
+            week = 0 if modulo else 1
         else:
             # For each week, it must be the same week as today
-            week = week_number
-        if week_number % week:
-            return today + datetime.timedelta(days=(14 - today.isoweekday()))
-        else:
+            week = 1
+
+        # Each week
+        if week:
             return today + datetime.timedelta(days=(7 - today.isoweekday()))
+        else:
+            return today + datetime.timedelta(days=(14 - today.isoweekday()))
 
     @bank_required
     def mongo_history(self):
@@ -825,9 +825,8 @@ class Manager(object):
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
                             'publication_date': str(Utils.time2date(sess['last_update_time'])),
-                            'removal_date': sess['last_modified'] if 'remove_release' in sess['status'] and
-                                                                     sess['status']['remove_release'] is True
-                            else None,
+                            'removal_date': str(Utils.time2datefmt(sess['deleted']))
+                                            if 'deleted' in sess else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packageVersions': packages,
