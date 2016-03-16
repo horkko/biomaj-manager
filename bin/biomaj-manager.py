@@ -243,6 +243,7 @@ def main():
             writer = Writer(config=manager.config, output=options.out)
             writer.write(template='banks_update.j2.' + options.oformat,
                          data={'banks': updates,
+                               'next_switch': manager.next_switch_date().strftime("%Y/%M/%d"),
                                'generated': Utils.get_now(),
                                'elapsed': "%.3f" % Utils.elapsed_time()})
             sys.exit(0)
