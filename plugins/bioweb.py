@@ -124,7 +124,7 @@ class Bioweb(BMPlugin):
                 history.append({'_id': '@'.join(['bank',
                                                  self.manager.bank.name,
                                                  row['version'],
-                                                 row['created'].strftime(self.manager.DATE_FMT)]),
+                                                 row['created'].strftime(Utils.DATE_FMT)]),
                                 'type': 'bank',
                                 'name': self.manager.bank.name,
                                 'version': row['version'],
