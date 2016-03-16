@@ -79,6 +79,8 @@ def main():
                         help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
     parser.add_argument('--vdbs', dest="vdbs",
                         help="Create virtual database HTML pages for tool. [-b REQUIRED]")
+    parser.add_argument('--visibility', dest="visibility", default="public",
+                        help="Banks visibility ['all', 'public'(default), 'private'")
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -162,7 +164,16 @@ def main():
                                    'elapsed': "%.3f" % Utils.elapsed_time()})
                 sys.exit(0)
         else:
-            pprint(history)
+            if len(history):
+                info = []
+                for bank in history:
+                    info = [['[%s] Release' % bank['name'], 'Status', 'Created', 'Removed']]
+                    for hist in bank['history']:
+                        info.append([hist['version'], hist['status'], hist['publication_date'],
+                                     hist['removal_date']])
+                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+            else:
+                print("No history available")
         sys.exit(0)
 
     if options.info:
@@ -238,7 +249,7 @@ def main():
     if options.show_update:
         manager = Manager(bank=options.bank)
         Utils.start_timer()
-        updates = manager.show_need_update()
+        updates = manager.show_need_update(visibility=options.visibility)
         if options.oformat:
             writer = Writer(config=manager.config, output=options.out)
             writer.write(template='banks_update.j2.' + options.oformat,
@@ -253,6 +264,7 @@ def main():
                 info.append([bank['name'], bank['current_release'], bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
+                print("Next bank switch will take place on %s @ 00:00AM" % manager.next_switch_date().strftime("%Y/%M/%d"))
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No bank need to be updated")
@@ -265,12 +277,15 @@ def main():
         if manager.can_switch():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
-            Utils.ok("Production dir is %s" % manager.get_current_proddir())
-            Utils.ok("Stopping running jobs ...")
-            manager.stop_running_jobs()
-            # manager.stop_running_jobs(args=manager.get_bank_data_dir())
-            # manager.bank.publish()
-            Utils.ok("Restarting stopped jobs ...")
+            Utils.ok("[%s] Stopping running jobs ..." % manager.bank.name)
+            manager.stop_running_jobs(args=[manager.get_bank_data_dir()])
+            # Inspired from biomaj-cli.py
+            manager.bank.load_session()
+            last_prod_ok = manager.get_last_production_ok()
+            session = manager.get_session_from_id(last_prod_ok['session'])
+            manager.bank.session._session = session
+            manager.bank.publish()
+            Utils.ok("[%s] Restarting stopped jobs ..." % manager.bank.name)
             manager.restart_stopped_jobs()
             Utils.ok("[%s] Bank published!" % manager.bank.name)
         else:
@@ -279,7 +294,7 @@ def main():
 
     if options.test:
         manager = Manager(bank=options.bank)
-        print(manager.get_bank_data_dir())
+        print(manager.next_release())
         #print("No test defined")
         sys.exit(0)
 
