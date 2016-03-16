@@ -749,7 +749,7 @@ class Manager(object):
 
         week_number = datetime.datetime.today().isocalendar()[1]
         today = datetime.datetime.today()
-	modulo = not week_number % 2
+        modulo = not week_number % 2
 
         if week == 'even':
             week = 1 if modulo else 0
