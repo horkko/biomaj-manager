@@ -236,7 +236,7 @@ class Links(object):
         bank_name = self.manager.bank.name
         current_release = self.manager.current_release()
         data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name,
-                                bank_name + '-' + current_release)
+                                bank_name + '_' + current_release)
         target_dir = self.manager.config.get('MANAGER', 'production.dir')
         source = os.path.join(data_dir, source)
 

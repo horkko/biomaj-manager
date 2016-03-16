@@ -342,6 +342,7 @@ def main():
         else:
             banks_list = Manager.get_bank_list()
         virtual_banks = {}
+        Utils.start_timer()
         for bank in banks_list:
             manager = Manager(bank=bank)
             info = manager.get_bank_sections(tool=options.vdbs)
@@ -354,6 +355,7 @@ def main():
             writer.write(template='virtual_banks.j2.html',
                          data={'banks': virtual_banks,
                                'prod_dir': manager.config.get('GENERAL', 'data.dir'),
+                               'elapsed': "%.3f" % Utils.elapsed_time(),
                                'generated': Utils.get_now()})
         else:
             print("No sections found in bank(s)")
