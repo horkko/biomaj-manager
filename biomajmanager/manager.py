@@ -791,7 +791,7 @@ class Manager(object):
         bank_format = self.bank.config.get('db.formats').split(',')
         status = 'unpublished'
 
-        for prod in sorted(productions, key=lambda created: created['session'], reverse=True ):
+        for prod in productions:
             if 'current' in self.bank.bank:
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
@@ -812,7 +812,7 @@ class Manager(object):
                             'status': status
                             })
 
-        for sess in sorted(sessions, key=lambda created: created['id'], reverse=True ):
+        for sess in sessions:
             # Don't repeat production item stored in sessions
             new_id = '@'.join(['bank',
                                self.bank.name,
@@ -825,8 +825,8 @@ class Manager(object):
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
                             'publication_date': str(Utils.time2date(sess['last_update_time'])),
-                            'removal_date': str(Utils.time2datefmt(sess['deleted']))
-                                            if 'deleted' in sess else None,
+                            'removal_date': str(Utils.time2datefmt(sess['deleted_time']))
+                                            if 'deleted_time' in sess else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packageVersions': packages,
@@ -1000,12 +1000,10 @@ class Manager(object):
         """
         return self.get_pending_sessions()
 
-    def show_need_update(self, visibility='public'):
+    def show_need_update(self):
         """
         Check bank(s) that need to be updated (can be switched)
 
-        :param visibility: Bank visibility, default 'public'
-        :type visibility: String
         :return:
         """
         banks = []
@@ -1016,7 +1014,7 @@ class Manager(object):
                               'next_release': self.next_release()})
             return banks
 
-        banks_list = Manager.get_bank_list(visibility=visibility)
+        banks_list = Manager.get_bank_list()
         for bank in banks_list:
             self.set_bank_from_name(name=bank)
             if self.can_switch():

@@ -19,7 +19,7 @@ import sys
 from biomaj.options import Options
 from biomajmanager.manager import Manager
 from biomajmanager.writer import Writer
-from biomajmanager.news import News
+from biomajmanager.news import News, RSS
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 from tabulate import tabulate
@@ -165,7 +165,6 @@ def main():
                 sys.exit(0)
         else:
             if len(history):
-                info = []
                 for bank in history:
                     info = [['[%s] Release' % bank['name'], 'Status', 'Created', 'Removed']]
                     for hist in bank['history']:
@@ -294,7 +293,8 @@ def main():
 
     if options.test:
         manager = Manager(bank=options.bank)
-        print(manager.next_release())
+        rss = RSS(config=manager.config)
+        rss.generate_rss()
         #print("No test defined")
         sys.exit(0)
 
