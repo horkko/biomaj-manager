@@ -7,7 +7,7 @@ services:
 # Apply only on main branches
 branches:
   except:
-    - /^feature.*$/
+    - /^test.*$/
 # command to install dependencies
 
 install:
