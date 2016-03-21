@@ -35,6 +35,7 @@ class News(object):
             self.max_news = max_news
 
         if news_dir is not None:
+            Utils.verbose("[news] 'news_dir' set from %s" % str(news_dir))
             if not os.path.isdir(news_dir):
                 Utils.error("News dir %s is not a directory." % news_dir)
             self.news_dir = news_dir
@@ -46,6 +47,7 @@ class News(object):
                 Utils.error("Configuration has no 'news.dir' key.")
             else:
                 self.news_dir = config.get('NEWS', 'news.dir')
+        Utils.verbose("[news] 'news_dir' set to %s" % str(self.news_dir))
 
     def get_news(self, news_dir=None):
         """
@@ -69,12 +71,12 @@ class News(object):
         # http://stackoverflow.com/questions/168409/how-do-you-get-a-directory-listing-sorted-by-creation-date-in-python
         # get all entries in the directory w/ stats
         files = (os.path.join(self.news_dir, file) for file in os.listdir(self.news_dir))
-        files = ((os.stat(path), path) for path in files)
-        files = ((stat[ST_CTIME], path) for stat, path in files if S_ISREG(stat[ST_MODE]))
-        for _, ifile in sorted(files):
+        #files = ((os.stat(path), path) for path in files)
+        #files = ((stat[ST_CTIME], path) for stat, path in files if S_ISREG(stat[ST_MODE]))
+        #for _, ifile in sorted(files):
+        for ifile in sorted(files):
             with open(ifile) as new:
-                if Manager.get_verbose():
-                    Utils.ok("Reading news file %s ..." % ifile)
+                Utils.verbose("[news] Reading news file %s ..." % ifile)
                 (label, date, title) = new.readline().strip().split(':')
                 text = ''
                 for line in new.readlines():
@@ -108,21 +110,30 @@ class RSS(News):
                 self.rss_file = self.config.get('RSS', 'rss.file')
         if self.rss_file is None:
             self.fh = sys.stdout
+        Utils.verbose("[rss] rss_file set to %s" % str(self.rss_file))
 
-    def generate_rss(self, rss_file=None):
+    def generate_rss(self, rss_file=None, data=None):
         """
         Generate RSS file from news
 
         :param rss_file: Path to file rss.xml
         :type rss_file: String
+        :param data: Data to create RSS from
+        :type data: Dict data['news'] = { ... }
         :return: Boolean
         """
         if rss_file is not None:
+            Utils.verbose("[rss] rss_file set to %s" % rss_file)
             self.rss_file = rss_file
 
-        data = self.get_news()
+        if data is None:
+            data = self.get_news()
+        elif 'news' not in data:
+            Utils.error("Could not find 'news' key in data")
         if len(data['news']) == 0:
+            Utils.verbose("No data to display")
             return True
+
         items = []
         for new in data['news']:
             item = Item(title=new['title'],

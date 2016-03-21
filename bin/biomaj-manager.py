@@ -55,6 +55,8 @@ def main():
                         help="Show pending release(s). [-b] available")
     parser.add_argument('-s', '--switch', dest="switch", action="store_true", default=False,
                         help="Switch a bank to its new version. [-b REQUIRED]")
+    parser.add_argument('-x', '--rss', dest="rss", action="store_true", default=False,
+                        help="Create RSS feed. [-o available]")
     parser.add_argument('-X', '--test', dest="test", action="store_true", default=False,
                         help="Test method. [-b REQUIRED]")
     parser.add_argument('-U', '--show_update', dest="show_update", action="store_true", default=False,
@@ -89,7 +91,7 @@ def main():
         sys.exit(1)
     Manager.set_simulate(options.simulate)
     Manager.set_verbose(options.verbose)
-    
+
     if options.bank_formats:
         formats = []
         banks = []
@@ -205,6 +207,9 @@ def main():
             manager.load_plugins()
             if not manager.plugins.bioweb.set_news(news.data):
                 Utils.error("Can't set news to collection")
+        elif options.rss:
+            rss = RSS(config=config)
+            rss.generate_rss(rss_file=options.out, data=news.data)
         else:
             if options.oformat is None:
                 options.oformat = 'txt'
@@ -238,6 +243,13 @@ def main():
             print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No pending session")
+        sys.exit(0)
+
+    if options.rss:
+        # Try to determine news directory from config gile
+        config = Manager.load_config()
+        rss = RSS(config=config)
+        rss.generate_rss(rss_file=options.out)
         sys.exit(0)
 
     if options.save_versions:

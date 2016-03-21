@@ -1016,11 +1016,22 @@ class TestBiomajManagerRSS(unittest.TestCase):
     @attr('manager.news')
     @attr('manager.news.rss')
     def test_RSSGenerateRssWithrssfileArgs(self):
-        """Check 'rfile' arg is parsed ok from __init__"""
+        """Check 'rss_file' arg is parsed ok from __init__"""
         rfile = os.path.join(self.utils.news_dir, 'rss.xml')
         manager = Manager()
         rss = RSS(config=manager.config)
         self.assertTrue(rss.generate_rss(rss_file=rfile))
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSGenerateRssWithrDataArgs(self):
+        """Check 'data' arg is parsed ok from __init__"""
+        rfile = os.path.join(self.utils.news_dir, 'rss.xml')
+        manager = Manager()
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss(data={'news': [{'title': 't1', 'item': 1, 'text': 'Hello world',
+                                                         'date': "10/12/2014"}]}))
 
     @attr('manager')
     @attr('manager.news')
@@ -1078,6 +1089,29 @@ class TestBiomajManagerRSS(unittest.TestCase):
         rss = RSS(config=manager.config)
         with self.assertRaises(SystemExit):
             rss.generate_rss()
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSDataArgsThrow(self):
+        """Check method throws when no 'news' key in data"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        # We delete rss.file from section 'RSS' to print to STDOUT
+        rss = RSS(config=manager.config)
+        with self.assertRaises(SystemExit):
+            rss.generate_rss(data={'no_news_key': []})
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSWithDataArgsEmptyThrow(self):
+        """Check method returns True when data is empty"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        # We delete rss.file from section 'RSS' to print to STDOUT
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss(data={'news': []}))
 
 
 class TestBioMajManagerDecorators(unittest.TestCase):
