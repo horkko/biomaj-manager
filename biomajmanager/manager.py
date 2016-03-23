@@ -1000,10 +1000,12 @@ class Manager(object):
         """
         return self.get_pending_sessions()
 
-    def show_need_update(self):
+    def show_need_update(self, visibility='public'):
         """
         Check bank(s) that need to be updated (can be switched)
 
+        :param visibility: Bank visibility, defaut 'public'
+        :type visibility: String
         :return:
         """
         banks = []
@@ -1014,7 +1016,7 @@ class Manager(object):
                               'next_release': self.next_release()})
             return banks
 
-        banks_list = Manager.get_bank_list()
+        banks_list = Manager.get_bank_list(visibility=visibility)
         for bank in banks_list:
             self.set_bank_from_name(name=bank)
             if self.can_switch():
