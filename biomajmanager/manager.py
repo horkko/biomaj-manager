@@ -1004,7 +1004,7 @@ class Manager(object):
         """
         Check bank(s) that need to be updated (can be switched)
 
-        :param visibility: Bank visibility, defaut 'public'
+        :param visibility: Bank visibility, default 'public'
         :type visibility: String
         :return:
         """
