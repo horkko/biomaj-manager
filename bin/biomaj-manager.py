@@ -344,7 +344,7 @@ def main():
     if options.version:
         version = pkg_resources.require('biomajmanager')[0].version
         biomaj_version = pkg_resources.require('biomaj')[0].version
-        print("Biomaj-manager: %s (Biomaj: %s)" % (str(version), str(biomaj_version)))
+        print("BioMAJ Manager: %s (BioMAJ: %s)" % (str(version), str(biomaj_version)))
         sys.exit(0)
 
     if options.vdbs:
