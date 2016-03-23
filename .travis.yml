@@ -10,6 +10,8 @@ branches:
     - /^test.*$/
 # command to install dependencies
 
+before_install:
+  - "pip install codecov"
 install:
   - "pip install --egg -r requirements.txt"
   - "pip install pymongo==3.2"
@@ -18,4 +20,5 @@ install:
 script:
   nosetests --with-coverage --cover-package=biomajmanager
 after_success:
-  coveralls
+  - coveralls
+  - codecov
