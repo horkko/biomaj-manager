@@ -140,7 +140,8 @@ class RSS(News):
                         description=new['text'],
                         author=self.config.get('RSS', 'feed.author'),
                         guid=Guid(self.config.get('RSS', 'feed.link') + '#' + str(new['item'])),
-                        pubDate=datetime.strptime(new['date'], self.config.get('RSS', 'rss.date.format'))
+                        pubDate=datetime.strptime(new['date'], self.config.get('RSS', 'rss.date.format')
+                                                                           .replace('%%', '%'))
                         )
             items.append(item)
         feed = Feed(title=self.config.get('RSS', 'feed.title'),
