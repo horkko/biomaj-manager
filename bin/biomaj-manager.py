@@ -275,7 +275,8 @@ def main():
                 info.append([bank['name'], bank['current_release'], bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
-                print("Next bank switch will take place on %s @ 00:00AM" % manager.next_switch_date().strftime("%Y/%M/%d"))
+                print("Next bank switch will take place on %s @ 00:00AM" %
+                      manager.next_switch_date().strftime("%Y/%M/%d"))
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No bank need to be updated")
@@ -344,7 +345,7 @@ def main():
     if options.version:
         version = pkg_resources.require('biomajmanager')[0].version
         biomaj_version = pkg_resources.require('biomaj')[0].version
-        print("Biomaj-manager: %s (Biomaj: %s)" % (str(version), str(biomaj_version)))
+        print("BioMAJ Manager: %s (BioMAJ: %s)" % (str(version), str(biomaj_version)))
         sys.exit(0)
 
     if options.vdbs:
