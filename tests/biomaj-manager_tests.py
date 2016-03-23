@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from datetime import datetime
 from biomajmanager.links import Links
 from biomajmanager.manager import Manager
-from biomajmanager.news import News
+from biomajmanager.news import News, RSS
 from biomajmanager.plugins import Plugins
 from biomajmanager.writer import Writer
 from biomajmanager.utils import Utils
@@ -151,6 +151,8 @@ class UtilsForTests(object):
                     fout.write("production.dir=%s\n" % self.prod_dir)
                 elif line.startswith('plugins.dir'):
                     fout.write("plugins.dir=%s\n" % self.plugins_dir)
+                elif line.startswith('rss.file'):
+                    fout.write("rss.file=%s/rss.xml\n" % self.news_dir)
                 else:
                     fout.write(line)
         fout.close()
@@ -879,6 +881,7 @@ class TestBiomajManagerNews(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewWithMaxNews(self):
         """Check max_news args is OK"""
         news = News(max_news=10)
@@ -886,33 +889,37 @@ class TestBiomajManagerNews(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewWithConfigOK(self):
         """Check init set everything from config as arg"""
         manager = Manager()
-        news_dir = manager.config.get('MANAGER', 'news.dir')
+        news_dir = manager.config.get('NEWS', 'news.dir')
         news = News(config=manager.config)
         self.assertEqual(news_dir, news.news_dir)
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewWithConfigNoSection(self):
-        """Check init throws because config has no section 'MANAGER'"""
+        """Check init throws because config has no section 'NEWS'"""
         manager = Manager()
-        manager.config.remove_section('MANAGER')
+        manager.config.remove_section('NEWS')
         with self.assertRaises(SystemExit):
             News(config=manager.config)
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewWithConfigNoOption(self):
         """Check init throws because config has no option 'news.dir"""
         manager = Manager()
-        manager.config.remove_option('MANAGER', 'news.dir')
+        manager.config.remove_option('NEWS', 'news.dir')
         with self.assertRaises(SystemExit):
             News(config=manager.config)
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewsNewsDirOK(self):
         """Check get_news set correct thing"""
         self.utils.copy_news_files()
@@ -922,6 +929,7 @@ class TestBiomajManagerNews(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewsDirNotADirectory(self):
         """Check the dir given is not a directory"""
         with self.assertRaises(SystemExit):
@@ -929,6 +937,7 @@ class TestBiomajManagerNews(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewsGetNewsWrongDirectory(self):
         """Check method throws exception with wrong dir calling get_news"""
         news = News()
@@ -937,6 +946,7 @@ class TestBiomajManagerNews(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_NewsGetNewsNewsDirNotDefined(self):
         """Check method throws exception while 'news.dir' not defined"""
         news = News()
@@ -945,6 +955,7 @@ class TestBiomajManagerNews(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.news')
+    @attr('manager.news.news')
     def test_FileNewsContentEqual(self):
         """Check the content of 2 generated news files are identical"""
         self.utils.copy_news_files()
@@ -953,7 +964,7 @@ class TestBiomajManagerNews(unittest.TestCase):
             data.append({'label': 'type' + str(i),
                          'date': str(i) + '0/12/2015',
                          'title': 'News%s Title' % str(i),
-                         'text': 'This is text #%s from news%s' % (str(i), str(i)),
+                         'text': 'This is text #%s from news%s\n' % (str(i), str(i)),
                          'item': i - 1})
         news = News(news_dir=self.utils.news_dir)
         news_data = news.get_news()
@@ -968,6 +979,139 @@ class TestBiomajManagerNews(unittest.TestCase):
         else:
             raise unittest.E
         shutil.rmtree(self.utils.news_dir)
+
+
+class TestBiomajManagerRSS(unittest.TestCase):
+    """Class for testing biomajmanager.news.RSS class"""
+
+    def setUp(self):
+        """Setup stuff"""
+        self.utils = UtilsForTests()
+        # Make our test global.properties set as env var
+        os.environ['BIOMAJ_CONF'] = self.utils.global_properties
+
+    def tearDown(self):
+        """Clean"""
+        self.utils.clean()
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSWithMaxNews(self):
+        """Check max_news args is OK"""
+        rss = RSS(max_news=10)
+        self.assertEqual(rss.max_news, 10)
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSWithrfileArgs(self):
+        """Check 'rfile' arg is parsed ok from __init__"""
+        rfile = os.path.join(self.utils.news_dir, 'rss.xml')
+        rss = RSS(rss_file=rfile)
+        Manager.verbose = True
+        self.assertEqual(rfile, rss.rss_file)
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSGenerateRssWithrssfileArgs(self):
+        """Check 'rss_file' arg is parsed ok from __init__"""
+        rfile = os.path.join(self.utils.news_dir, 'rss.xml')
+        manager = Manager()
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss(rss_file=rfile))
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSGenerateRssWithrDataArgs(self):
+        """Check 'data' arg is parsed ok from __init__"""
+        rfile = os.path.join(self.utils.news_dir, 'rss.xml')
+        manager = Manager()
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss(data={'news': [{'title': 't1', 'item': 1, 'text': 'Hello world',
+                                                         'date': "10/12/2014"}]}))
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSWithrfileInConfig(self):
+        """Check 'rfile' is taken from config"""
+        rfile = os.path.join(self.utils.news_dir, 'rss.xml')
+        manager = Manager()
+        rss = RSS(config=manager.config)
+        self.assertEqual(rfile, rss.rss_file)
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSNewsDataEmpty(self):
+        """Check method returns True if news.dir is empty"""
+        empty_dir = '/tmp/empty'
+        os.mkdir(empty_dir)
+        manager = Manager()
+        rss = RSS(config=manager.config, news_dir=empty_dir)
+        self.assertTrue(rss.generate_rss())
+        shutil.rmtree(empty_dir)
+        
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSrfileNoneOK(self):
+        """Check we print to STDOUT"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss())
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSrfileNonePrintSTDOUT(self):
+        """Check we print to STDOUT has rss.file is not in config"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        # We delete rss.file from section 'RSS' to print to STDOUT
+        manager.config.remove_option('RSS', 'rss.file')
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss())
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSrfileArgsThrow(self):
+        """Check method throws when OSError"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        # We delete rss.file from section 'RSS' to print to STDOUT
+        manager.config.set('RSS', 'rss.file', '/no_ok')
+        rss = RSS(config=manager.config)
+        with self.assertRaises(SystemExit):
+            rss.generate_rss()
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSDataArgsThrow(self):
+        """Check method throws when no 'news' key in data"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        # We delete rss.file from section 'RSS' to print to STDOUT
+        rss = RSS(config=manager.config)
+        with self.assertRaises(SystemExit):
+            rss.generate_rss(data={'no_news_key': []})
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSWithDataArgsEmptyThrow(self):
+        """Check method returns True when data is empty"""
+        self.utils.copy_news_files()
+        manager = Manager()
+        # We delete rss.file from section 'RSS' to print to STDOUT
+        rss = RSS(config=manager.config)
+        self.assertTrue(rss.generate_rss(data={'news': []}))
 
 
 class TestBioMajManagerDecorators(unittest.TestCase):
@@ -2846,7 +2990,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method throws error command does not exist"""
         manager = Manager()
         with self.assertRaises(SystemExit):
-            manager._run_command(exe='/bin/nobin', args=['/tmp'], quiet=True)
+            manager._run_command(exe='/bin/fakebin', args=['/usr/local'], quiet=True)
 
 
 class TestBiomajManagerPlugins(unittest.TestCase):
