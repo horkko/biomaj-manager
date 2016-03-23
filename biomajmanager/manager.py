@@ -791,7 +791,7 @@ class Manager(object):
         bank_format = self.bank.config.get('db.formats').split(',')
         status = 'unpublished'
 
-        for prod in productions:
+        for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
             if 'current' in self.bank.bank:
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
@@ -812,7 +812,7 @@ class Manager(object):
                             'status': status
                             })
 
-        for sess in sessions:
+        for sess in sorted(sessions, key=lambda k: k['id'], reverse=True):
             # Don't repeat production item stored in sessions
             new_id = '@'.join(['bank',
                                self.bank.name,
