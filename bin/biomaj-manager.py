@@ -275,7 +275,8 @@ def main():
                 info.append([bank['name'], bank['current_release'], bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
-                print("Next bank switch will take place on %s @ 00:00AM" % manager.next_switch_date().strftime("%Y/%M/%d"))
+                print("Next bank switch will take place on %s @ 00:00AM" %
+                      manager.next_switch_date().strftime("%Y/%M/%d"))
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No bank need to be updated")
