@@ -125,8 +125,9 @@ You can run tests by typing `nosetests`
 
 Status
 ======
-[![Build Status](https://travis-ci.org/horkko/biomajmanager.svg?branch=master)](https://travis-ci.org/horkko/biomajmanager)
+[![Build Status](https://travis-ci.org/horkko/biomaj-manager.svg?branch=master)](https://travis-ci.org/horkko/biomaj-manager)
 [![Coverage Status](https://coveralls.io/repos/github/horkko/biomajmanager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomajmanager?branch=master)
-[![Code Health](https://landscape.io/github/horkko/biomajmanager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomajmanager/master)
-[![Code Climate](https://codeclimate.com/github/horkko/biomajmanager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomajmanager)
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomajmanager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+[![codecov.io](https://codecov.io/github/horkko/biomaj-manager/coverage.svg?branch=master)](https://codecov.io/github/horkko/biomaj-manager?branch=master)
+[![Code Health](https://landscape.io/github/horkko/biomaj-manager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomaji-manager/master)
+[![Code Climate](https://codeclimate.com/github/horkko/biomaj-manager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomaj-manager)
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomaj-manager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
