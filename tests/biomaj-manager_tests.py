@@ -1257,9 +1257,10 @@ class TestBioMajManagerManager(unittest.TestCase):
                                                     })
         manager.bank.bank = manager.bank.banks.find_one({'name': 'alu'})
         returned = manager.bank_info()
+        print(returned)
         expected = {'info': [["Name", "Type(s)", "Last update status", "Published release"],
                              ["alu", "nucleic,protein", Utils.time2datefmt(now), '54']],
-                    'prod': [["Session", "Remote release", "Release", "Directory", "Freeze", "Pending"],
+                    'prod': [["Session", "Remote release", "Release", "Directory", "Freeze"],
                              [Utils.time2datefmt(now), '54', '54',
                               os.path.join(manager.bank.config.get('data.dir'),
                                            manager.bank.config.get('dir.version'), "alu"),

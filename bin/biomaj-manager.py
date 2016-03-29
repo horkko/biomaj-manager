@@ -179,11 +179,14 @@ def main():
 
     if options.info:
         if not options.bank:
-            Utils.error("Getting info required a bank name")
+            Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
         info = manager.bank_info()
-        pprint(info)
-        print(manager.bank.config.get('db.packages'))
+        print(tabulate(info['info'], headers='firstrow', tablefmt='psql'))
+        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql'))
+        # do we have some pending release(s)
+        if 'pend' in info and len(info['pend']) > 1:
+            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql'))
         sys.exit(0)
 
     if options.links:
