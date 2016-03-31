@@ -264,11 +264,12 @@ def main():
         manager = Manager(bank=options.bank)
         Utils.start_timer()
         updates = manager.show_need_update(visibility=options.visibility)
+        next_switch = manager.next_switch_date().strftime("%Y/%m/%d")
         if options.oformat:
             writer = Writer(config=manager.config, output=options.out)
             writer.write(template='banks_update.j2.' + options.oformat,
                          data={'banks': updates,
-                               'next_switch': manager.next_switch_date().strftime("%Y/%M/%d"),
+                               'next_switch': next_switch,
                                'generated': Utils.get_now(),
                                'elapsed': "%.3f" % Utils.elapsed_time()})
             sys.exit(0)
@@ -278,8 +279,7 @@ def main():
                 info.append([bank['name'], bank['current_release'], bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
-                print("Next bank switch will take place on %s @ 00:00AM" %
-                      manager.next_switch_date().strftime("%Y/%M/%d"))
+                print("Next bank switch will take place on %s @ 00:00AM" % next_switch)
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No bank need to be updated")
