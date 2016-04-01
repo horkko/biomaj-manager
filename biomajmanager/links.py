@@ -46,8 +46,9 @@ class Links(object):
 
     def check_links(self):
         """
-        Check if some link(s) need to be (re)created. It uses do_links and set
-        simulate and verbose mode to True
+        Check if some link(s) need to be (re)created.
+
+        It uses do_links and set simulate and verbose mode to True
 
         :return: Number of links "virtually" created
         :rtype: Int
@@ -79,46 +80,29 @@ class Links(object):
         # Our default internal use
         if dirs is None:
             dirs = {
-                'bowtie': ['index/bowtie'], 'bwa': ['index/bwa'], 'gatk': ['index/gatk'], 'picard': ['index/picard'],
-                'samtools': ['index/samtools'], 'fusioncatcher': ['index/fusioncatcher'], 'soap': ['index/soap'],
-                'blast2': ['index/blast2'], 'blast+': ['index/blast+'], 'flat': ['ftp'], 'uncompressed': ['release']
+                'bowtie': [{'target': 'index/bowtie'}], 'bwa': [{'target': 'index/bwa'}],
+                'gatk': [{'target': 'index/gatk'}], 'picard': [{'target': 'index/picard'}],
+                'samtools': [{'target': 'index/samtools'}], 'fusioncatcher': [{'target': 'index/fusioncatcher'}],
+                'golden': [{'target': 'index/golden'}], 'soap': [{'target': 'index/soap'}],
+                'blast+': [{'target': 'index/blast+'}], 'flat': [{'target': 'ftp'}],
+                'uncompressed': [{'target': 'release', 'fallback': 'flat'}],
             }
         if files is None:
             files = {
-                'golden': ['index/golden'], 'uncompressed': ['index/golden'], 'blast2': ['fasta', 'index/blast2'],
-                'hmmer': ['index/hmmer'], 'fasta': ['fasta'], 'bdb': ['index/bdb']
+                'golden': [{'target': 'index/golden'}], 'uncompressed': [{'target': 'index/golden'}],
+                'blast2': [{'target': 'fasta'}, {'target': 'index/blast2'}],
+                'hmmer': [{'target': 'index/hmmer'}], 'fasta': [{'target': 'fasta', 'remove_ext': True}],
+                'bdb': [{'target': 'index/bdb', 'remove_ext': True}]
             }
-        # for source, targets in dirs.iteritems():
-        #     for target in targets:
-        #         self._generate_dir_link(source=source, target=target)
-        # for source, targets in files.iteritems():
-        #     for target in targets:
-        #         self._generate_files_link(source=source, target=target)
-        self._generate_dir_link(source='bowtie', target='index/bowtie')
-        self._generate_dir_link(source='bwa', target='index/bwa')
-        self._generate_dir_link(source='gatk', target='index/gatk')
-        self._generate_dir_link(source='picard', target='index/picard')
-        self._generate_dir_link(source='samtools', target='index/samtools')
-        self._generate_dir_link(source='fusioncatcher', target='index/fusioncatcher')
-        self._generate_dir_link(source='soap', target='index/soap')
-        self._generate_dir_link(source='blast2', target='index/blast2')
-        self._generate_dir_link(source='blast+', target='index/blast+')
-        # Ftp
-        self._generate_dir_link(source='flat', target='ftp')
-        # Release
-        self._generate_dir_link(source='uncompressed', target='release', fallback='flat')
-        # Golden
-        self._generate_files_link(source='golden', target='index/golden')
-        self._generate_files_link(source='uncompressed', target='index/golden')
-        self._generate_files_link(source='blast2', target='fasta')
-        self._generate_files_link(source='blast2', target='index/blast2')
-        self._generate_files_link(source='hmmer', target='index/hmmer')
-        self._generate_files_link(source='fasta', target='fasta', remove_ext=True)
-        self._generate_files_link(source='bdb', target='index/bdb', no_ext=True)
+        for source, targets in list(dirs.items()):
+            for target in targets:
+                self._generate_dir_link(source=source, **target)
+        for source, targets in list(files.items()):
+            for target in targets:
+                self._generate_files_link(source=source, **target)
         return self.created_links
 
-
-    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, msg=None):
+    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None):
         """
         Create a symbolic link between 'source' and 'target' for a directory
 
@@ -130,9 +114,7 @@ class Links(object):
         :type hard: Boolean (default False)
         :param fallback: Alternative source if source does not exist
         :type fallback: String
-        :param msg: Message to display at the end of the function call (simulate mode)
-        :type msg: String
-        :return: Number of link(s) created
+        :return: Number of created link(s)
         :rtype: Integer
         """
         if self._prepare_links(source=source, target=target, fallback=fallback):
@@ -144,17 +126,14 @@ class Links(object):
 
         self._make_links(links=[(slink, tlink)], hard=hard)
 
-        if Manager.get_simulate():
-            if msg:
-                print(msg)
-            else:
-                if Manager.get_verbose():
-                    print("%s -> %s directory link done" % (self.target, self.source))
+        if Manager.get_simulate() and Manager.get_verbose():
+            print("%s -> %s directory link done" % (self.target, self.source))
         return self.created_links
 
     def _generate_files_link(self, source=None, target=None, remove_ext=False):
         """
-        Links list of file from 'source' to 'target' directory
+        Links list of file from 'source' to 'target' directory.
+
         If remove_ext is set to True, then another link is created. This link is the same as the
         target link, wihtout the file extension
 
@@ -164,7 +143,7 @@ class Links(object):
         :type target: String
         :param remove_ext: Create another link of the file without the file name extension
         :type remove_ext: Boolean (default False)
-        :return: Number of link(s) created
+        :return: Number of created link(s)
         :rtype: Integer
         """
         if self._prepare_links(source=source, target=target, use_deepest=True):
@@ -195,7 +174,7 @@ class Links(object):
 
         self._make_links(links=links)
 
-        if Manager.simulate and Manager.get_verbose():
+        if Manager.get_simulate() and Manager.get_verbose():
             print("%s -> %s file link done" % (self.target, self.source))
         return self.created_links
 
@@ -226,7 +205,8 @@ class Links(object):
                             else:
                                 os.symlink(source_link, tlink)
                     except OSError as err:
-                        Utils.error("[%s] Can't create %slink %s: %s" %(self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
+                        Utils.error("[%s] Can't create %slink %s: %s" %
+                                    (self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
                     self.add_link()
         return self.created_links
 
@@ -255,15 +235,18 @@ class Links(object):
 
         bank_name = self.manager.bank.name
         current_release = self.manager.current_release()
-        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name, 'alu_' + current_release)
+        data_dir = os.path.join(self.manager.config.get('GENERAL', 'data.dir'), bank_name,
+                                bank_name + '_' + current_release)
         target_dir = self.manager.config.get('MANAGER', 'production.dir')
         source = os.path.join(data_dir, source)
 
         if not os.path.isdir(source) and fallback is None:
-            Utils.warn("[%s] %s does not exist" % (bank_name, source))
+            if self.manager.get_verbose():
+                Utils.warn("[%s] %s does not exist" % (bank_name, source))
             return 1
         elif fallback:
-            print("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
+            if self.manager.get_verbose():
+                print("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
             source = os.path.join(data_dir, fallback)
 
         if use_deepest:

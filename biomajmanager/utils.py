@@ -14,11 +14,14 @@ class Utils(object):
     show_warn = True
     show_debug = True
     show_verbose = True
+    # Default date format string
+    DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
     def elapsed_time():
         """
-        Get the elapsed time between start and stop timer
+        Get the elapsed time between start and stop timer.
+
         Stop timer call is not required. If not set, it is automatically called
         as soon as the method is called
 
@@ -103,17 +106,10 @@ class Utils(object):
             Utils.warn("More than one deepest dir found at %s: Only first returned" % str(path))
         return dirs[0]
 
-    # @staticmethod
-    # def local2utc(value):
-    #     """
-    #     Convert a locatime datetime object to UTC
-    #     """
-    #     if not isinstance(value, datetime):
-    #         Utils.error("datetime object required! %s" % value)
-    #     time_zone = tzname[0]
-    #     local_time_zone = pytz.timezone(time_zone)
-    #     local_date_time = local_time_zone.localize(value)
-    #     return local_date_time.astimezone(pytz.UTC)
+    @staticmethod
+    def get_now():
+        """Retruns time.time() formatted using DATE_FMT"""
+        return Utils.time2datefmt(time())
 
     @staticmethod
     def ok(msg):
@@ -167,7 +163,7 @@ class Utils(object):
         return datetime.fromtimestamp(time)
 
     @staticmethod
-    def time2datefmt(time, fmt):
+    def time2datefmt(time, fmt=DATE_FMT):
         """
         Convert a timestamp into a date following the format fmt
 

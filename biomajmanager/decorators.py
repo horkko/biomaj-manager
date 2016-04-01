@@ -1,4 +1,4 @@
-""" Global decoratores for BioMAJ Manager """
+"""Global decoratores for BioMAJ Manager"""
 from biomajmanager.utils import Utils
 __author__ = 'tuco'
 
@@ -12,7 +12,7 @@ def bank_required(func):
     :return:
     """
     def _check_bank_required(*args, **kwargs):
-        """ Small function to check a bank object is set in BioMAJ Manager instance """
+        """Small function to check a bank object is set in BioMAJ Manager instance"""
         self = args[0]
         if self.bank is None:
             Utils.error("A bank name is required")
@@ -29,10 +29,11 @@ def user_granted(func):
     """
     def _check_user_granted(*args, **kwargs):
         """
-        Check the user has enough right to perform action(s)
+        Check the user has enough right to perform action(s).
+
         If a bank is set, we first set the user as the owner of
         the current bank. Otherwise we try to find it from the
-        config file, we search for 'user.admin' property
+        config file, we search for 'admin' property
 
         :return: Boolean
         """
@@ -45,7 +46,7 @@ def user_granted(func):
         if not admin:
             Utils.error("Could not find admin user either in config nor in bank")
 
-        user = self._current_user()
+        user = self.get_current_user()
 
         if admin != user:
             Utils.error("[%s] User %s, permission denied" % (admin, user))

@@ -35,11 +35,11 @@ plugins.dir=%(root.dir)s/plugins
 Usage
 =====
 ```
-$ biomaj-manager.py --help
 usage: biomaj-manager.py [-h] [-C] [-D] [-H] [-i] [-J] [-l] [-L] [-M] [-N]
-                         [-n] [-P] [-s] [-X] [-U] [-v] [-V] [-b BANK]
+                         [-n] [-P] [-s] [-x] [-X] [-U] [-v] [-V] [-b BANK]
                          [--db_type DB_TYPE] [-o OUT] [-F OFORMAT]
-                         [-T TEMPLATE_DIR] [-S TOOL]
+                         [-T TEMPLATE_DIR] [-S TOOL] [--vdbs VDBS]
+                         [--visibility VISIBILITY]
 
 BioMAJ Manager adds some functionality around BioMAJ.
 
@@ -56,13 +56,14 @@ optional arguments:
                         (Permissions required). [-b REQUIRED]
   -L, --bank_formats    List supported formats and index for each banks. [-b]
                         available.
-  -M, --to_mongo        [SPECIFIC] Load bank(s) history into mongo database
+  -M, --to_mongo        [PLUGIN] Load bank(s) history into mongo database
                         (bioweb). [-b and --db_type REQUIRED]
   -N, --news            Create news to display at BiomajWatcher. [Default
                         output txt]
   -n, --simulate        Simulate action, don't do it really.
   -P, --show_pending    Show pending release(s). [-b] available
   -s, --switch          Switch a bank to its new version. [-b REQUIRED]
+  -x, --rss             Create RSS feed. [-o available]
   -X, --test            Test method. [-b REQUIRED]
   -U, --show_update     If -b passed prints if bank needs to be updated.
                         Otherwise, prints all bank that need to be updated.
@@ -73,11 +74,16 @@ optional arguments:
   --db_type DB_TYPE     BioMAJ database type [MySQL, MongoDB]
   -o OUT, --out OUT     Output file
   -F OFORMAT, --format OFORMAT
-                        Output format. Supported [csv, html, json, txt]
+                        Output format. Supported [csv, html, json,
+                        tmpl[default]]
   -T TEMPLATE_DIR, --templates TEMPLATE_DIR
                         Template directory. Overwrites template_dir
   -S TOOL, --section TOOL
                         Prints [TOOL] section(s) for a bank. [-b REQUIRED]
+  --vdbs VDBS           Create virtual database HTML pages for tool. [-b
+                        REQUIRED]
+  --visibility VISIBILITY
+                        Banks visibility ['all', 'public'(default), 'private'
 ```
 
 Plugins support
@@ -125,8 +131,9 @@ You can run tests by typing `nosetests`
 
 Status
 ======
-[![Build Status](https://travis-ci.org/horkko/biomajmanager.svg?branch=master)](https://travis-ci.org/horkko/biomajmanager)
+[![Build Status](https://travis-ci.org/horkko/biomaj-manager.svg?branch=master)](https://travis-ci.org/horkko/biomaj-manager)
 [![Coverage Status](https://coveralls.io/repos/github/horkko/biomajmanager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomajmanager?branch=master)
-[![Code Health](https://landscape.io/github/horkko/biomajmanager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomajmanager/master)
-[![Code Climate](https://codeclimate.com/github/horkko/biomajmanager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomajmanager)
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomajmanager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+[![codecov.io](https://codecov.io/github/horkko/biomaj-manager/coverage.svg?branch=master)](https://codecov.io/github/horkko/biomaj-manager?branch=master)
+[![Code Health](https://landscape.io/github/horkko/biomaj-manager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomaji-manager/master)
+[![Code Climate](https://codeclimate.com/github/horkko/biomaj-manager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomaj-manager)
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomaj-manager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")

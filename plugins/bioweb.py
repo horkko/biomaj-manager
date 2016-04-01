@@ -124,7 +124,7 @@ class Bioweb(BMPlugin):
                 history.append({'_id': '@'.join(['bank',
                                                  self.manager.bank.name,
                                                  row['version'],
-                                                 row['created'].strftime(self.manager.DATE_FMT)]),
+                                                 row['created'].strftime(Utils.DATE_FMT)]),
                                 'type': 'bank',
                                 'name': self.manager.bank.name,
                                 'version': row['version'],
@@ -267,7 +267,7 @@ class Bioweb(BMPlugin):
             else:
                 res = self.getCollection(collection).update(search_params, {'$set': item},
                                                             upsert=upsert)
-            self._update_documents_count(res)
+            self._update_documents_counts(res)
         self._print_updated_documents()
         return True
 
@@ -298,12 +298,7 @@ class Bioweb(BMPlugin):
     def _print_updated_documents(self):
         """
         Print a small report of action(s) done duinrg the update
-        :param matched: Number of documents matched based on filtering query
-        :type matched: Int
-        :param modified: Number of documents updated during update
-        :type modified: Int
-        :param upserted: Number of new documents created (using 'upsert') during update
-        :type upserted: Int
+
         :return: Boolean
         """
         if not self.get_manager().get_verbose():
