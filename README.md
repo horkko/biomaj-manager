@@ -134,5 +134,6 @@ Status
 [![codecov.io](https://codecov.io/github/horkko/biomaj-manager/coverage.svg?branch=master)](https://codecov.io/github/horkko/biomaj-manager?branch=master)
 [![Code Health](https://landscape.io/github/horkko/biomaj-manager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomaji-manager/master)
 [![Code Climate](https://codeclimate.com/github/horkko/biomaj-manager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomaj-manager)
+[![Documentation Status](https://readthedocs.org/projects/biomaj-manager/badge/?version=latest)](https://readthedocs.org/projects/biomaj-manager/?badge=latest)
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomaj-manager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
