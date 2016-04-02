@@ -1,1 +1,4 @@
+biomaj
+Jinaj2
 git+https://github.com/svpino/rfeed#egg=rfeed
+Yapsy
