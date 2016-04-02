@@ -10,10 +10,8 @@ Installation
 ============
 
 * Install required packages
- * `pip install biomaj Jinja2`
-* If you want to create and use your own plugin(s)
- * `pip install Yapsy`
-* Now go to the biomamanager directory and type
+ * `pip install -r requirements.txt`
+* Now go to the biomaj-manager directory and type
  * `python setup.py install`
 
 Configuration file
@@ -97,7 +95,7 @@ more information.
 Once this is done, fill file `manager.properties` within the `[PLUGINS]` section as follow:
 ```
 ...
-plugins.dir=/path/to/biomajmanager/plugins
+plugins.dir=/path/to/biomaj-manager/plugins
 
 [PLUGINS]
 plugins.list=yourplugin
@@ -132,7 +130,7 @@ You can run tests by typing `nosetests`
 Status
 ======
 [![Build Status](https://travis-ci.org/horkko/biomaj-manager.svg?branch=master)](https://travis-ci.org/horkko/biomaj-manager)
-[![Coverage Status](https://coveralls.io/repos/github/horkko/biomajmanager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomajmanager?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/horkko/biomaj-manager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomaj-manager?branch=master)
 [![codecov.io](https://codecov.io/github/horkko/biomaj-manager/coverage.svg?branch=master)](https://codecov.io/github/horkko/biomaj-manager?branch=master)
 [![Code Health](https://landscape.io/github/horkko/biomaj-manager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomaji-manager/master)
 [![Code Climate](https://codeclimate.com/github/horkko/biomaj-manager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomaj-manager)
