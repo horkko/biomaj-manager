@@ -179,11 +179,14 @@ def main():
 
     if options.info:
         if not options.bank:
-            Utils.error("Getting info required a bank name")
+            Utils.error("A bank name is required")
         manager = Manager(bank=options.bank)
         info = manager.bank_info()
-        pprint(info)
-        print(manager.bank.config.get('db.packages'))
+        print(tabulate(info['info'], headers='firstrow', tablefmt='psql'))
+        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql'))
+        # do we have some pending release(s)
+        if 'pend' in info and len(info['pend']) > 1:
+            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql'))
         sys.exit(0)
 
     if options.links:
@@ -261,11 +264,12 @@ def main():
         manager = Manager(bank=options.bank)
         Utils.start_timer()
         updates = manager.show_need_update(visibility=options.visibility)
+        next_switch = manager.next_switch_date().strftime("%Y/%m/%d")
         if options.oformat:
             writer = Writer(config=manager.config, output=options.out)
             writer.write(template='banks_update.j2.' + options.oformat,
                          data={'banks': updates,
-                               'next_switch': manager.next_switch_date().strftime("%Y/%M/%d"),
+                               'next_switch': next_switch,
                                'generated': Utils.get_now(),
                                'elapsed': "%.3f" % Utils.elapsed_time()})
             sys.exit(0)
@@ -275,8 +279,7 @@ def main():
                 info.append([bank['name'], bank['current_release'], bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
-                print("Next bank switch will take place on %s @ 00:00AM" %
-                      manager.next_switch_date().strftime("%Y/%M/%d"))
+                print("Next bank switch will take place on %s @ 00:00AM" % next_switch)
                 print(tabulate(info, headers='firstrow', tablefmt='psql'))
         else:
             print("No bank need to be updated")

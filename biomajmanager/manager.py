@@ -317,10 +317,8 @@ class Manager(object):
 
         :param tool: Name of the index to search section(s) for
         :type tool: String
-        :return: Dict of List
-                 {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]},
-                  'pro': {'dbs': [ ... ], 'sections': ['sec1', 'sec2', ..] }
-                 }
+        :return: {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]}, 'pro': {'dbs': [ ... ], 'sections': ... }
+        :rtype: Dict of List
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
@@ -455,9 +453,9 @@ class Manager(object):
         Search for the last release in production which ran ok
 
         :return: 'production' Dict or None if
-                                           production is empty
-                                           last production is the current
-                  Throws is no 'production' or no 'sessions' key
+                production is empty
+                last production is the current
+                Throws is no 'production' or no 'sessions' key
         """
         last_release = None
         current_id = None
@@ -791,7 +789,7 @@ class Manager(object):
         bank_format = self.bank.config.get('db.formats').split(',')
         status = 'unpublished'
 
-        for prod in productions:
+        for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
             if 'current' in self.bank.bank:
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
@@ -812,7 +810,7 @@ class Manager(object):
                             'status': status
                             })
 
-        for sess in sessions:
+        for sess in sorted(sessions, key=lambda k: k['id'], reverse=True):
             # Don't repeat production item stored in sessions
             new_id = '@'.join(['bank',
                                self.bank.name,

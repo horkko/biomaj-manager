@@ -1,16 +1,18 @@
-"""Global decoratores for BioMAJ Manager"""
+""" Global decorators for BioMAJ Manager """
 from biomajmanager.utils import Utils
+from functools import wraps
 __author__ = 'tuco'
 
 
 def bank_required(func):
     """
-    Decorator function that check a bank name is set
+    Decorator function that checks a bank name is set
 
-    :param func:
+    :param func: Decorated function
     :type func: Function
     :return:
     """
+    @wraps(func)
     def _check_bank_required(*args, **kwargs):
         """Small function to check a bank object is set in BioMAJ Manager instance"""
         self = args[0]
@@ -21,12 +23,13 @@ def bank_required(func):
 
 def user_granted(func):
     """
-    Decorator that check a user has enough right to perform action
+    Decorator function that checks a user has enough right to perform action
 
     :param func: Decorated function
     :type func: Function
     :return:
     """
+    @wraps(func)
     def _check_user_granted(*args, **kwargs):
         """
         Check the user has enough right to perform action(s).
