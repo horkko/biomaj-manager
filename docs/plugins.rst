@@ -9,4 +9,4 @@ plugins API reference
 =====================
 
  .. automodule:: biomajmanager.plugins
-   :members:
+    :members:

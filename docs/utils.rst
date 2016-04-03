@@ -9,4 +9,4 @@ utils API reference
 ===================
 
  .. automodule:: biomajmanager.utils
-   :members:
+    :members:
