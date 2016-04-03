@@ -8,5 +8,5 @@ utils
 utils API reference
 ===================
 
- .. automodule:: biomajmanager.utils
-    :members:
+.. automodule:: biomajmanager.utils
+   :members:

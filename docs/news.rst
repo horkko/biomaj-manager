@@ -8,5 +8,5 @@ news
 news API reference
 ==================
 
- .. automodule:: biomajmanager.news
-    :members:
+.. automodule:: biomajmanager.news
+   :members:

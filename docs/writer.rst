@@ -8,6 +8,6 @@ writer
 writer API reference
 ====================
 
- .. automodule:: biomajmanager.writer
-    :members:
+.. automodule:: biomajmanager.writer
+   :members:
 

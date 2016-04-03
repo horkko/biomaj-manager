@@ -8,5 +8,5 @@ links
 links API reference
 ===================
 
- .. automodule:: biomajmanager.links
-    :members:
+.. automodule:: biomajmanager.links
+   :members:

@@ -8,5 +8,5 @@ manager
 manager API reference
 =====================
 
- .. automodule:: biomajmanager.manager
-    :members:
+.. automodule:: biomajmanager.manager
+   :members:
