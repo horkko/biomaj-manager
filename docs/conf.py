@@ -65,7 +65,7 @@ author = u'Emmanuel Quevillon'
 # built documents.
 #
 # The short X.Y version.
-version = u'1.0.3'
+version = u'1.0'
 # The full version, including alpha/beta/rc tags.
 release = u'1.0.3'
 
@@ -118,7 +118,6 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-# html_theme = 'alabaster'
 html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -134,7 +133,7 @@ html_theme = 'default'
 #html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+html_short_title = "BioMAJ Manager docmentation"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
