@@ -1,4 +1,4 @@
-.. _decorators:
+#.. _decorators:
 
 
 decorators API reference

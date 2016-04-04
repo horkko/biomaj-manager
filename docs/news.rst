@@ -1,4 +1,4 @@
-.. _news:
+#.. _news:
 
 
 news API reference

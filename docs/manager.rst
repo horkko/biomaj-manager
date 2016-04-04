@@ -1,4 +1,4 @@
-.. _manager:
+#.. _manager:
 
 
 manager API reference

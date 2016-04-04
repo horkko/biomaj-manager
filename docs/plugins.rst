@@ -1,4 +1,4 @@
-.. _plugins:
+#.. _plugins:
 
 
 plugins API reference
