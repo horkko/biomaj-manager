@@ -1,13 +1,9 @@
 .. _writer:
 
 
-******
-writer
-******
-
 writer API reference
 ====================
-
 .. automodule:: biomajmanager.writer
-   :members:
-
+  :members:
+  :private-members:
+  :special-members:

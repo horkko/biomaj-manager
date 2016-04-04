@@ -1,12 +1,10 @@
 .. _news:
 
 
-****
-news
-****
-
 news API reference
 ==================
-
 .. automodule:: biomajmanager.news
-   :members:
+  :members:
+  :private-members:
+  :special-members:
+  :show-inheritance:

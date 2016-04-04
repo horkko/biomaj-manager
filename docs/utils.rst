@@ -1,12 +1,9 @@
 .. _utils:
 
 
-*****
-utils
-*****
-
 utils API reference
 ===================
-
 .. automodule:: biomajmanager.utils
-   :members:
+  :members:
+  :private-members:
+  :special-members:
