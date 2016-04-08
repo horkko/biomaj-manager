@@ -1,12 +1,9 @@
 .. _links:
 
 
-*****
-links
-*****
-
 links API reference
 ===================
-
- .. automodule:: biomajmanager.links
-   :members:
+.. automodule:: biomajmanager.links
+  :members:
+  :private-members:
+  :special-members:

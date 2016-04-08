@@ -10,7 +10,9 @@ def bank_required(func):
 
     :param func: Decorated function
     :type func: Function
-    :return:
+    :return: Result of function called
+    :rtype: func
+    :raises SystemExit: If no bank set
     """
     @wraps(func)
     def _check_bank_required(*args, **kwargs):
@@ -27,7 +29,9 @@ def user_granted(func):
 
     :param func: Decorated function
     :type func: Function
-    :return:
+    :return: Result of function called
+    :rtype: func
+    :raises SystemExit: If no owner found either in bank nor in config file
     """
     @wraps(func)
     def _check_user_granted(*args, **kwargs):

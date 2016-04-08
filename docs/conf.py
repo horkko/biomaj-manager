@@ -15,6 +15,7 @@
 import sys
 import os
 import mock
+import sphinx_rtd_theme
 
 MOCK_MODULES = ['pycurl', 'pymongo', 'elasticsearch', 'drmaa']
 for mod_name in MOCK_MODULES:
@@ -65,7 +66,7 @@ author = u'Emmanuel Quevillon'
 # built documents.
 #
 # The short X.Y version.
-version = u'1.0.3'
+version = u'1.0'
 # The full version, including alpha/beta/rc tags.
 release = u'1.0.3'
 
@@ -118,7 +119,8 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+#html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -127,13 +129,14 @@ html_theme = 'alabaster'
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 #html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+html_short_title = "BioMAJ Manager docmentation"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.

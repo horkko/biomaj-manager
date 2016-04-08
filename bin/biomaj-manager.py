@@ -212,12 +212,12 @@ def main():
                 Utils.error("Can't set news to collection")
         elif options.rss:
             rss = RSS(config=config)
-            rss.generate_rss(rss_file=options.out, data=news.data)
+            rss.generate_rss(data=news.data)
         else:
             if options.oformat is None:
                 options.oformat = 'txt'
             writer = Writer(config=config, template_dir=options.template_dir, output=options.out)
-            writer.write(template='news' + '.' + options.oformat, data=news.data)
+            writer.write(template='news.j2.' + options.oformat, data=news.data)
         sys.exit(0)
 
     if options.pending:
