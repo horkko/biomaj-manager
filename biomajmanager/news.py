@@ -1,10 +1,9 @@
 """Utilities to create some news for BioMAJ"""
-from __future__ import print_function
-from stat import S_ISREG, ST_CTIME, ST_MODE
+# from stat import S_ISREG, ST_CTIME, ST_MODE
 from biomajmanager.utils import Utils
-from biomajmanager.manager import Manager
-from rfeed import *
+from rfeed import Item, Feed, Guid
 from datetime import datetime
+from configparser import NoOptionError, NoSectionError
 import os
 import sys
 
@@ -20,12 +19,14 @@ class News(object):
         Initiate object building
 
         :param news_dir: Path to directory containing templates
-        :type news_dir: String
+        :type news_dir: str
         :param config: Configuration object
-        :type config: ConfigParser object
-        :param max_news: Number of news to get when displaying then
-        :type max_news: int (default 5)
-        :return:
+        :type config: :class:`configParser`
+        :param max_news: Number of news to get when displaying news (default :const:`News.MAX_NEWS`)
+        :type max_news: int
+        :raises SystemExit: If 'news_dir' is not a directory
+        :raises SystemExit: If 'NEWS' section is not defined in :py:data:`manager.properties`
+        :raises SystemExit: If 'news.dir' is not set in :py:data:`manager.properties`
         """
         self.news_dir = None
         self.max_news = News.MAX_NEWS
@@ -60,7 +61,7 @@ class News(object):
         :return: news_files, list of news files found into 'news' directory
         :rtype: list
         :raises SystemExit: If path 'news_dir' does not exist
-                            If 'news_dir' not set
+        :raises SystemExit: If 'news_dir' not set
         """
         if news_dir is not None:
             if not os.path.isdir(news_dir):
@@ -91,7 +92,6 @@ class News(object):
                 item += 1
                 new.close()
         if reverse:
-            Utils.verbose("Reversing news list ...")
             news_data.reverse()
         self.data = {'news': news_data}
         return self.data
@@ -102,11 +102,7 @@ class RSS(News):
     """Class for generating RSS feed from news files"""
 
     def __init__(self, rss_file=None, *args, **kwargs):
-        """
-        Initiate object building
-
-        :return:
-        """
+        """Initiate object building"""
         super(RSS, self).__init__(*args, **kwargs)
         self.rss_file = None
         self.fh = None
@@ -125,10 +121,13 @@ class RSS(News):
         Generate RSS file from news
 
         :param rss_file: Path to file rss.xml
-        :type rss_file: String
+        :type rss_file: str
         :param data: Data to create RSS from
-        :type data: Dict data['news'] = { ... }
+        :type data: dict data['news'] = { ... }
         :return: Boolean
+        :rtype: bool
+        :raises SystemExit: If 'news' key is not found in 'data' dict
+        :raises SystemExit: If rss file cannot be opened
         """
         if rss_file is not None:
             Utils.verbose("[rss] rss_file set to %s" % rss_file)
@@ -139,31 +138,33 @@ class RSS(News):
         elif 'news' not in data:
             Utils.error("Could not find 'news' key in data")
         if len(data['news']) == 0:
-            Utils.verbose("No data to display")
+            Utils.warn("No data to display")
             return True
 
         items = []
-        for new in data['news']:
-            item = Item(title=new['title'],
-                        description=new['text'],
-                        author=self.config.get('RSS', 'feed.author'),
-                        guid=Guid(self.config.get('RSS', 'feed.news.link') + '#' + str(new['item'])),
-                        pubDate=datetime.strptime(new['date'], self.config.get('RSS', 'rss.date.format')
-                                                                           .replace('%%', '%'))
-                        )
-            items.append(item)
-        feed = Feed(title=self.config.get('RSS', 'feed.title'),
-                    link=self.config.get('RSS', 'feed.link'),
-                    description=self.config.get('RSS', 'feed.description'),
-                    language=self.config.get('RSS', 'feed.language'),
-                    lastBuildDate=datetime.now(),
-                    items=items)
-        if self.fh is None:
-            try:
+        try:
+            for new in data['news']:
+                item = Item(title=new['title'],
+                            description=new['text'],
+                            author=self.config.get('RSS', 'feed.author'),
+                            guid=Guid(self.config.get('RSS', 'feed.news.link') + '#' + str(new['item'])),
+                            pubDate=datetime.strptime(new['date'], self.config.get('RSS', 'rss.date.format')
+                                                                   .replace('%%', '%'))
+                            )
+                items.append(item)
+            feed = Feed(title=self.config.get('RSS', 'feed.title'),
+                        link=self.config.get('RSS', 'feed.link'),
+                        description=self.config.get('RSS', 'feed.description'),
+                        language=self.config.get('RSS', 'feed.language'),
+                        lastBuildDate=datetime.now(),
+                        items=items)
+            if self.fh is None:
                 self.fh = open(self.rss_file, 'w')
-            except (OSError, IOError) as err:
-                Utils.error("Can't open file %s: %s" % (self.rss_file, str(err)))
-        print(feed.rss(), file=self.fh)
-        if self.rss_file is not None:
-            self.fh.close()
+            Utils._print(feed.rss(), to=self.fh)
+            if self.rss_file is not None:
+                self.fh.close()
+        except (NoOptionError, NoSectionError) as err:
+            Utils.error("Option missing in config file: %s" % str(err))
+        except (OSError, IOError) as err:
+            Utils.error("Can't open file %s: %s" % (self.rss_file, str(err)))
         return True

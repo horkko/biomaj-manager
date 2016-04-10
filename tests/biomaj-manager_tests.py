@@ -327,24 +327,22 @@ class TestBiomajManagerUtils(unittest.TestCase):
         Utils.start_timer()
         self.assertIsInstance(Utils.elapsed_time(), float)
 
-    # @attr('utils')
-    # def test_local2utc(self):
-    #    """
-    #     Check local2utc returns the right time according to local time
-    #     :return:
-    #    """
-    #     now = datetime.now()
-    #     utc_now = Utils.local2utc(now)
-    #     self.assertEquals(utc_now.hour + 1, now.hour)
-    #
-    # @attr('utils')
-    # def test_local2utc_WrongArgsType(self):
-    #    """
-    #     We check the args instance checking throws an error
-    #     :return:
-    #    """
-    #     with self.assertRaises(SystemExit):
-    #         Utils.local2utc(int(2))
+    @attr('utils')
+    @attr('utils.print')
+    def test_UtilsSayReturnsNone(self):
+        """Check the method returns empty string"""
+        self.assertIsNone(Utils._print(None))
+
+    @attr('utils')
+    @attr('utils.print')
+    def test_UtilsSayReturnsOK(self):
+        """Check the method returns correct message"""
+        expected = "OK\n"
+        from StringIO import StringIO
+        out = StringIO()
+        Utils._print("OK", to=out)
+        returned = out.getvalue()
+        self.assertEqual(expected, returned)
 
     @attr('utils')
     @attr('utils.time2date')
@@ -582,7 +580,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
 
     @attr('links')
     @attr('links.checklinks')
-    def test_LinksCheckLinksSimulateTrueVeboseFalseOK(self):
+    def test_LinksCheckLinksSimulateTrueVerboseFalseOK(self):
         """Check method returns right number of simulated created links"""
         links = Links(manager=self.utils.manager)
         Manager.set_simulate(True)
@@ -663,12 +661,12 @@ class TestBiomajManagerLinks(unittest.TestCase):
 
     @attr('links')
     @attr('links.preparelinks')
-    def test_LinksPrepareLinksArgsOKSourceNotDirReturns1(self):
-        """Check method throws if source given is not a directory"""
+    def test_LinksPrepareLinksArgsOKSourceNotDirReturnsFalse(self):
+        """Check method returns False if data.dir does not exist"""
         link = Links(manager=self.utils.manager)
         link.manager.config.set('GENERAL', 'data.dir', '/dir/does_not/')
         link.manager.set_verbose(True)
-        self.assertEqual(link._prepare_links(source='/exist', target="link_test"), 1)
+        self.assertFalse(link._prepare_links(source='/exist', target="link_test"))
 
     @attr('links')
     @attr('links.preparelinks')
@@ -678,7 +676,18 @@ class TestBiomajManagerLinks(unittest.TestCase):
         # Remove uncompressed directory, and fallback to flat
         os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
         link.manager.set_verbose(True)
-        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', fallback='flat'), 0)
+        self.assertTrue(link._prepare_links(source='uncompressed', target='flat_test', fallback='flat'))
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksWithFallbackFalse(self):
+        """Check method returns False if fallback given but does not exist either"""
+        link = Links(manager=self.utils.manager)
+        # Remove uncompressed directory, and fallback to flat
+        os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
+        os.removedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat'))
+        link.manager.set_verbose(True)
+        self.assertFalse(link._prepare_links(source='uncompressed', target='flat_test', fallback='flat'))
 
     @attr('links')
     @attr('links.preparelinks')
@@ -686,7 +695,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method passes OK if fallback given"""
         link = Links(manager=self.utils.manager)
         # Remove uncompressed directory, and fallback to flat
-        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', use_deepest=True), 0)
+        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', use_deepest=True), True)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -696,7 +705,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link.manager.set_simulate(True)
         link.manager.set_verbose(True)
         # Remove uncompressed directory, and fallback to flat
-        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test'), 0)
+        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test'), True)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -825,7 +834,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.assertEqual(source_dir, link.source)
         self.assertEqual(target_dir, link.target)
 
-    @attr('links')
+    @attr('links.1')
     @attr('links.generatefileslink')
     def test_LinksGenerateFilesLinkNotNoExtCreatedLinksOKVerboseOnRemoveExtTrue(self):
         """Check method returns correct number of created links (remove_ext=True)"""
@@ -836,8 +845,8 @@ class TestBiomajManagerLinks(unittest.TestCase):
         target_dir = os.path.join(self.utils.prod_dir, 'flat_symlink')
         files = ['file1.txt', 'file2.txt']
         # Create list of file to link
-        for ifile in files:
-            open(os.path.join(source_dir, ifile), 'w').close()
+        for i_file in files:
+            open(os.path.join(source_dir, i_file), 'w').close()
         # We check we've created 4 link, for file1 and file2 twice (with and without extension)
         self.assertEqual(4, link._generate_files_link(source='flat', target='flat_symlink', remove_ext=True))
         # We check the created links are OK without the extention (.txt)
@@ -969,7 +978,6 @@ class TestBiomajManagerNews(unittest.TestCase):
         news = News(news_dir=self.utils.news_dir)
         news_data = news.get_news()
         # Compare data
-        data.reverse()
 
         if 'news' in news_data:
             for new in news_data['news']:
@@ -1021,6 +1029,20 @@ class TestBiomajManagerRSS(unittest.TestCase):
         manager = Manager()
         rss = RSS(config=manager.config)
         self.assertTrue(rss.generate_rss(rss_file=rfile))
+
+    @attr('manager')
+    @attr('manager.news')
+    @attr('manager.news.rss')
+    def test_RSSGenerateRssWithrssfileArgsMissingOptionRaises(self):
+        """Check method throw exception if option missing"""
+        rfile = os.path.join(self.utils.news_dir, 'rss.xml')
+        manager = Manager()
+        manager.config.remove_option('RSS', 'feed.link')
+        rss = RSS(config=manager.config)
+        with self.assertRaises(SystemExit):
+            rss.generate_rss(rss_file=rfile, data={'news': [{'title': "title", 'text': "Some blah", 'item': 1,
+                                                            'date': "01/01/2000"}]})
+
 
     @attr('manager')
     @attr('manager.news')
@@ -2361,7 +2383,7 @@ class TestBioMajManagerManager(unittest.TestCase):
                                                                        'remoterelease': '54', 'size': '100Mo'}}})
         # Prints on output using simulate mode
 
-        self.assertEqual(manager.save_banks_version(), 0)
+        self.assertTrue(manager.save_banks_version())
         # Reset to the right user name as previously
         self.utils.drop_db()
 
@@ -2403,7 +2425,7 @@ class TestBioMajManagerManager(unittest.TestCase):
                                                                        'remoterelease': '54', 'size': '100Mo'}}})
         # Set verbose mode
         Manager.set_verbose(True)
-        self.assertEqual(manager.save_banks_version(), 0)
+        self.assertTrue(manager.save_banks_version())
         # Unset verbose mode
         manager.set_bank(False)
         self.utils.drop_db()
@@ -3101,7 +3123,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         manager.load_plugins()
         self.assertIsInstance(manager.plugins.myplugin.get_manager(), Manager)
 
-    @attr('plugins')
+    @attr('plugins.1')
     def test_PluginsCheckConfigValues(self):
         """Check the plugins config values"""
         manager = Manager()

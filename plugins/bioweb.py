@@ -1,4 +1,4 @@
-from __future__ import print_function
+# from __future__ import print_function
 
 import ssl
 import pymongo
@@ -10,7 +10,7 @@ class Bioweb(BMPlugin):
 
     """
     Bioweb (Institut Pasteur, Paris) is a web portal which provide information about
-    bioinformatics resources 
+    bioinformatics resources (`Bioweb <http://bioweb.pasteur.fr>`)
     """
 
     CONNECTED = False
@@ -18,11 +18,14 @@ class Bioweb(BMPlugin):
 
     def getCollection(self, name):
         """
-        Get a collection (pymongo) object from the list loaded at connection. If the collection does not exists
-        it prints an error on STDERR and exit(1)
-        :param name: Collectio name
-        :type name: String
+        Get a collection (pymongo) object from the list loaded at connection.
+
+        If the collection does not exists it prints an error on STDERR and exit(1)
+
+        :param name: Collection name
+        :type name: str
         :return: Collection object, or throws error
+        :rtype: :class:`pymongo.collection`
         """
         if not name:
             Utils.error("A collection name is required")
@@ -34,9 +37,11 @@ class Bioweb(BMPlugin):
     def get_info_for_bank(self, name):
         """
         Test method to retrieve information from MongoDB (Bioweb) database
+
         :param name: Name of the bank (optional)
-        :type name: String
+        :type name: str
         :return: Pymongo Cursor for the bank
+        :rtype: :class:`pymongo.cursor`
         """
 
         if not Bioweb.CONNECTED:
@@ -52,7 +57,9 @@ class Bioweb(BMPlugin):
     def set_bank_update_news(self):
         """
         Send a new to MongoDB to let bioweb know about bank update. Update MongoDB
+
         :return: Boolean
+        :rtype: bool
         """
 
         if not self.manager.bank:
@@ -72,7 +79,9 @@ class Bioweb(BMPlugin):
     def update_bioweb(self):
         """
         Update the Bioweb.catalog MongoDB collection
+
         :return: Boolean
+        :rtype: boole
         """
 
         history = self.manager.mongo_history()
@@ -83,9 +92,10 @@ class Bioweb(BMPlugin):
 
     def update_bioweb_from_mysql(self):
         """
-        Get the history from the MySQL database (Biomaj 1.2.x) and transform it to a json
-        document.
+        Get the history from the MySQL database (Biomaj 1.2.x) and transform it to a json document.
+
         :return: Boolean
+        :rtype: bool
         """
         import mysql.connector
         from mysql.connector import errorcode
@@ -155,13 +165,15 @@ class Bioweb(BMPlugin):
     def update_db_with_data(self, filter, data, collection=None):
         """
         Method used to update the Bioweb mongo database
+
         :param filter: Query that match the document
-        :type filter: Dict
+        :type filter: dict
         :param data: Original data to update
-        :type data: Dict
+        :type data: dict
         :param collection: Collection name
-        :type collection: String
+        :type collection: str
         :return: Boolean
+        :rtype: bool
         """
 
         if not collection:
@@ -181,11 +193,7 @@ class Bioweb(BMPlugin):
     """
 
     def _init_db(self):
-        """
-        Load and connect to Mongodb database
-        :return:
-        """
-
+        """Load and connect to Mongodb database"""
         if not self.config:
             Utils.error("No configuration object set")
 
@@ -231,16 +239,19 @@ class Bioweb(BMPlugin):
     def _update_mongodb(self, data=None, collection='catalog', params=None, upsert=True):
         """
         Function that really update the Mongodb collection ('catalog')
+
         It does an upsert to update the collection
+
         :param data: Data to be updated
-        :type data: Dict
+        :type data: dict
         :param collection: Collection name to update (Default 'catalog')
-        :type collection: String
+        :type collection: str
         :param params: Extra parameters to filter documents to update
-        :type params: Dict
+        :type params: dict
         :param upsert: Perform upsert or not
-        :type upsert: Boolean
+        :type upsert: bool
         :return: Boolean
+        :rtype: bool
         """
         if not self.manager.bank.name:
             Utils.error("Can't update, bank name required")
@@ -274,9 +285,11 @@ class Bioweb(BMPlugin):
     def _update_documents_counts(self, res):
         """
         Update internal counter about matched/modified/upserted documents during an update
+
         :param res: Result return by an update
         :type res: Depending on pymongo version (3.2=UpdateResult, 2.x=Dict)
         :return: Boolean
+        :rtype: bool
         """
         if not res:
             return False
@@ -300,6 +313,7 @@ class Bioweb(BMPlugin):
         Print a small report of action(s) done duinrg the update
 
         :return: Boolean
+        :rtype: bool
         """
         if not self.get_manager().get_verbose():
             return True

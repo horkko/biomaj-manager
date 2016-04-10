@@ -1,5 +1,4 @@
 """Writer class to be used with Jinja2 templates"""
-from __future__ import print_function
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 from biomajmanager.utils import Utils
@@ -16,12 +15,14 @@ class Writer(object):
         Create Writer object
 
         :param template_dir: Root directory where to find templates
-        :type template_dir: String
+        :type template_dir: str
         :param config: Global configuration file from BiomajConfig
-        :type config: configparser
+        :type config: :class:`configparser`
         :param output: Output file. Default STDOUT
-        :type output: String
-        :return:
+        :type output: str
+        :raises SystemExit: If 'template_dir' is not given
+        :raises SystemExit: If 'MANAGER' section not found in :py:data:`manager.properties`
+        :raises SystemExit: If 'template.dir' not set in :py:data:`manager.properties`
         """
         self.env = None
         self.output = None
@@ -53,10 +54,15 @@ class Writer(object):
         from scratch
 
         :param template: Template file name
-        :type template: String
+        :type template: str
         :param data: Template data
-        :type data: Dictionary
+        :type data: dict
         :return: True, throws on error
+        :rtype: bool
+        :raises SystemExit: If 'template' is None
+        :raises SystemExit: If 'template' is not found
+        :raises SystemExit: If 'template' has a syntax error in it
+        :raises SystemExit: If 'output' file cannot be opened
         """
         if template is None:
             Utils.error("A template name is required")
@@ -74,5 +80,5 @@ class Writer(object):
                 ofile = open(self.output, 'w')
             except IOError as err:
                 Utils.error("Can't open %s: %s" % (self.output, str(err)))
-        print(template.render(data), file=ofile)
+        Utils._print(template.render(data), to=ofile)
         return True

@@ -1,6 +1,4 @@
 """Main class of BioMAJ Manager"""
-
-from __future__ import print_function
 import datetime
 import re
 import os
@@ -34,10 +32,10 @@ class Manager(object):
 
         :param bank: Bank name
         :param cfg: Manager Configuration file (manager.properties)
-        :type cfg: String
-        :param globa_cfg: Global configuration file (global.properties)
-        :type global_cfg: String
-        :return:
+        :type cfg: str
+        :param global_cfg: Global configuration file (global.properties)
+        :type global_cfg: str
+        :raises SystemExit: If problem reading configuration file
         """
         # Our bank
         self.bank = None
@@ -49,6 +47,8 @@ class Manager(object):
         self.config = None
         # Where data are located
         self.bank_prod = None
+        # Plugins object reference
+        self.plugins = None
         # Current release of the bank
         self._current_release = None
         # Next release of the bank
@@ -81,11 +81,12 @@ class Manager(object):
         global.properties or file parameter must point to manager.properties
 
         :param cfg: Path to config file to load
-        :type cfg: String
+        :type cfg: str
         :param global_cfg:
         :type global_cfg:
         :return: ConfigParser object
-        :rtype: configparser.SafeParser
+        :rtype: :class:`configparser.SafeParser`
+        :raises SystemExit: If can load configuaration file
         """
         # Load global.properties (or user defined global_cfg)
         Utils.verbose("[manager] Loading Biomaj global configuration file")
@@ -109,7 +110,8 @@ class Manager(object):
         """
         Prints some information about the bank
 
-        :return: Output from biomaj.bank.get_bank_release_info (Lists)
+        :return: Output from :py:func:`biomaj.bank.get_bank_release_info`
+        :rtype: dict of list
         """
         return self.bank.get_bank_release_info(full=True)
 
@@ -119,6 +121,7 @@ class Manager(object):
         Check if a bank is already published or not.
 
         :return: Boolean
+        :rtype: bool
         """
         if 'current' in self.bank.bank and self.bank.bank['current']:
             return True
@@ -130,17 +133,18 @@ class Manager(object):
         Check if a bank can be updated and put into production as 'current'
 
         :return: Boolean
+        :rtype: bool
         """
         # Bank is updating?
         if self.bank.is_locked():
             if Manager.get_verbose():
-                print("[%s] Can't switch, bank is being updated" % self.bank.name, file=sys.stderr)
+                Utils.verbose("[%s] Can't switch, bank is being updated" % self.bank.name)
             return False
         # If there is no published bank yet, ask the user to do it first. Can't switch to new release version
         # if no bank is published yet
         if not self.bank_is_published():
             if Manager.get_verbose():
-                print("[%s] There's no published bank yet. Publish it first" % self.bank.name, file=sys.stderr)
+                Utils.verbose("[%s] There's no published bank yet. Publish it first" % self.bank.name)
             return False
 
         # Bank construction failed?
@@ -150,7 +154,7 @@ class Manager(object):
 
         if not self.update_ready():
             if Manager.get_verbose():
-                print("[%s] Can't switch, bank is not ready" % self.bank.name, file=sys.stderr)
+                Utils.verbose("[%s] Can't switch, bank is not ready" % self.bank.name)
             return False
         return True
 
@@ -159,8 +163,8 @@ class Manager(object):
         """
         Search for the current available release ('online')
 
-        :return: Release number if available or 'NA'
-        :rtype: String or None
+        :return: Release number if available or None
+        :rtype: str or None
         """
         current = None
         release = None
@@ -173,16 +177,6 @@ class Manager(object):
                 release = session['remoterelease']
             if release:
                 current = release
-        # Then we fallback to production which handle release(s) that have been
-        # completed, workflow(s) over
-        #elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
-        #    production = self.bank.bank['production'][-1]
-        #    if 'release' in production and production['release']:
-        #        release = production['release']
-        #    elif 'remoterelease'in production and production['remoterelease']:
-        #        release = production['remoterelease']
-        #    if release:
-        #        current = release
         if current:
             self._current_release = current
             return str(current)
@@ -199,12 +193,13 @@ class Manager(object):
 
         :param flat: flatten the list of format for this bank
                      default False
-        :type flat: Boolean
+        :type flat: bool
         :return: List of supported format(s) as:
                 if flat is True:
                 { 'tool1': [list of version], 'tool2': [list of version] ...}
                 if flat is False
                 ['tool1@version', 'tool1@version', 'tool2@version' ....]
+        :rtype: list
         """
         formats = []
         if flat:
@@ -224,7 +219,12 @@ class Manager(object):
 
     @bank_required
     def formats_as_string(self):
-        """Returns the formats as a List of string"""
+        """
+        Returns the formats as a List of string
+
+        :return: List of formats for bank
+        :rtype: list
+        """
         return self.formats(flat=True)
 
     @bank_required
@@ -233,7 +233,10 @@ class Manager(object):
         Returns the complete path where the bank data_dir is located
 
         :return: Path to the current bank data dir
-        :rtype: String
+        :rtype: str
+        :raises SystemExit: If 'current release' cannot be found in 'production' db field
+        :raises SystemExit: If 'production.data_dir' not found in 'production' document
+        :raises SystemExit: If no current release is found
         """
         release = self.current_release()
         if release:
@@ -254,10 +257,11 @@ class Manager(object):
         Get the list of bank available from the database
 
         :param visibility: Type of bank visibility, default to 'public'. Supported ['all', 'public', 'private']
-        :type visibility: String
-        :return: List of bank name
-        :rtype: List of string
-                Throws SystemExit exception
+        :type visibility: str
+        :return: List of bank name.
+        :rtype: list
+        :raises SystemExit: If visibility argument is not one of ('all', 'public', 'private')
+        :raises SystemExit: If cannot connect to MongoDB
         """
         if visibility not in ['all', 'public', 'private']:
             Utils.error("Bank visibility '%s' not supported. Only one of ['all', 'public', 'private']" % visibility)
@@ -291,8 +295,8 @@ class Manager(object):
         """
         Retrieve the list of linked packages for the current bank
 
-        :return: List of defined pckages for a bank
-        :rtype: List of string 'pack@<pack_name>@<pack_version>'
+        :return: List of defined packages for a bank ('pack@<pack_name>@<pack_version>')
+        :rtype: list
         """
         # Check db.packages is set for the current bank
         packages = []
@@ -314,11 +318,10 @@ class Manager(object):
         By default, it returns the info as a dictionary of lists.
 
         :param tool: Name of the index to search section(s) for
-        :type tool: String
-        :return: Dict of List
-                 {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]},
-                  'pro': {'dbs': [ ... ], 'sections': ['sec1', 'sec2', ..] }
-                 }
+        :type tool: str
+        :return: {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]}, 'pro': {'dbs': [ ... ], 'sections': ... }
+        :rtype: dict
+        :raises SystemExit: If not tool name is given
         """
         if tool is None:
             Utils.error("A tool name is required to retrieve section(s) info")
@@ -344,7 +347,7 @@ class Manager(object):
         Return the the path of the bank 'current' version symlink
 
         :return: Complete path of 'current' link
-        :rtype: String
+        :rtype: str
         """
         return os.path.join(self.bank.config.get('data.dir'),
                             self.bank.name,
@@ -356,7 +359,10 @@ class Manager(object):
         Get the path of the current production bank
 
         :return: Path to the current production bank
-        :rtype: String
+        :rtype: str
+        :raises SystemExit: If no 'current release' cannot be found in 'production' db field
+        :raises SystemExit: If 'production.data_dir' not found in 'production' document
+        :raises SystemExit: If no current release is found
         """
         release = self.current_release()
         if release:
@@ -379,12 +385,14 @@ class Manager(object):
         set to False, it returns only the keys.
 
         :param section: Section to read, default 'GENERAL'
-        :type section: Str
+        :type section: str
         :param regex: Regex to search the key with
-        :type regex: String
-        :param with_values: Returns values instead of keys
-        :type with_values: Boolean, default True
+        :type regex: str
+        :param with_values: Returns values instead of keys, default True
+        :type with_values: bool
         :return: Sorted List of values found
+        :rtype: list
+        :raises SystemExit: If not 'regex' arg given
         """
         if not regex:
             Utils.error("Regular expression required to get config regex")
@@ -406,7 +414,7 @@ class Manager(object):
         Get the user name from the environment
 
         :return: Logname or None if not found
-        :rtype: String or None
+        :rtype: str or None
         """
         return self._current_user()
 
@@ -416,8 +424,10 @@ class Manager(object):
         Get all the formats supported for a bank (path).
 
         :param path: Path of the release to search in
-        :type path: String (path)
-        :return: List of sorted formats
+        :type path: str (path)
+        :return: Sorted formats
+        :rtype: list
+        :raises SystemExit: If no path given as arg
         """
         formats = []
         if not path:
@@ -426,11 +436,11 @@ class Manager(object):
             Utils.warn("Path %s does not exist" % path)
             return formats
 
-        for pathdir, dirs, _ in os.walk(path):
-            if pathdir == path or not len(dirs) or os.path.basename(pathdir) == 'flat':
+        for path_dir, dirs, _ in os.walk(path):
+            if path_dir == path or not len(dirs) or os.path.basename(path_dir) == 'flat':
                 continue
             for d in dirs:
-                formats.append('@'.join(['pack', os.path.basename(pathdir), d or '-']))
+                formats.append('@'.join(['pack', os.path.basename(path_dir), d or '-']))
         formats.sort()
         return formats
 
@@ -441,7 +451,7 @@ class Manager(object):
         Return the the path of the bank 'current' version symlink
 
         :return: Complete path of 'future_release' link
-        :rtype: String
+        :rtype: str
         """
         return os.path.join(self.bank.config.get('data.dir'),
                             self.bank.name,
@@ -450,12 +460,13 @@ class Manager(object):
     @bank_required
     def get_last_production_ok(self):
         """
-        Search for the last release in production which ran ok
+        Search for the last release in production which ran ok and which is not 'online' (current)
 
-        :return: 'production' Dict or None if
-                                           production is empty
-                                           last production is the current
-                  Throws is no 'production' or no 'sessions' key
+        :return: 'production' document from the database
+                 None if production is empty
+        :rtype: dict
+        :raises SystemExit: If no 'session' key found in 'production' db field
+        :raises SystemExit: If no 'production' key found in bank's collection
         """
         last_release = None
         current_id = None
@@ -485,7 +496,8 @@ class Manager(object):
         """
         Request the database to check if some session(s) is/are pending to complete
 
-        :return: List of Dict {'release'=release, 'session_id': id} or empty list
+        :return: List of dict {'release'=release, 'session_id': id} or empty list
+        :rtype: list
         """
         pending = []
         if 'pending' in self.bank.bank and self.bank.bank['pending']:
@@ -500,6 +512,8 @@ class Manager(object):
         Check a bank has a published release
 
         :return: Release number or None
+        :rtype: str
+        :raises SystemExit: If no 'remoterelease' key found in published release document
         """
         if self.bank_is_published():
             session = self.get_session_from_id(self.bank.bank['current'])
@@ -515,8 +529,9 @@ class Manager(object):
         Retrieve a bank session from its id
 
         :param session_id: Session id
-        :type session_id: String
+        :type session_id: str
         :return: Session or None
+        :rtype: dict or None
         """
         sess = None
         if not session_id:
@@ -532,7 +547,8 @@ class Manager(object):
         """
         Get the value of the simulate mode
 
-        :return: Boolean
+        :return: Simulate mode status
+        :rtype: bool
         """
         return Manager.simulate
 
@@ -541,7 +557,8 @@ class Manager(object):
         """
         Get the value of the verbose mode
 
-        :return: Boolean
+        :return: Verbose mode status
+        :rtype: bool
         """
         return Manager.verbose
 
@@ -551,8 +568,9 @@ class Manager(object):
         Check if the 'current' link is there
 
         :param link: Link path to check, otherwise get from 'get_current_link'
-        :type: String
-        :return: Boolean
+        :type: str
+        :return: If a current link is present or not
+        :rtype: bool
         """
         if link is None:
             link = self.get_current_link()
@@ -564,8 +582,9 @@ class Manager(object):
         Check if the 'future_release' link is there
 
         :param link: Link path to check, otherwise get from 'get_future_link'
-        :type: String
-        :return: Boolean
+        :type: str
+        :return: If a future_link is present or not
+        :rtype: bool
         """
         if link is None:
             link = self.get_future_link()
@@ -577,8 +596,10 @@ class Manager(object):
         Checks either the bank supports 'format' or not
 
         :param fmt: Format to check
-        :type fmt: String
-        :return: Boolean
+        :type fmt: str
+        :return: If a format is present for a bank
+        :rtype: bool
+        :raises SystemExit: If 'fmt' args is not given
         """
         if not fmt:
             Utils.error("Format is required")
@@ -593,6 +614,9 @@ class Manager(object):
         Get the releases history of a specific bank
 
         :return: A list with the full history of the bank
+        :rtype: list
+        :raises SystemExit: If 'production' key not found in bank document
+        :raises SystemExit: If 'session' key not found in bank docuement
         """
         productions = sessions = None
         if 'production' in self.bank.bank and self.bank.bank['production']:
@@ -662,7 +686,9 @@ class Manager(object):
         - If we find a pending session, we return False and warn the user to finish it
         - Then, we look into session and check that the last session.status.over is True/False
 
-        :return: Boolean
+        :return: If the last update session failed
+        :rtype: bool
+        :raises SystemExit: If the session id of 'last_update_session' is not found in 'sessions' document
         """
         has_failed = False
         last_update_id = None
@@ -719,7 +745,8 @@ class Manager(object):
         """
         Load all the plugins and activate them from manager.properties (plugins.list property)
 
-        :returns: biomajmanager.plugins.Plugins instance
+        :returns: Instance of biomajmanager.plugins.Plugins
+        :rtype: :class:`biomajmanager.plugins.Plugins`
         """
         self.plugins = Plugins(manager=self)
         return self.plugins
@@ -734,7 +761,9 @@ class Manager(object):
 
         :param week: Week to perform the switch (Supported ['even', 'odd', 'each'])
         :type week: str
-        :return: datetime.datetime object
+        :return: Next bank switch date as datetime.datetime
+        :rtype: :class:`datetime.datetime`
+        :raises SystemExit: If 'week' arg value is none of ('even', 'odd', 'each')
         """
         if week is None:
             if self.config.has_option('MANAGER', 'switch.week'):
@@ -769,6 +798,9 @@ class Manager(object):
         Get the releases history of a bank from the database and build a Mongo like document in json
 
         :return: history + extra info to be included into bioweb (Institut Pasteur only)
+        :rtype: list
+        :raises SystemExit: If 'production' key not found in bank docuement
+        :raises SystemExit: If 'session' key not found in bank docuement
         """
         ## TODO: During the sessions check, make sure the sessions.update is true, meaning that we'done something
         productions = sessions = None
@@ -838,20 +870,16 @@ class Manager(object):
         """
         Get the next bank release version from the database if available
 
-        :return: String or None
+        :return: Next release or None
+        :rtype: str
+        :raises SystemExit: If no production ok found
+        :raises SystemExit: If no session found for the next release we are looking for
         """
         next_release = None
         session = None
         production = None
-        # If we have a current release set, we need to check the last session from sessions
-        # which are not current and not in production
-        # if 'current' in self.bank.bank and self.bank.bank['current']:
-        #     current_id = self.bank.bank['current']
-        # elif 'production' in self.bank.bank and len(self.bank.bank['production']) > 0:
-        #     production = self.get_last_production_ok()
-        # else:
-        #     Utils.error("Can't determine next release, no production nor current release published!")
-
+        if self._next_release:
+            return self._next_release
         production = self.get_last_production_ok()
         if production is None:
             Utils.error("No 'production' release found searching for next release")
@@ -876,8 +904,9 @@ class Manager(object):
         [OPTIONAL]
 
         :param args: List of args to pass to the command
-        :type args: List of string
-        :return: Boolean
+        :type args: list of string
+        :return: If command executed ok
+        :rtype: bool
         """
         return self._submit_job('restart.stopped.jobs', args=args)
 
@@ -887,8 +916,10 @@ class Manager(object):
         Save versions of bank when switching bank version (publish)
 
         :param bank_file: Path to save banks version (String)
-        :return: 0
-        :raise: Exception
+        :return: True if all is ok
+        :rtype: bool
+        :raises SystemExit: If dirname cannot be created
+        :raises SystemExit: If file cannot be opened
         """
         if not bank_file:
             bank_file = os.path.join(self.bank_prod,
@@ -919,20 +950,23 @@ class Manager(object):
                                                                               else 'NA',
                                                             bank.config.get('server'))
                                 if Manager.simulate:
-                                    print(file_line)
+                                    Utils._print(file_line)
                                 else:
                                     fv.write(file_line)
         except Exception as e:
             Utils.error("Can't access file: %s" % str(e))
-        Utils.ok("Bank versions saved in %s" % bank_file)
-        return 0
+        if self.get_verbose():
+            Utils.verbose("Bank versions saved in %s" % bank_file)
+        return True
 
     def set_bank(self, bank=None):
         """
         Set a bank for the current Manager
 
-        :param bank: biomaj.bank.Bank
-        :return: Boolean
+        :param bank: Bank instance
+        :type bank: :class:`biomaj.bank.Bank`
+        :return: True if correctly set with expected instance
+        :rtype: bool
         """
         if not bank or bank is None:
             return False
@@ -946,8 +980,10 @@ class Manager(object):
         Set a bank from a bank name
 
         :param name: Name of the bank to set
-        :type name: String
-        :return: Boolean
+        :type name: str
+        :return: True if bank set ok
+        :rtype: bool
+        :raises SystemExit: If bank object creation failed
         """
         if not name or name is None:
             return False
@@ -963,8 +999,9 @@ class Manager(object):
         Set/Unset simulate mode
 
         :param value: Value to set
-        :type value: Boolean
+        :type value: bool
         :return: Boolean
+        :rtype: bool
         """
         if value:
             Manager.simulate = True
@@ -978,8 +1015,9 @@ class Manager(object):
         Set/Unset verbose mode
 
         :param value: Value to set
-        :type value: Boolean
+        :type value: bool
         :return: Boolean
+        :rtype: bool`
         """
         if value:
             Manager.verbose = True
@@ -992,7 +1030,8 @@ class Manager(object):
         """
         Check if some session are pending
 
-        :return: See get_pending_sessions()
+        :return: Results from get_pending_sessions()
+        :rtype: list
         """
         return self.get_pending_sessions()
 
@@ -1001,8 +1040,9 @@ class Manager(object):
         Check bank(s) that need to be updated (can be switched)
 
         :param visibility: Bank visibility, default 'public'
-        :type visibility: String
-        :return:
+        :type visibility: str
+        :return: List of banks requiring update
+        :rtype: list
         """
         banks = []
         if self.bank:
@@ -1032,8 +1072,9 @@ class Manager(object):
         [OPTIONAL]
 
         :param args: List of args to pass to the commande
-        :type args: List of string
-        :return: Boolean
+        :type args: list of string
+        :return: If job executed ok
+        :rtype: bool
         """
         return self._submit_job('stop.running.jobs', args=args)
 
@@ -1048,7 +1089,8 @@ class Manager(object):
         the last update that went ok and is ok for publishing.
         Otherwise, we warn the user and we return false.
 
-        :return: Boolean
+        :return: fF a bank is ready to be updated to its next release
+        :rtype: bool
         """
         ready = False
 
@@ -1087,7 +1129,8 @@ class Manager(object):
 
         We search for login name in enviroment 'LOGNAME' and 'USER' variable
 
-        :return: String or None
+        :return: Current user name
+        :rtype: str
         """
         logname = None
 
@@ -1102,8 +1145,11 @@ class Manager(object):
         Check that the config for the jobs submission is OK
 
         :param name: Name of the config value to check. Will be '<name>.exe' in section 'JOBS
-        :type name: String
-        :return: Boolean
+        :type name: str
+        :return: Jobs configuration values
+        :rtype: bool
+        :raises SystemExit: If 'JOBS' section not found in configuration file (manager.properties)
+        :raises SystemExit: If script's executable path is not found
         """
         if not self.config.has_section('JOBS'):
             Utils.error("[jobs] No JOBS section defined")
@@ -1121,8 +1167,9 @@ class Manager(object):
         Get the values from the config for a particular job key
 
         :param name: Name of the job type
-        :type name: String
+        :type name: str
         :return: Tuple, (exe, [args])
+        :rtype: tuple
         """
         args = []
         if self.config.has_option('JOBS', "%s.args" % name):
@@ -1136,7 +1183,9 @@ class Manager(object):
         """
         Get the session(s) from a bank.
 
-        :return: List of session
+        :return: Session document from the database
+        :rtype: dict
+        :raises SystemExit: If 'session' key not found in bank document
         """
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             sessions = self.bank.bank['sessions']
@@ -1150,12 +1199,16 @@ class Manager(object):
         Just run a system command using subprocess. STDOUT and STDERR are redirected to /dev/null (os.devnull)
 
         :param exe: Executable to launch
-        :type exe: String
+        :type exe: str
         :param args: List of arguments
-        :type args: List
+        :type args: list
         :param quiet: Quiet stdout, don't print on stdout
-        :type quiet: Boolean
-        :return: Boolean
+        :type quiet: bool
+        :return: Execution status of the command
+        :rtype: bool
+        :raises SystemExit: If 'exe' args not provided
+        :raises SystemExit: If returned exit code is > 0
+        :raises SystemExit: If command cannot be run (except :class:`OSError`)
         """
         # Sleep time while waiting for process to terminate
         sleep = float(5)
@@ -1199,10 +1252,12 @@ class Manager(object):
         Submit a job.
 
         :param name: Name of the defined job in the manager.properties file, section 'JOBS'
-        :type name: String
+        :type name: str
         :param args: List of args to pass to the commande
-        :type args: List of string
-        :return: Boolean
+        :type args: list
+        :return: Result of the command ran
+        :rtype: bool
+        :raises SystemExit: If 'args' arg is not a list
         """
         if not self._check_config_jobs(name):
             return False
