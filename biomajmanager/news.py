@@ -49,12 +49,18 @@ class News(object):
                 self.news_dir = config.get('NEWS', 'news.dir')
         Utils.verbose("[news] 'news_dir' set to %s" % str(self.news_dir))
 
-    def get_news(self, news_dir=None):
+    def get_news(self, news_dir=None, reverse=True):
         """
         Get the news to be displayed from the specific news.dir directory
 
-        :param news_dir:
+        :param news_dir: Path to news directory
+        :type news_dir: str
+        :param reverse: Reverse list of news files, default True
+        :type reverse: bool
         :return: news_files, list of news files found into 'news' directory
+        :rtype: list
+        :raises SystemExit: If path 'news_dir' does not exist
+                            If 'news_dir' not set
         """
         if news_dir is not None:
             if not os.path.isdir(news_dir):
@@ -84,7 +90,9 @@ class News(object):
                 news_data.append({'label': label, 'date': date, 'title': title, 'text': text, 'item': item})
                 item += 1
                 new.close()
-
+        if reverse:
+            Utils.verbose("Reversing news list ...")
+            news_data.reverse()
         self.data = {'news': news_data}
         return self.data
 
@@ -139,7 +147,7 @@ class RSS(News):
             item = Item(title=new['title'],
                         description=new['text'],
                         author=self.config.get('RSS', 'feed.author'),
-                        guid=Guid(self.config.get('RSS', 'feed.link') + '#' + str(new['item'])),
+                        guid=Guid(self.config.get('RSS', 'feed.news.link') + '#' + str(new['item'])),
                         pubDate=datetime.strptime(new['date'], self.config.get('RSS', 'rss.date.format')
                                                                            .replace('%%', '%'))
                         )

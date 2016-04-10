@@ -162,8 +162,6 @@ class Manager(object):
         :return: Release number if available or 'NA'
         :rtype: String or None
         """
-        if self._current_release:
-            return self._current_release
         current = None
         release = None
         # First se search if a current release is set
@@ -842,8 +840,6 @@ class Manager(object):
 
         :return: String or None
         """
-        if self._next_release:
-            return self._next_release
         next_release = None
         session = None
         production = None
@@ -863,7 +859,7 @@ class Manager(object):
         if session is not None:
             # Pending sessions are excluded
             if 'workflow_status' in session and session['workflow_status']:
-                next_release = session['remoterelease']
+                next_release = session['release']
         else:
             Utils.error("Can't find release in session '%s'" % str(production['session']))
 
