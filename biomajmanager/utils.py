@@ -1,4 +1,5 @@
 """Utilities class for BioMAJ Manager"""
+from __future__ import print_function
 import os
 import sys
 from time import time
@@ -154,7 +155,8 @@ class Utils(object):
         if not msg:
             return
         msg.strip()
-        to.write(str(msg) + "\n")
+        msg += "\n"
+        to.write(msg)
         return
 
     @staticmethod

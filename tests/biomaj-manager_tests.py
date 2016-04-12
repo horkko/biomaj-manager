@@ -338,8 +338,8 @@ class TestBiomajManagerUtils(unittest.TestCase):
     def test_UtilsSayReturnsOK(self):
         """Check the method returns correct message"""
         expected = "OK\n"
-        from StringIO import StringIO
-        out = StringIO()
+        from io import BytesIO
+        out = BytesIO()
         Utils._print("OK", to=out)
         returned = out.getvalue()
         self.assertEqual(expected, returned)
