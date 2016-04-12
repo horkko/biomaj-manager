@@ -35,7 +35,7 @@ class Utils(object):
             etime = Utils.timer_stop - Utils.timer_start
             Utils.reset_timer()
             return etime
-        Utils.error("Missing timer value (start/stop")
+        Utils.error("Missing timer value (start/stop)")
 
     @staticmethod
     def error(msg):
@@ -154,9 +154,8 @@ class Utils(object):
         """
         if not msg:
             return
-        msg.strip()
-        msg += "\n"
-        to.write(msg)
+        msg = str(msg).rstrip("\n")
+        print(msg, file=to)
         return
 
     @staticmethod
