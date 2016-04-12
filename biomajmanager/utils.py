@@ -25,8 +25,9 @@ class Utils(object):
         Stop timer call is not required. If not set, it is automatically called
         as soon as the method is called
 
-        :return: Time
+        :return: Elapsed time
         :rtype: float
+        :raises SystemExit: If Utils.timer_start is not defined
         """
         if Utils.timer_start:
             if not Utils.timer_stop:
@@ -34,18 +35,20 @@ class Utils(object):
             etime = Utils.timer_stop - Utils.timer_start
             Utils.reset_timer()
             return etime
-        Utils.error("Missing timer value (start/stop")
+        Utils.error("Missing timer value (start/stop)")
 
     @staticmethod
     def error(msg):
         """
-        Prints error on STDERR and exit with exit code 1
+        Prints error message on STDERR and exits with exit code 1
 
         :param msg: Message to print
-        :type msg: String
-        :return:
+        :type msg: str
+        :return: Error message
+        :rtype: str
+        :raises SystemExit:
         """
-        print('[ERROR] %s' % str(msg), file=sys.stderr)
+        Utils._print("[ERROR] %s" % str(msg), to=sys.stderr)
         sys.exit(1)
 
     @staticmethod
@@ -54,9 +57,10 @@ class Utils(object):
         Return the list of file(s) found for a given path
 
         :param path: Path to search from
-        :type path: String
+        :type path: str
         :return: List of file(s) found
-        :rtype: List
+        :rtype: list
+        :raises SystemExit: If path does not exist
         """
         if not path or not os.path.isdir(path):
             Utils.error("Path not found: %s" % str(path))
@@ -68,11 +72,12 @@ class Utils(object):
         Get the last directories from a path
 
         :param path: Path to start from
-        :type path: String
+        :type path: str
         :param full: Get the full path otherwise the directory only
-        :type full: Boolean
+        :type full: bool
         :return: List of directories
-        :rtype: List
+        :rtype: list
+        :raises SystemExit: If 'path' not given or does not exist
         """
         if path is None:
             Utils.error("Path is required")
@@ -95,11 +100,11 @@ class Utils(object):
         Return only one deepest dir from the path
 
         :param path: Path
-        :type path: String
-        :param full: Return complete path
-        :type full: Boolean
-        :return: Director name
-        :rtype: String
+        :type path: str
+        :param full: Returns complete path or not
+        :type full: bool
+        :return: Directory name
+        :rtype: str
         """
         dirs = Utils.get_deepest_dirs(path, full=full)
         if len(dirs) > 1:
@@ -108,80 +113,94 @@ class Utils(object):
 
     @staticmethod
     def get_now():
-        """Retruns time.time() formatted using DATE_FMT"""
+        """
+        Get current time from :class:`time.time` formatted using :py:const:`Utils.DATE_FMT`
+
+        :returns: Current time formatted using :class:`Utils.DATE_FMT`
+        :rtype: :class:`time.time`
+        """
         return Utils.time2datefmt(time())
 
     @staticmethod
     def ok(msg):
         """
-        Print a [OK] msg
+        Prints a [OK] msg
 
         :param msg: Message to print
-        :type msg: String
-        :return:
+        :type msg: str
+        :return: Message to print
+        :rtype: str
         """
         if msg:
-            print("[OK] %s" % str(msg))
+            Utils._print("[OK] %s" % str(msg))
 
     @staticmethod
     def reset_timer():
-        """
-        Reset to 0.0 timer_start and timer_stop for a new elapsed_time() count
-
-        :return:
-        """
+        """Reset to *0.0* :py:func:`timer_start` and :py:func:`timer_stop` for a new :py:func:`elapsed_time()` count"""
         Utils.timer_start = 0.0
         Utils.timer_stop = 0.0
 
     @staticmethod
-    def start_timer():
+    def _print(msg, to=sys.stdout):
         """
-        Store the time at function call
+        Redefined print function to support python 2 and 3
 
-        :return:
+        :param msg: Message to print
+        :type msg: str
+        :param to: File handle
+        :type to: file
+        :return: Message to print
+        :rtype: str
         """
+        if not msg:
+            return
+        msg = str(msg).rstrip("\n")
+        print(msg, file=to)
+        return
+
+    @staticmethod
+    def start_timer():
+        """Set current time at function call"""
         Utils.timer_start = time()
 
     @staticmethod
     def stop_timer():
-        """
-        Store the time at function call
-
-        :return:
-        """
+        """Set current time at function call"""
         Utils.timer_stop = time()
 
     @staticmethod
-    def time2date(time):
+    def time2date(otime):
         """
         Convert a timestamp into a datetime object
 
-        :param time: Timestamp to convert
-        :type time: time
-        :return: datetime object
+        :param otime: Timestamp to convert
+        :type otime: time
+        :return: Formatted time to date
+        :rtype: :class:`datetime.datetime`
         """
-        return datetime.fromtimestamp(time)
+        return datetime.fromtimestamp(otime)
 
     @staticmethod
-    def time2datefmt(time, fmt=DATE_FMT):
+    def time2datefmt(otime, fmt=DATE_FMT):
         """
-        Convert a timestamp into a date following the format fmt
+        Converts a timestamp into a date following the format fmt, default to Utils.DATE_FMT
 
-        :param time: Timestamp to convert
-        :type time: time
+        :param otime: Timestamp to convert
+        :type otime: time
         :param fmt: Date format to follow for conversion
-        :type fmt: String
-        :return: date (String)
+        :type fmt: str
+        :return: Formatted time to date
+        :rtype: :class:`datetime.datetime`
         """
-        return datetime.fromtimestamp(time).strftime(fmt)
+        return datetime.fromtimestamp(otime).strftime(fmt)
 
     @staticmethod
     def user():
         """
-        Return the current user running or using the script. Taken from os.env
+        Returns the current user running or using the script. Taken from os.env
 
         :return: User name
-        :rtype: String
+        :rtype: str
         """
         return os.getenv('USER')
 
@@ -191,12 +210,13 @@ class Utils(object):
         Prints verbose message. Requires Manager.verbose to be True
 
         :param msg: Verbose message to print
-        :type msg: String
-        :return:
+        :type msg: str
+        :return: Verbose message
+        :rtype: str
         """
         from .manager import Manager
         if Manager.verbose and Utils.show_verbose:
-            print('[VERBOSE] %s' % str(msg), file=sys.stdout)
+            Utils._print('[VERBOSE] %s' % str(msg))
 
     @staticmethod
     def warn(msg):
@@ -204,8 +224,9 @@ class Utils(object):
         Prints warning message. Required Utils.show_warn to be set to True
 
         :param msg: Warning message to print
-        :type msg: String
-        :return:
+        :type msg: str
+        :return: Warning message
+        :rtype: str
         """
         if Utils.show_warn:
-            print('[WARNING] %s' % str(msg), file=sys.stderr)
+            Utils._print('[WARNING] %s' % str(msg), to=sys.stderr)

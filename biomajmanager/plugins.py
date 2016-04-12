@@ -1,6 +1,4 @@
 """Plugins mechanism to load user defined method"""
-from __future__ import print_function
-
 from biomajmanager.utils import Utils
 from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
@@ -18,11 +16,19 @@ class Plugins(object):
         Create the plugin object
 
         :param manager: Manager instance
-        :type config: biomajmanager.manager
+        :type manager: :class:`biomajmanager.manager.Manager`
         :param name: Name of the plugin to load. [DEFAULT: load all plugins]
         :type name: String
-        :return:
+        :raises SystemExit: If 'manager' arg is not given
+        :raises SystemExit: If 'PLUGINS' section not found in :py:data:`manager.properties`
+        :raises SystemExit: If 'plugins.dir' not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'plugins.list' not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'plugins.dir' does not exist
         """
+        self.pm = None
+        self.name = None
+        self.config = None
+        self.manager = None
         if not manager:
             Utils.error("'manager' is required")
         self.manager = manager
@@ -37,8 +43,8 @@ class Plugins(object):
 
         if not os.path.isdir(self.config.get('MANAGER', 'plugins.dir')):
             Utils.error("Can't find plugins.dir")
-        plugin_manager= PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
-                                      categories_filter={Plugins.CATEGORY: BMPlugin})
+        plugin_manager = PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
+                                       categories_filter={Plugins.CATEGORY: BMPlugin})
         plugin_manager.collectPlugins()
         self.pm = plugin_manager
         self.name = name
@@ -75,6 +81,7 @@ class BMPlugin(IPlugin):
         Get the BioMAJ manager config as object
 
         :return: configparser instance
+        :rtype: :class:'configparser`
         """
         return self.config
 
@@ -82,7 +89,8 @@ class BMPlugin(IPlugin):
         """
         Get the BioMAJ manager instance
 
-        :return: biomajmanager.manager
+        :return: Manager
+        :rtype: :class:`biomaj.manager.Manager`
         """
         return self.manager
 
