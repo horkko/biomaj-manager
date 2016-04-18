@@ -5,7 +5,7 @@ except ImportError:
 
 config = {
     'name': 'biomajmanager',
-    'version': '1.1.0',
+    'version': '1.1.1',
     'packages': find_packages(),
     'scripts': ['bin/biomaj-manager.py'],
     'url': 'https://github.com/horkko/biomaj-manager',
