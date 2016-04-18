@@ -69,6 +69,8 @@ def main():
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank",
                         help="Bank name")
+    parser.add_argument('-c', '--config', dest="config",
+                        help="BioMAJ global.properties configuration file")
     parser.add_argument('--db_type', dest="db_type",
                         help="BioMAJ database type [MySQL, MongoDB]")
     parser.add_argument('-o', '--out', dest="out",
@@ -96,7 +98,7 @@ def main():
         formats = []
         banks = []
         Utils.start_timer()
-        manager = Manager()
+        manager = Manager(global_cfg=options.config)
         if options.bank:
             banks.append(options.bank)
         else:
@@ -136,7 +138,7 @@ def main():
     if options.check_links:
         if not options.bank:
             Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         linker = Links(manager=manager)
         if linker.check_links():
             print("[%s] %d link(s) need to be created" % (options.bank, linker.created_links))
@@ -154,7 +156,7 @@ def main():
 
         Utils.start_timer()
         for bank in bank_list:
-            manager = Manager(bank=bank)
+            manager = Manager(bank=bank, global_cfg=options.config)
             history.append({'name': bank, 'history': manager.mongo_history()})
         if options.oformat:
             if options.oformat == 'json':
@@ -180,7 +182,7 @@ def main():
     if options.info:
         if not options.bank:
             Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         info = manager.bank_info()
         print(tabulate(info['info'], headers='firstrow', tablefmt='psql'))
         print(tabulate(info['prod'], headers='firstrow', tablefmt='psql'))
@@ -193,7 +195,7 @@ def main():
         if not options.bank:
             Utils.error("A bank name is required")
         Utils.start_timer()
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         linker = Links(manager=manager)
         linker.do_links()
         etime = Utils.elapsed_time()
@@ -206,7 +208,7 @@ def main():
         news = News(config=config)
         news.get_news()
         if options.db_type:
-            manager = Manager()
+            manager = Manager(global_cfg=options.config)
             manager.load_plugins()
             if not manager.plugins.bioweb.set_news(news.data):
                 Utils.error("Can't set news to collection")
@@ -228,7 +230,7 @@ def main():
             bank_list.append(options.bank)
         info = []
         for bank in bank_list:
-            manager = Manager(bank=bank)
+            manager = Manager(bank=bank, global_cfg=options.config)
             pending = manager.get_pending_sessions()
             if pending:
                 if options.oformat != 'tmpl':
@@ -256,12 +258,12 @@ def main():
         sys.exit(0)
 
     if options.save_versions:
-        manager = Manager()
+        manager = Manager(global_cfg=options.config)
         manager.save_banks_version()
         sys.exit(0)
 
     if options.show_update:
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         Utils.start_timer()
         updates = manager.show_need_update(visibility=options.visibility)
         next_switch = manager.next_switch_date().strftime("%Y/%m/%d")
@@ -288,7 +290,7 @@ def main():
     if options.switch:
         if not options.bank:
             Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         if manager.can_switch():
             Utils.ok("[%s] Ready to switch" % manager.bank.name)
             Utils.ok("[%s] Publishing ..." % manager.bank.name)
@@ -308,7 +310,7 @@ def main():
         sys.exit(0)
 
     if options.test:
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         rss = RSS(config=manager.config)
         rss.generate_rss()
         #print("No test defined")
@@ -323,7 +325,7 @@ def main():
         else:
             bank_list.append(options.bank)
         for bank in bank_list:
-            manager = Manager(bank=bank)
+            manager = Manager(bank=bank, global_cfg=options.config)
             manager.load_plugins()
             if options.db_type.lower() == 'mongodb':
                 manager.plugins.bioweb.update_bioweb()
@@ -336,7 +338,7 @@ def main():
     if options.tool:
         if not options.bank:
             Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank)
+        manager = Manager(bank=options.bank, global_cfg=options.config)
         sections = manager.get_bank_sections(tool=options.tool)
         print("[%s] %s dbs and section(s):" % (options.bank, str(options.tool)))
         for alpha in sections.keys():
@@ -360,7 +362,7 @@ def main():
         virtual_banks = {}
         Utils.start_timer()
         for bank in banks_list:
-            manager = Manager(bank=bank)
+            manager = Manager(bank=bank, global_cfg=options.config)
             info = manager.get_bank_sections(tool=options.vdbs)
             info['info'] = {'version': manager.current_release(),
                             'description': manager.bank.config.get('db.fullname')}
