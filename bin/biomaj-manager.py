@@ -166,7 +166,6 @@ def main():
                 writer.write(template='history.j2.' + options.oformat,
                              data={'history': history, 'generated': Utils.get_now(),
                                    'elapsed': "%.3f" % Utils.elapsed_time()})
-                sys.exit(0)
         else:
             if len(history):
                 for bank in history:

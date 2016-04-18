@@ -168,6 +168,8 @@ class Manager(object):
         """
         current = None
         release = None
+        if self._current_release is not None:
+            return self._current_release
         # First se search if a current release is set
         if 'current' in self.bank.bank and self.bank.bank['current']:
             session = self.get_session_from_id(self.bank.bank['current'])
@@ -887,7 +889,12 @@ class Manager(object):
         if session is not None:
             # Pending sessions are excluded
             if 'workflow_status' in session and session['workflow_status']:
-                next_release = session['release']
+                if 'release' in session:
+                    next_release = session['release']
+                elif 'remoterelease' in session:
+                    next_release = session['remoterelease']
+                else:
+                    Utils.error("Can't find 'release' or 'remoterelease' field in session")
         else:
             Utils.error("Can't find release in session '%s'" % str(production['session']))
 

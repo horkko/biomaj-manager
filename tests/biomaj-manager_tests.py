@@ -557,14 +557,6 @@ class TestBiomajManagerLinks(unittest.TestCase):
             Links(manager=self.utils)
 
     @attr('links')
-    @attr('links.init')
-    def test_LinksInitNoCurrentProdDirThrows(self):
-        """Check init throws exception when no production dir ready"""
-        self.utils.manager.bank.bank['production'].pop()
-        with self.assertRaises(SystemExit):
-            Links(manager=self.utils.manager)
-
-    @attr('links')
     @attr('links.addlink')
     def test_LinkAddLinkAddOneOK(self):
         """Check method increase by 1 ok"""
@@ -1662,9 +1654,18 @@ class TestBioMajManagerManager(unittest.TestCase):
     def test_ManagerGetCurrentRelease_CurrentSet(self):
         """Check correct release is returned"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = str(54)
+
+        data = {'name': 'alu',
+                'current': now,
+                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
+                }
         manager = Manager(bank='alu')
+        manager.bank.bank = data
         manager._current_release = str(54)
         self.assertEqual(str(54), manager.current_release())
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.currentrelease')
@@ -1681,37 +1682,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank = data
         self.assertEqual(release, manager.current_release())
         self.utils.drop_db()
-
-# These tests are switched off because current_release only search for 'current' tag in Mongo
-#    @attr('manager')
-#    @attr('manager.currentrelease')
-#    def test_ManagerGetCurrentRelease_ProductionRemoteRelease(self):
-#        """Check we get the right current release"""
-#        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-#        now = time.time()
-#        release = 'R54'
-#        data = {'name': 'alu',
-#                'production': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
-#                }
-#        manager = Manager(bank='alu')
-#        manager.bank.bank = data
-#        self.assertEqual(release, manager.current_release())
-#        self.utils.drop_db()
-
-#    @attr('manager')
-#    @attr('manager.currentrelease')
-#    def test_ManagerGetCurrentRelease_ProductionRelease(self):
-#        """Check we get the right current release"""
-#        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-#        now = time.time()
-#        release = 'R54'
-#        data = {'name': 'alu',
-#                'production': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'release': release}]
-#                }
-#        manager = Manager(bank='alu')
-#        manager.bank.bank = data
-#        self.assertEqual(release, manager.current_release())
-#        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.getcurrentuser')

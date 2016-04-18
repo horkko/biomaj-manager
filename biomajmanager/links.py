@@ -28,10 +28,6 @@ class Links(object):
         if not isinstance(manager, Manager):
             Utils.error("A Manager instance is required")
         self.manager = manager
-        try:
-            self.curr_bank_dir = self.manager.get_current_proddir()
-        except SystemExit:
-            Utils.error("Can't create Links instance: Can't get production dir for bank")
         self.created_links = 0
 
     def add_link(self, inc=1):
