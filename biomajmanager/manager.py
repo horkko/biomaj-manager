@@ -901,6 +901,12 @@ class Manager(object):
         self._next_release = next_release
         return self._next_release
 
+    def reset_releases(self):
+        """ Reset current and next release variables to None"""
+        self._current_release = None
+        self._next_release = None
+        return
+
     @user_granted
     def restart_stopped_jobs(self, args=None):
         """
@@ -979,6 +985,7 @@ class Manager(object):
             return False
         if isinstance(bank, Bank):
             self.bank = bank
+            self.reset_releases()
             return True
         return False
 
