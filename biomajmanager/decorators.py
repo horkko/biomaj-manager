@@ -36,8 +36,8 @@ def deprecated(func):
     """
     @wraps(func)
     def _dep_func(*args, **kwargs):
-        Utils.warn("Call to deprecated function '{}'.".format(func.__name__))
-        return func(*args, **kwargs)
+        Utils.warn("Call to deprecated function '{}'. Not executed.".format(func.__name__))
+        return
     _dep_func.__name__ = func.__name__
     _dep_func.__doc__ = func.__doc__
     _dep_func.__dict__.update(func.__dict__)
