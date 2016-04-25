@@ -2300,7 +2300,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.mongohistory')
     def test_ManagerMongoHistorySessionsHistoryANDStatusDeletedOK(self):
-        """Check bank has status deleted"""
+        """Check bank has status deprecated"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_12'))
@@ -2310,7 +2310,7 @@ class TestBioMajManagerManager(unittest.TestCase):
                                               'prod_dir': "alu_12", 'remoterelease': 12, 'last_update_time': 100,
                                               'last_modified': 100, 'status': {'remove_release': True}})
         history = manager.mongo_history()
-        self.assertEqual(history[1]['status'], 'deleted')
+        self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
 
     @attr('manager')

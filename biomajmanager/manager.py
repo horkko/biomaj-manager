@@ -822,7 +822,7 @@ class Manager(object):
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
         status = 'unpublished'
-
+        fmt = "%Y-%m-%d %H:%M"
         for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
             if 'current' in self.bank.bank:
                 if prod['session'] == self.bank.bank['current']:
@@ -835,7 +835,7 @@ class Manager(object):
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(prod['remoterelease']),
-                            'publication_date': str(Utils.time2date(prod['session'])),
+                            'publication_date': str(Utils.time2datefmt(prod['session'], fmt=fmt)),
                             'removal_date': None,
                             'bank_type': bank_type,
                             'bank_format': bank_format,
@@ -850,15 +850,18 @@ class Manager(object):
                                self.bank.name,
                                str(sess['remoterelease']),
                                str(Utils.time2datefmt(sess['id']))])
-            if new_id in map(lambda d: d['_id'], history):
+            #if new_id in map(lambda d: d['_id'], history):
+            #    continue
+            # Don't take into account no deleted session
+            if 'deleted' not in sess:
                 continue
             history.append({'_id': new_id,
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
-                            'publication_date': str(Utils.time2date(sess['last_update_time'])),
-                            'removal_date': str(Utils.time2datefmt(sess['deleted_time']))
-                                            if 'deleted_time' in sess else None,
+                            'publication_date': str(Utils.time2datefmt(sess['last_update_time'], fmt=fmt)),
+                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt))
+                                            if 'deleted' in sess else None,
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packageVersions': packages,

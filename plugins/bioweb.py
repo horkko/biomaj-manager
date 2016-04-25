@@ -4,6 +4,7 @@ import ssl
 import pymongo
 from biomajmanager.plugins import BMPlugin
 from biomajmanager.utils import Utils
+from biomajmanager.decorators import deprecated
 
 
 class Bioweb(BMPlugin):
@@ -90,6 +91,7 @@ class Bioweb(BMPlugin):
 
         return True
 
+    @deprecated
     def update_bioweb_from_mysql(self):
         """
         Get the history from the MySQL database (Biomaj 1.2.x) and transform it to a json document.
@@ -221,15 +223,15 @@ class Bioweb(BMPlugin):
             for collection in self.config.get(self.get_name(), 'bioweb.mongo.collections').strip().split(','):
                 self.collections[collection] = self.dbname[collection]
 
-        except pymongo.ConnectionFailure as err:
+        except pymongo.errors.ConnectionFailure as err:
             raise Exception("[ConnectionFailure] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
-        except pymongo.InvalidName as err:
+        except pymongo.errors.InvalidName as err:
             raise Exception("Error getting collection: %s" % str(err))
-        except pymongo.InvalidURI as err:
+        except pymongo.errors.InvalidURI as err:
             raise Exception("[InvalidURI] Can't connect to Mongo database %s: %s" % (dbname, str(err)))
-        except pymongo.OperationFailure as err:
+        except pymongo.errors.OperationFailure as err:
             raise Exception("Operation failed: %s" % str(err))
-        except pymongo.InvalidName as err:
+        except pymongo.errors.InvalidName as err:
             raise Exception("Error getting collection: %s" % str(err))
         except Exception as err:
             raise Exception("Error while setting Mongo configuration: %s" % str(err))
