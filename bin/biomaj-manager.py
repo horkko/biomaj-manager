@@ -76,7 +76,7 @@ def main():
     parser.add_argument('-o', '--out', dest="out",
                         help="Output file")
     parser.add_argument('-F', '--format', dest="oformat",
-                        help="Output format. Supported [csv, html, json, tmpl[default]]")
+                        help="Output format. Supported [csv, html, json]")
     parser.add_argument('-T', '--templates', dest="template_dir",
                         help="Template directory. Overwrites template_dir")
     parser.add_argument('-S', '--section', dest="tool",
@@ -232,15 +232,16 @@ def main():
             manager = Manager(bank=bank, global_cfg=options.config)
             pending = manager.get_pending_sessions()
             if pending:
-                if options.oformat != 'tmpl':
+                if options.oformat:
                     writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
                     writer.write(template='pending.j2.' + options.oformat, data={'pending': pending})
                 else:
                     for pend in pending:
                         release = pend['release']
-                        sess_id = pend['session_id']
-                        date = Utils.time2datefmt(sess_id, Manager.DATE_FMT)
+                        sess_id = pend['id']
+                        date = Utils.time2datefmt(sess_id, Utils.DATE_FMT)
                         info.append([bank, str(release), str(date)])
+            manager.set_bank_from_name(name=bank)
         if info:
             info.insert(0, ["Bank", "Release", "Run time"])
             print("Pending banks:")

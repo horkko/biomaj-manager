@@ -498,14 +498,12 @@ class Manager(object):
         """
         Request the database to check if some session(s) is/are pending to complete
 
-        :return: List of dict {'release'=release, 'session_id': id} or empty list
-        :rtype: list
+        :return: List of dict {'release'=release, 'id': id} or None
+        :rtype: list or None
         """
-        pending = []
-        if 'pending' in self.bank.bank and self.bank.bank['pending']:
-            has_pending = self.bank.bank['pending']
-            for k, v in has_pending.items():
-                pending.append({'release': k, 'session_id': v})
+        pending = None
+        if 'pending' in self.bank.bank and len(self.bank.bank['pending']) > 0:
+            pending = self.bank.bank['pending']
         return pending
 
     @bank_required
@@ -707,7 +705,7 @@ class Manager(object):
         # Check the last updated session is not pending. We consider pending session has failed because not ended
         if pending and last_update_id:
             for pend in pending:
-                if pend['session_id'] == last_update_id:
+                if pend['id'] == last_update_id:
                     if Manager.get_verbose():
                         Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first,"
                                    " or update bank" % (self.bank.name, pend['release']))

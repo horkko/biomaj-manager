@@ -1409,7 +1409,7 @@ class TestBioMajManagerManager(unittest.TestCase):
                 'sessions': [{'id': 0, 'workflow_status': True},
                              {'id': now, 'workflow_status': True}],
                 'last_update_session': now,
-                'pending': {'12345': now}
+                'pending': [{'release': '12345', 'id': now}]
                 }
         manager = Manager(bank='alu')
         manager.bank.bank = data
@@ -1535,20 +1535,16 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.get_session_from_id(None)
         self.utils.drop_db()
 
-    @attr('manager')
     @attr('manager.getpendingsessions')
     def test_ManagerGetPendingSessionsOK(self):
         """Check method returns correct pending session"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
-        expected = {54: now, 55: now + 1}
+        expected = [{'release': 54, 'id': now}, {'release': 55, 'id': now + 1}]
         manager.bank.bank['pending'] = expected
-        returned_list = manager.get_pending_sessions()
-        returned = {}
-        for item in returned_list:
-            returned[item['release']] = item['session_id']
-        self.assertDictEqual(expected, returned)
+        pendings = manager.get_pending_sessions()
+        self.assertListEqual(expected, pendings)
         self.utils.drop_db()
 
     @attr('manager')
@@ -1558,13 +1554,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
-        expected = {54: now, 55: now + 1}
+        expected = [{'release': 54, 'id': now}, {'release': 55, 'id': now + 1}]
         manager.bank.bank['pending'] = expected
-        returned_list = manager.show_pending_sessions()
-        returned = {}
-        for item in returned_list:
-            returned[item['release']] = item['session_id']
-        self.assertDictEqual(expected, returned)
+        pendings = manager.show_pending_sessions()
+        self.assertListEqual(expected, pendings)
         self.utils.drop_db()
 
     @attr('manager')
