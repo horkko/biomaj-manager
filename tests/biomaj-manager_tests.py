@@ -2239,7 +2239,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.1')
     @attr('manager.history')
     def test_ManagerHistorySessionsHistoryANDSessionDeletedOK(self):
-        """As we kept sessions history, we check old delted session have 'deleted' with date in sessions"""
+        """As we kept sessions history, we check old deleted session have 'deleted' with date in sessions"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_12'))
@@ -2250,9 +2250,9 @@ class TestBioMajManagerManager(unittest.TestCase):
                                               'last_modified': 100, 'status': {'remove_release': True}})
         manager.bank.bank['sessions'].append({'id': 98, 'data_dir': self.utils.data_dir, 'dir_version': "alu",
                                               'prod_dir': "alu_12", 'remoterelease': 12, 'last_update_time': 98,
-                                              'last_modified': 98, 'status': {'remove_release': True}, 'deleted': 99})
+                                              'last_modified': 98, 'status': {'remove_release': True}, 'deleted': 0})
         history = manager.history()
-        self.assertEqual(history[1]['removal_date'], '1970-01-01 01:01')
+        self.assertEqual(history[1]['status'], 'deleted')
         self.utils.drop_db()
 
     @attr('manager')
