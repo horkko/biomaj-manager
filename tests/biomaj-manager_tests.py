@@ -1205,6 +1205,16 @@ class TestBioMajManagerDecorators(unittest.TestCase):
             manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         self.utils.drop_db()
 
+    @attr('manager')
+    @attr('manager.decorators')
+    def test_DecoratorsDeprecated(self):
+        """Check the call to deprecated method throws"""
+        from biomajmanager.decorators import deprecated
+        @deprecated
+        def def_test():
+            pass
+        with self.assertRaises(SystemExit):
+            def_test()
 
 class TestBioMajManagerManager(unittest.TestCase):
     """Class for testing biomajmanager.manager class"""
@@ -2173,12 +2183,13 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check bank has right session id"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        _id = "@".join(['bank', 'alu', '12', Utils.time2datefmt(100)])
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
         manager.bank.bank['current'] = 100
-        manager.bank.bank['sessions'].append({'id': 100})
+        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
         history = manager.history()
-        self.assertEqual(history[0]['id'], 100)
+        self.assertEqual(history[0]['_id'], _id)
         self.utils.drop_db()
 
     @attr('manager')
@@ -2190,7 +2201,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
         manager.bank.bank['current'] = 100 + 1
-        manager.bank.bank['sessions'].append({'id': 100})
+        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
         history = manager.history()
         self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
@@ -2203,7 +2214,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['sessions'].append({'id': 100})
+        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
         del manager.bank.bank['current']
         history = manager.history()
         self.assertEqual(history[0]['status'], 'unpublished')
@@ -2212,87 +2223,6 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.history')
     def test_ManagerHistorySessionsHistoryANDStatusDeletedOK(self):
-        """Check bank has status deleted"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_12'))
-        manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
-                                                'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['sessions'].append({'id': 101, 'data_dir': self.utils.data_dir, 'dir_version': "alu",
-                                              'prod_dir': "alu_12"})
-        history = manager.history()
-        self.assertEqual(history[1]['status'], 'deleted')
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.mongohistory')
-    def test_ManagerMongoHistoryNoProductionRaisesError(self):
-        """Check when no 'production' field in bank, history raises exception"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        manager.bank.bank['production'] = None
-        with self.assertRaises(SystemExit):
-            manager.mongo_history()
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.mongohistory')
-    def test_ManagerMongoHistoryNoSessionsRaisesError(self):
-        """Check when no 'sessions' field in bank, history raises exception"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        manager.bank.bank['production'].append({'session': 100, 'release': 12})
-        manager.bank.bank['sessions'] = None
-        with self.assertRaises(SystemExit):
-            manager.mongo_history()
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.mongohistory')
-    def test_ManagerMongoHistoryCheckIDSessionsOK(self):
-        """Check bank has right session id"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        _id = "@".join(['bank', 'alu', '12', Utils.time2datefmt(100)])
-        manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
-                                                'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['current'] = 100
-        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
-        history = manager.mongo_history()
-        self.assertEqual(history[0]['_id'], _id)
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.mongohistory')
-    def test_ManagerMongoHistoryCheckStatusDeprecatedOK(self):
-        """Check bank has status deprecated"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
-                                                'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['current'] = 100 + 1
-        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
-        history = manager.mongo_history()
-        self.assertEqual(history[0]['status'], 'deprecated')
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.mongohistory')
-    def test_ManagerMongoHistoryStatusUnpublishedOK(self):
-        """Check bank not published yet (first run) has status unpublished"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
-                                                'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
-        del manager.bank.bank['current']
-        history = manager.mongo_history()
-        self.assertEqual(history[0]['status'], 'unpublished')
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.mongohistory')
-    def test_ManagerMongoHistorySessionsHistoryANDStatusDeletedOK(self):
         """Check bank has status deprecated"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
@@ -2302,8 +2232,27 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['sessions'].append({'id': 101, 'data_dir': self.utils.data_dir, 'dir_version': "alu",
                                               'prod_dir': "alu_12", 'remoterelease': 12, 'last_update_time': 100,
                                               'last_modified': 100, 'status': {'remove_release': True}})
-        history = manager.mongo_history()
+        history = manager.history()
         self.assertEqual(history[0]['status'], 'deprecated')
+        self.utils.drop_db()
+
+    @attr('manager.1')
+    @attr('manager.history')
+    def test_ManagerHistorySessionsHistoryANDSessionDeletedOK(self):
+        """As we kept sessions history, we check old delted session have 'deleted' with date in sessions"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_12'))
+        manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
+                                                'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
+        manager.bank.bank['sessions'].append({'id': 101, 'data_dir': self.utils.data_dir, 'dir_version': "alu",
+                                              'prod_dir': "alu_12", 'remoterelease': 12, 'last_update_time': 100,
+                                              'last_modified': 100, 'status': {'remove_release': True}})
+        manager.bank.bank['sessions'].append({'id': 98, 'data_dir': self.utils.data_dir, 'dir_version': "alu",
+                                              'prod_dir': "alu_12", 'remoterelease': 12, 'last_update_time': 98,
+                                              'last_modified': 98, 'status': {'remove_release': True}, 'deleted': 99})
+        history = manager.history()
+        self.assertEqual(history[1]['removal_date'], '1970-01-01 01:01')
         self.utils.drop_db()
 
     @attr('manager')
@@ -2453,7 +2402,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.nextrelease')
     def test_ManagerNextReleasePassesContinue(self):
-        """Check method continue when session['id'] == 'current'"""
+        """Check method get the right release (next) using 'remoterelease' from sessions"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
@@ -2463,6 +2412,37 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['sessions'].append({'id': now, 'remoterelease': '54'})
         manager.bank.bank['sessions'].append({'id': now + 1, 'remoterelease': '55', 'workflow_status': True})
         self.assertEqual('55', manager.next_release())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.nextrelease')
+    def test_ManagerNextReleasePassesContinue(self):
+        """Check method get the right release (next) using 'release' from sessions"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now})
+        manager.bank.bank['production'].append({'session': now + 1})
+        manager.bank.bank['sessions'].append({'id': now, 'release': '54'})
+        manager.bank.bank['sessions'].append({'id': now + 1, 'release': '55', 'workflow_status': True})
+        self.assertEqual('55', manager.next_release())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.nextrelease')
+    def test_ManagerNextReleaseSessionsMissingReleaseFieldsThorws(self):
+        """Check method throws because nor 'remoterelease' nor 'release' found in sessions"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now})
+        manager.bank.bank['production'].append({'session': now + 1})
+        manager.bank.bank['sessions'].append({'id': now})
+        manager.bank.bank['sessions'].append({'id': now + 1, 'workflow_status': True})
+        with self.assertRaises(SystemExit):
+            manager.next_release()
         self.utils.drop_db()
 
     @attr('manager')

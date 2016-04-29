@@ -4,7 +4,6 @@ import re
 import os
 import select
 import subprocess
-import sys
 import time
 
 from biomaj.bank import Bank
@@ -611,11 +610,11 @@ class Manager(object):
     @bank_required
     def history(self):
         """
-        Get the releases history of a specific bank
+        Get the releases history of a bank from the database and build a Mongo like document in json
 
-        :return: A list with the full history of the bank
+        :return: history + extra info to be included into bioweb (Institut Pasteur only)
         :rtype: list
-        :raises SystemExit: If 'production' key not found in bank document
+        :raises SystemExit: If 'production' key not found in bank docuement
         :raises SystemExit: If 'session' key not found in bank docuement
         """
         productions = sessions = None
@@ -628,54 +627,57 @@ class Manager(object):
             sessions = self.bank.bank['sessions']
         else:
             Utils.error("No sessions found for bank %s" % self.bank.name)
-        history = []
 
-        description = self.bank.config.get('db.fullname').strip()
+        history = []
         packages = self.get_bank_packages()
+        description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
         status = 'unpublished'
-
-        for prod in productions:
+        fmt = "%Y-%m-%d %H:%M"
+        for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
             if 'current' in self.bank.bank:
-                if 'session' in prod and prod['session'] == self.bank.bank['current']:
+                if prod['session'] == self.bank.bank['current']:
                     status = 'online'
                 else:
                     status = 'deprecated'
-            history.append({
-                # Convert the time stamp from time() to a date
-                'created': Utils.time2datefmt(prod['session']),
-                'id': prod['session'],
-                'removed': None,
-                'status': status,
-                'name': self.bank.name,
-                'path': os.path.join(prod['data_dir'], str(prod['dir_version']), str(prod['prod_dir'])),
-                'release': prod['remoterelease'],
-                'freeze': prod['freeze'],
-                'bank_type': bank_type,
-                'bank_format': bank_format,
-                'description': description,
-                'packageVersions': packages,
-            })
+            hid = '@'.join(['bank', self.bank.name, str(prod['remoterelease']),
+                            str(Utils.time2datefmt(prod['session']))])
+            history.append({'_id': hid,
+                            'type': 'bank',
+                            'name': self.bank.name,
+                            'version': str(prod['remoterelease']),
+                            'publication_date': str(Utils.time2datefmt(prod['session'], fmt=fmt)),
+                            'removal_date': None,
+                            'bank_type': bank_type,
+                            'bank_format': bank_format,
+                            'packageVersions': packages,
+                            'description': description,
+                            'status': status
+                            })
 
-        for sess in sessions:
+        for sess in sorted(sessions, key=lambda k: k['id'], reverse=True):
             # Don't repeat production item stored in sessions
-            if 'id' in sess:
-                if sess['id'] in map(lambda d: d['id'], history):
-                    continue
-                path = os.path.join(sess['data_dir'], str(sess['dir_version']), str(sess['prod_dir']))
-                history.append({
-                    'created': Utils.time2datefmt(sess['id']),
-                    'id': sess['id'],
-                    'removed': True,
-                    'status': 'deleted',
-                    'name': self.bank.name,
-                    'path': path,
-                    'bank_type': bank_type,
-                    'bank_format': bank_format,
-                    'description': description,
-                    'packageVersions': packages,
-                })
+            new_id = '@'.join(['bank',
+                               self.bank.name,
+                               str(sess['remoterelease']),
+                               str(Utils.time2datefmt(sess['id']))])
+            # Don't take into account no deleted session
+            if 'deleted' not in sess:
+                continue
+            history.append({'_id': new_id,
+                            'type': 'bank',
+                            'name': self.bank.name,
+                            'version': str(sess['remoterelease']),
+                            'publication_date': str(Utils.time2datefmt(sess['last_update_time'], fmt=fmt)),
+                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt))
+                            if 'deleted' in sess else None,
+                            'bank_type': bank_type,
+                            'bank_formats': bank_format,
+                            'packageVersions': packages,
+                            'description': description,
+                            'status': 'deleted'
+                            })
         return history
 
     @bank_required
@@ -791,82 +793,6 @@ class Manager(object):
             return today + datetime.timedelta(days=(7 - today.isoweekday()))
         else:
             return today + datetime.timedelta(days=(14 - today.isoweekday()))
-
-    @bank_required
-    def mongo_history(self):
-        """
-        Get the releases history of a bank from the database and build a Mongo like document in json
-
-        :return: history + extra info to be included into bioweb (Institut Pasteur only)
-        :rtype: list
-        :raises SystemExit: If 'production' key not found in bank docuement
-        :raises SystemExit: If 'session' key not found in bank docuement
-        """
-        ## TODO: During the sessions check, make sure the sessions.update is true, meaning that we'done something
-        productions = sessions = None
-        if 'production' in self.bank.bank and self.bank.bank['production']:
-            productions = self.bank.bank['production']
-        else:
-            Utils.error("No production found for bank %s" % self.bank.name)
-
-        if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
-            sessions = self.bank.bank['sessions']
-        else:
-            Utils.error("No sessions found for bank %s" % self.bank.name)
-
-        history = []
-        packages = self.get_bank_packages()
-        description = self.bank.config.get('db.fullname').replace('"', '').strip()
-        bank_type = self.bank.config.get('db.type').split(',')
-        bank_format = self.bank.config.get('db.formats').split(',')
-        status = 'unpublished'
-        fmt = "%Y-%m-%d %H:%M"
-        for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
-            if 'current' in self.bank.bank:
-                if prod['session'] == self.bank.bank['current']:
-                    status = 'online'
-                else:
-                    status = 'deprecated'
-            hid = '@'.join(['bank', self.bank.name, str(prod['remoterelease']),
-                            str(Utils.time2datefmt(prod['session']))])
-            history.append({'_id': hid,
-                            'type': 'bank',
-                            'name': self.bank.name,
-                            'version': str(prod['remoterelease']),
-                            'publication_date': str(Utils.time2datefmt(prod['session'], fmt=fmt)),
-                            'removal_date': None,
-                            'bank_type': bank_type,
-                            'bank_format': bank_format,
-                            'packageVersions': packages,
-                            'description': description,
-                            'status': status
-                            })
-
-        for sess in sorted(sessions, key=lambda k: k['id'], reverse=True):
-            # Don't repeat production item stored in sessions
-            new_id = '@'.join(['bank',
-                               self.bank.name,
-                               str(sess['remoterelease']),
-                               str(Utils.time2datefmt(sess['id']))])
-            #if new_id in map(lambda d: d['_id'], history):
-            #    continue
-            # Don't take into account no deleted session
-            if 'deleted' not in sess:
-                continue
-            history.append({'_id': new_id,
-                            'type': 'bank',
-                            'name': self.bank.name,
-                            'version': str(sess['remoterelease']),
-                            'publication_date': str(Utils.time2datefmt(sess['last_update_time'], fmt=fmt)),
-                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt))
-                                            if 'deleted' in sess else None,
-                            'bank_type': bank_type,
-                            'bank_formats': bank_format,
-                            'packageVersions': packages,
-                            'description': description,
-                            'status': 'deleted'
-                            })
-        return history
 
     @bank_required
     def next_release(self):

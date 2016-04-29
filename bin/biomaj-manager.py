@@ -157,7 +157,7 @@ def main():
         Utils.start_timer()
         for bank in bank_list:
             manager = Manager(bank=bank, global_cfg=options.config)
-            history.append({'name': bank, 'history': manager.mongo_history()})
+            history.append({'name': bank, 'history': manager.history()})
         if options.oformat:
             if options.oformat == 'json':
                 print(json.dumps([h for hist in history for h in hist]))
