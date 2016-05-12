@@ -83,13 +83,15 @@ class Links(object):
                 'samtools': [{'target': 'index/samtools'}], 'fusioncatcher': [{'target': 'index/fusioncatcher'}],
                 'golden': [{'target': 'index/golden'}], 'soap': [{'target': 'index/soap'}],
                 'blast+': [{'target': 'index/blast+'}], 'flat': [{'target': 'ftp'}],
-                'uncompressed': [{'target': 'release', 'fallback': 'flat'}],
+                'uncompressed': [{'target': 'release', 'fallback': 'flat'},
+                                 {'target': 'index/golden', 'requires': 'golden'}],
             }
         if files is None:
             files = {
-                'golden': [{'target': 'index/golden'}], 'uncompressed': [{'target': 'index/golden'}],
+                'golden': [{'target': 'index/golden'}],#  'uncompressed': [{'target': 'index/golden'}],
                 'blast2': [{'target': 'fasta'}, {'target': 'index/blast2'}],
-                'hmmer': [{'target': 'index/hmmer'}], 'fasta': [{'target': 'fasta', 'remove_ext': True}],
+                'hmmer': [{'target': 'index/hmmer'}],
+                'fasta': [{'target': 'fasta', 'remove_ext': True}],
                 'bdb': [{'target': 'index/bdb', 'remove_ext': True}]
             }
         for source, targets in list(dirs.items()):
@@ -100,7 +102,7 @@ class Links(object):
                 self._generate_files_link(source=source, **target)
         return self.created_links
 
-    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None):
+    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, requires=None):
         """
         Create a symbolic link between 'source' and 'target' for a directory
 
@@ -112,10 +114,12 @@ class Links(object):
         :type hard: bool (default False)
         :param fallback: Alternative source if source does not exist
         :type fallback: str
+        :param requires: A required directory
+        :type requires: str
         :return: Number of created link(s)
         :rtype: int
         """
-        if not self._prepare_links(source=source, target=target, fallback=fallback):
+        if not self._prepare_links(source=source, target=target, fallback=fallback, requires=requires):
             return 0
 
         # Final link name
@@ -209,7 +213,7 @@ class Links(object):
                     self.add_link()
         return self.created_links
 
-    def _prepare_links(self, source=None, target=None, use_deepest=False, fallback=None):
+    def _prepare_links(self, source=None, target=None, use_deepest=False, fallback=None, requires=None):
         """
         Prepare stuff to create links
 
@@ -221,6 +225,8 @@ class Links(object):
         :type use_deepest: bool
         :param fallback: Alternative source if source does not exist
         :type fallback: str
+        :param requires: A required file or directory
+        :type requires: str
         :return: Boolean
         :rtype: bool
         :raises SystemExit: If 'source' or 'target' are None
@@ -244,18 +250,24 @@ class Links(object):
         target_dir = self.manager.config.get('MANAGER', 'production.dir')
         source = os.path.join(data_dir, source)
 
-        if not os.path.isdir(source) and fallback is None:
-            if self.manager.get_verbose():
-                Utils.warn("[%s] %s does not exist" % (bank_name, source))
-            return False
-        elif fallback:
-            if self.manager.get_verbose():
-                Utils.verbose("[%s] Source %s not found\nFallback to %s" % (bank_name, source, fallback))
-            source = os.path.join(data_dir, fallback)
-            if not os.path.isdir(source):
+        if requires is not None:
+            if not os.path.exists(os.path.join(data_dir, requires)):
+                Utils.warn("[%s] Can't create %s, requires param %s not here." % (bank_name, source, requires))
+                return False
+
+        if not os.path.isdir(source):
+            if fallback is None:
                 if self.manager.get_verbose():
                     Utils.warn("[%s] %s does not exist" % (bank_name, source))
                 return False
+            else:
+                if self.manager.get_verbose():
+                    Utils.verbose("[%s] %s does not exist. Fallback to %s" % (bank_name, source, fallback))
+                source = os.path.join(data_dir, fallback)
+                if not os.path.isdir(source):
+                    if self.manager.get_verbose():
+                        Utils.warn("[%s] Fallback %s does not exist" % (bank_name, source))
+                    return False
 
         if use_deepest:
             source = Utils.get_deepest_dir(source, full=use_deepest)
