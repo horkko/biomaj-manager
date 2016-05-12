@@ -85,7 +85,7 @@ class Bioweb(BMPlugin):
         :rtype: boole
         """
 
-        history = self.manager.mongo_history()
+        history = self.manager.history()
         if not self._update_mongodb(data=history):
             Utils.error("Can't update bioweb.catalog")
 
