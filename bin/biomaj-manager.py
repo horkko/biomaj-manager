@@ -61,7 +61,7 @@ def main():
                         help="Test method. [-b REQUIRED]")
     parser.add_argument('-U', '--show_update', dest="show_update", action="store_true", default=False,
                         help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that\
-                              need to be updated. [-b] available.")
+                              need to be updated. [-b and --visibility] available.")
     parser.add_argument('-v', '--version', dest="version", action="store_true", default=False,
                         help="Show version")
     parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
@@ -84,7 +84,7 @@ def main():
     parser.add_argument('--vdbs', dest="vdbs",
                         help="Create virtual database HTML pages for tool. [-b REQUIRED]")
     parser.add_argument('--visibility', dest="visibility", default="public",
-                        help="Banks visibility ['all', 'public'(default), 'private'")
+                        help="Banks visibility ['all', 'public'(default), 'private'].Use with --show_update.")
 
     options = Options()
     parser.parse_args(namespace=options)
