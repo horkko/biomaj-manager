@@ -123,9 +123,18 @@ class Links(object):
             return 0
 
         # Final link name
+        # TODO: New implementation - 12 May 2016
+        # links = []
+        # for source in self.sources:
+        #     slink = os.path.join(source)
+        #     tlink = os.path.join(self.target, os.path.basename(source))
+        #     links.append((slink, tlink))
+
         slink = os.path.join(self.source)
         tlink = os.path.join(self.target, self.manager.bank.name)
 
+        # TODO: New implementation - 12 May 2016
+        # self._make_links(links=links, hard=hard)
         self._make_links(links=[(slink, tlink)], hard=hard)
 
         if Manager.get_simulate() and Manager.get_verbose():
