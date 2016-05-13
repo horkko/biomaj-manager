@@ -306,6 +306,23 @@ class TestBiomajManagerUtils(unittest.TestCase):
             Utils.get_files(path='/not_found')
 
     @attr('utils')
+    @attr('utils.getsubtree')
+    def test_GetSubTreeWarnAndReturnsEmptyList(self):
+        """Check the method prints a warning message and returns empty list"""
+        self.assertListEqual(Utils.get_subtree(path=None), [])
+
+    @attr('utils')
+    @attr('utils.getsubtree')
+    def test_GetSubTreeRetrunsRgihtSubTree(self):
+        """Checks the method returns the right subtree list"""
+        os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'a1', 'a2', 'a3'))
+        os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'b1', 'b2', 'b3', 'b4'))
+        os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'c1', 'c2'))
+        returned = Utils.get_subtree(path=os.path.join(self.utils.tmp_dir, 'sub'))
+        expected = ["a1/a2/a3", "b1/b2/b3/b4", "c1/c2"]
+        self.assertListEqual(returned, expected)
+
+    @attr('utils')
     @attr('utils.getnow')
     def test_UtilsGetNow(self):
         """Check method returns right time"""
