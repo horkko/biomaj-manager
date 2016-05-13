@@ -320,7 +320,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'c1', 'c2'))
         returned = Utils.get_subtree(path=os.path.join(self.utils.tmp_dir, 'sub'))
         expected = ["a1/a2/a3", "b1/b2/b3/b4", "c1/c2"]
-        self.assertListEqual(returned, expected)
+        self.assertListEqual(sorted(returned), sorted(expected))
 
     @attr('utils')
     @attr('utils.getnow')
@@ -1366,7 +1366,6 @@ class TestBioMajManagerManager(unittest.TestCase):
                                                     })
         manager.bank.bank = manager.bank.banks.find_one({'name': 'alu'})
         returned = manager.bank_info()
-        print(returned)
         expected = {'info': [["Name", "Type(s)", "Last update status", "Published release"],
                              ["alu", "nucleic,protein", Utils.time2datefmt(now), '54']],
                     'prod': [["Session", "Remote release", "Release", "Directory", "Freeze"],

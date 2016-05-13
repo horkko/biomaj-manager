@@ -4,7 +4,7 @@ import os
 import sys
 from time import time
 from datetime import datetime
-from string import split, lstrip
+import string
 
 
 class Utils(object):
@@ -139,8 +139,8 @@ class Utils(object):
             return subtrees
         for dir_path, dir_name, file_name in os.walk(path):
             if len(dir_name) == 0:
-                subtree = split(dir_path, path)[-1]
-                subtree = lstrip(subtree, '/')
+                subtree = dir_path.split(path)[-1]
+                subtree = subtree.lstrip('/')
                 subtrees.append(subtree)
         return subtrees
 
