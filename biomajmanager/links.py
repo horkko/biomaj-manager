@@ -168,7 +168,11 @@ class Links(object):
         :raise SystemExit: If error occurred during directory structure building
         """
         self._check_source_target_parameters(source=source, target=target)
-        source = os.path.join(self.data_dir, source)
+        # Check do_links.clone_dirs. As we want to recreate the same architecture as for the source,
+        # we need to recreate the target because Utils.get_subtree removes the source path which contains
+        # the target name
+        target = os.path.join(target, source)
+        source = os.path.join(self.bank_data_dir, source)
         subtrees = Utils.get_subtree(path=source)
         try:
             for subtree in subtrees:

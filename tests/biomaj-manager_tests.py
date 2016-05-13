@@ -555,7 +555,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
                            'uncompressed': [{'target': 'release', 'fallback': 'flat'}]}
         self.utils.files = {'golden': [{'target': 'index/golden'}],
                             'blast2': [{'target': 'fasta', 'remove_ext': True}, {'target': 'index/blast2'}]}
-        self.utils.clones = {} #'index': [{'source': 'golden'}, {'source': 'blast2'}]}
+        self.utils.clones = {'index': [{'source': 'golden'}, {'source': 'blast2'}]}
 
     def tearDown(self):
         """Clean all"""
@@ -568,9 +568,9 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_clonsestructre(self):
         """Checks method build subtree structure correctly"""
         links = Links(manager=self.utils.manager)
-        links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'), target='index')
+        links.manager.set_verbose(True)
+        links._clone_structure(source='blast2', target='index')
         self.assertTrue(os.path.isfile(os.path.join(self.utils.prod_dir, 'index', 'blast2', 'news1.txt')))
-        self.assertTrue(os.path.isfile(os.path.join(self.utils.prod_dir, 'index', 'golden', 'news2.txt')))
 
     @attr('links')
     @attr('links.clonestructure')
@@ -579,17 +579,15 @@ class TestBiomajManagerLinks(unittest.TestCase):
         links = Links(manager=self.utils.manager)
         links.manager.set_simulate(True)
         links.manager.set_verbose(True)
-        self.assertTrue(links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'),
-                                               target='index'))
+        self.assertTrue(links._clone_structure(source='blast2', target='index'))
 
     @attr('links')
     @attr('links.clonestructure')
     def test_cloneStructureWithRemoveExt(self):
         """Check the method add some more created links due to remove_ext option"""
         links = Links(manager=self.utils.manager)
-        links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'),
-                               target='index', remove_ext=True)
-        self.assertEqual(links.created_links, 4)
+        links._clone_structure(source='blast2', target='index', remove_ext=True)
+        self.assertEqual(links.created_links, 2)
 
     @attr('links')
     @attr('links.clonestructure')
@@ -597,9 +595,8 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check the method add some more created links due to remove_ext option"""
         links = Links(manager=self.utils.manager)
         links.manager.set_verbose(True)
-        links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'),
-                               target='index', remove_ext=True)
-        self.assertEqual(links.created_links, 4)
+        links._clone_structure(source='golden', target='index', remove_ext=True)
+        self.assertEqual(links.created_links, 2)
 
     @attr('links')
     @attr('links.init')
@@ -659,7 +656,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         # Check setUp, it creates 3 dirs
         self.assertEqual(links.check_links(clone_dirs=self.utils.clones,
                                            dirs=self.utils.dirs,
-                                           files=self.utils.files), 8)
+                                           files=self.utils.files), 10)
 
     @attr('links')
     @attr('links.dolinks')
@@ -686,7 +683,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         links = Links(manager=self.utils.manager)
         exp_dirs = {'flat': [{'target': 'ftp'}], 'uncompressed': [{'target': 'release'}],
                     'blast2': [{'target': 'index/blast2'}]}
-        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 6)
+        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 8)
 
     @attr('links')
     @attr('links.dolinks')
@@ -698,7 +695,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.copy_file(ofile='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         self.utils.copy_file(ofile='news3.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         exp_files = {'blast2': [{'target': 'index/blast2'}]}
-        self.assertEqual(links.do_links(dirs=self.utils.dirs, files=exp_files), 7)
+        self.assertEqual(links.do_links(dirs=self.utils.dirs, files=exp_files), 14)
 
     @attr('links')
     @attr('links.preparelinks')
