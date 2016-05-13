@@ -140,7 +140,7 @@ class Utils(object):
         for dir_path, dir_name, file_name in os.walk(path):
             if len(dir_name) == 0:
                 subtree = dir_path.split(path)[-1]
-                subtree = dir_path.lstrip(subtree, '/')
+                subtree = subtree.lstrip('/')
                 subtrees.append(subtree)
         return subtrees
 
