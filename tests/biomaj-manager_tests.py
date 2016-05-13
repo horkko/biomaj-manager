@@ -284,7 +284,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         tmp_file2 = os.path.join(self.utils.tmp_dir, '2foobar.tmp')
         open(tmp_file1, mode='a').close()
         open(tmp_file2, mode='a').close()
-        files = Utils.get_files(self.utils.tmp_dir)
+        files = Utils.get_files(path=self.utils.tmp_dir)
         b_tmp_file1 = os.path.basename(tmp_file1)
         b_tmp_file2 = os.path.basename(tmp_file2)
         self.assertEqual(b_tmp_file1, files[0])
@@ -527,7 +527,18 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.manager = manager
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'flat'))
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'golden'))
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        self.utils.copy_file(ofile='news1.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        self.utils.copy_file(ofile='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'golden'))
+        # Default dirs and files to create
+        self.utils.dirs = {'golden': [{'target': 'index/golden'}],
+                           'blast2': [{'target': 'index/blast2'}],
+                           'flat': [{'target': 'ftp'}],
+                           'uncompressed': [{'target': 'release', 'fallback': 'flat'}]}
+        self.utils.files = {'golden': [{'target': 'index/golden'}],
+                            'blast2': [{'target': 'fasta', 'remove_ext': True}, {'target': 'index/blast2'}]}
+        self.utils.clones = {} #'index': [{'source': 'golden'}, {'source': 'blast2'}]}
 
     def tearDown(self):
         """Clean all"""
@@ -536,11 +547,57 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('links')
+    @attr('links.clonestructure')
+    def test_clonsestructre(self):
+        """Checks method build subtree structure correctly"""
+        links = Links(manager=self.utils.manager)
+        links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'), target='index')
+        self.assertTrue(os.path.isfile(os.path.join(self.utils.prod_dir, 'index', 'blast2', 'news1.txt')))
+        self.assertTrue(os.path.isfile(os.path.join(self.utils.prod_dir, 'index', 'golden', 'news2.txt')))
+
+    @attr('links')
+    @attr('links.clonestructure')
+    def test_cloneStructureWtihSimulateAndVerbose(self):
+        """Check no target are created"""
+        links = Links(manager=self.utils.manager)
+        links.manager.set_simulate(True)
+        links.manager.set_verbose(True)
+        self.assertTrue(links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'),
+                                               target='index'))
+
+    @attr('links')
+    @attr('links.clonestructure')
+    def test_cloneStructureWithRemoveExt(self):
+        """Check the method add some more created links due to remove_ext option"""
+        links = Links(manager=self.utils.manager)
+        links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'),
+                               target='index', remove_ext=True)
+        self.assertEqual(links.created_links, 4)
+
+    @attr('links')
+    @attr('links.clonestructure')
+    def test_cloneStructureWithRemoveExtVerboseON(self):
+        """Check the method add some more created links due to remove_ext option"""
+        links = Links(manager=self.utils.manager)
+        links.manager.set_verbose(True)
+        links._clone_structure(source=os.path.join(self.utils.data_dir, 'alu', 'alu_54'),
+                               target='index', remove_ext=True)
+        self.assertEqual(links.created_links, 4)
+
+    @attr('links')
     @attr('links.init')
     def test_LinksInitOK(self):
         """Check init Links instance is OK"""
         links = Links(manager=self.utils.manager)
         self.assertEqual(links.created_links, 0)
+
+    @attr('links')
+    @attr('links.init')
+    def test_ConstructorThrowsNoCurrentReleaseAvailable(self):
+        """Checks the constructor throws an error if the current release for the bank is not available"""
+        self.utils.manager._current_release = None
+        with self.assertRaises(SystemExit):
+            links = Links(manager=self.utils.manager)
 
     @attr('links')
     @attr('links.init')
@@ -581,9 +638,11 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method returns right number of simulated created links"""
         links = Links(manager=self.utils.manager)
         Manager.set_simulate(True)
-        Manager.set_verbose(False)
+        Manager.set_verbose(True)
         # Check setUp, it creates 3 dirs
-        self.assertEqual(links.check_links(), 2)
+        self.assertEqual(links.check_links(clone_dirs=self.utils.clones,
+                                           dirs=self.utils.dirs,
+                                           files=self.utils.files), 8)
 
     @attr('links')
     @attr('links.dolinks')
@@ -599,16 +658,18 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksDoLinksArgsDirsAndFilesNone(self):
         """Check method with args set to None, creates the right number of links"""
         links = Links(manager=self.utils.manager)
-        self.assertEqual(links.do_links(dirs=None, files=None), 2)
+        self.assertEqual(links.do_links(dirs=None,
+                                        files=self.utils.files,
+                                        clone_dirs=self.utils.clones), 7)
 
     @attr('links')
     @attr('links.dolinks')
     def test_LinksDoLinksArgsDirsMatchesSetUp(self):
         """Check method creates the right number of link passing a list of dirs matching setUp"""
         links = Links(manager=self.utils.manager)
-        exp_dirs = {'flat': [{'target':'ftp'}], 'uncompressed': [{'target': 'release'}],
+        exp_dirs = {'flat': [{'target': 'ftp'}], 'uncompressed': [{'target': 'release'}],
                     'blast2': [{'target': 'index/blast2'}]}
-        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 3)
+        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 6)
 
     @attr('links')
     @attr('links.dolinks')
@@ -620,7 +681,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.copy_file(ofile='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         self.utils.copy_file(ofile='news3.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         exp_files = {'blast2': [{'target': 'index/blast2'}]}
-        self.assertEqual(links.do_links(dirs=None, files=exp_files), 5)
+        self.assertEqual(links.do_links(dirs=self.utils.dirs, files=exp_files), 7)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -642,19 +703,24 @@ class TestBiomajManagerLinks(unittest.TestCase):
     @attr('links.preparelinks')
     def test_LinksPrepareLinksArgsOKConfigDataDirMissingThrows(self):
         """Check method throws if source given but no other args"""
-        link = Links(manager=self.utils.manager)
         self.utils.manager.config.remove_option('GENERAL', 'data.dir')
         with self.assertRaises(SystemExit):
-            link._prepare_links(source=self.utils.data_dir, target="test")
+            link = Links(manager=self.utils.manager)
 
     @attr('links')
     @attr('links.preparelinks')
     def test_LinksPrepareLinksArgsOKConfigProdDirMissingThrows(self):
         """Check method throws if source given but no other args"""
-        link = Links(manager=self.utils.manager)
         self.utils.manager.config.remove_option('MANAGER', 'production.dir')
         with self.assertRaises(SystemExit):
-            link._prepare_links(source=self.utils.data_dir, target="test")
+            link = Links(manager=self.utils.manager)
+
+    @attr('links')
+    @attr('links.preparelinks')
+    def test_LinksPrepareLinksRequiresSetDirMissingReturnFalse(self):
+        """Check the method returns False if require set and required dir not here"""
+        links = Links(manager=self.utils.manager)
+        self.assertFalse(links._prepare_links(source='uncompressed', target='flat_test', requires='not_here'))
 
     @attr('links')
     @attr('links.preparelinks')
@@ -692,7 +758,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method passes OK if fallback given"""
         link = Links(manager=self.utils.manager)
         # Remove uncompressed directory, and fallback to flat
-        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', use_deepest=True), True)
+        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', get_deepest=True), True)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -831,7 +897,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.assertEqual(source_dir, link.source)
         self.assertEqual(target_dir, link.target)
 
-    @attr('links.1')
+    @attr('links')
     @attr('links.generatefileslink')
     def test_LinksGenerateFilesLinkNotNoExtCreatedLinksOKVerboseOnRemoveExtTrue(self):
         """Check method returns correct number of created links (remove_ext=True)"""

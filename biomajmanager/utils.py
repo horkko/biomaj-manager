@@ -4,6 +4,7 @@ import os
 import sys
 from time import time
 from datetime import datetime
+from string import split, lstrip
 
 
 class Utils(object):
@@ -86,12 +87,12 @@ class Utils(object):
             Utils.error("%s does not exists" % str(path))
 
         dirs = []
-        for dirpath, dirnames, _ in os.walk(path):
-            if len(dirnames) == 0:
+        for dir_path, dir_names, _ in os.walk(path):
+            if len(dir_names) == 0:
                 if full:
-                    dirs.append(dirpath)
+                    dirs.append(dir_path)
                 else:
-                    dirs.append(os.path.basename(dirpath))
+                    dirs.append(os.path.basename(dir_path))
         return dirs
 
     @staticmethod
@@ -120,6 +121,28 @@ class Utils(object):
         :rtype: :class:`time.time`
         """
         return Utils.time2datefmt(time())
+
+    @staticmethod
+    def get_subtree(path=None):
+        """
+        Get the subtree structure from a root path
+
+        E.g.: File system is /t/a1/a2/a3, get_subtree(path='/t') -> /a1/a2/a3
+        :param path: Root path to get subtree structure from
+        :type path: str
+        :return: List of found subtree
+        :rtype: list
+        """
+        subtrees = []
+        if path is None:
+            Utils.warn("No root path directory given")
+            return subtrees
+        for dir_path, dir_name, file_name in os.walk(path):
+            if len(dir_name) == 0:
+                subtree = split(dir_path, path)[-1]
+                subtree = lstrip(subtree, '/')
+                subtrees.append(subtree)
+        return subtrees
 
     @staticmethod
     def ok(msg):
