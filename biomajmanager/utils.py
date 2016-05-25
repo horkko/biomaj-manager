@@ -19,6 +19,46 @@ class Utils(object):
     DATE_FMT = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
+    def clean_symlinks(path=None, delete=False):
+        """
+        Search for broken symlinks.
+
+        Given a path, it search for all symlinks 'path' directory and remomve broken symlinks.
+        If delete is True, remove broken symlink(s), otherwise lists broken symlinks.
+
+        :param path: Path to search symlinks from
+        :type path: str
+        :param delete: Wether to delete or not broken symlink(s)
+        :type delete: bool
+        :return: True/False
+        :rtype: bool:
+        :raise SystemExit: If path not found, or not given
+        :raise SystemExit: If remove of symlink(s) failed
+        """
+        if path is None:
+            Utils.error("Path not given")
+        if not os.path.isdir(path):
+            Utils.error("Path '%s' does not exist" % str(path))
+        links = os.listdir(path)
+        broken = []
+        for link in links:
+            try:
+                link = os.path.join(path, link)
+                os.stat(link)
+            except OSError:
+                broken.append(link)
+        if not delete:
+            Utils.warn("%d need to be cleaned" % int(len(broken)))
+            Utils.verbose("\n".join(broken))
+        else:
+            deleted = 0
+            for link in broken:
+                os.remove(link)
+                deleted += 1
+            Utils.ok("%d links removed" % int(deleted))
+        return True
+
+    @staticmethod
     def elapsed_time():
         """
         Get the elapsed time between start and stop timer.

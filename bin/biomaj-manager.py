@@ -31,8 +31,6 @@ def main():
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
-    parser.add_argument('-C', '--clean_links', dest="clean_links", action="store_true", default=False,
-                        help="Remove old links (Permissions required)")
     parser.add_argument('-D', '--save_versions', dest="save_versions", action="store_true", default=False,
                         help="Prints info about all banks into version file. (Requires permissions)")
     parser.add_argument('-H', '--history', dest="history", action="store_true", default=False,
@@ -67,6 +65,8 @@ def main():
     parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
                         help="Activate verbose mode")
     # Options with value required
+    parser.add_argument('-C', '--clean_links', dest="clean_links",
+                        help="Remove old links (Permissions required)")
     parser.add_argument('-b', '--bank', dest="bank",
                         help="Bank name")
     parser.add_argument('-c', '--config', dest="config",
@@ -381,7 +381,7 @@ def main():
 
     # Not yet implemented options
     if options.clean_links:
-        print("Not yet implemented")
+        Utils.clean_symlinks(path=options.clean_links, delete=True)
         sys.exit(0)
 
 if __name__ == '__main__':

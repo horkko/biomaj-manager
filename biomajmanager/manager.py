@@ -505,6 +505,18 @@ class Manager(object):
             pending = self.bank.bank['pending']
         return pending
 
+    def get_production_dir(self):
+        """
+        Get the production.dir setting
+
+        :return: Path to the production.dir
+        :rtype: str
+        :raise SystemExit: If 'production.dir' is not set
+        """
+        if not self.config.has_option('MANAGER', 'production.dir'):
+            Utils.error("'production.dir' not set")
+        return self.config.get('MANAGER', 'production.dir')
+
     @bank_required
     def get_published_release(self):
         """

@@ -35,12 +35,12 @@ class Links(object):
         if not self.manager.config.has_option('MANAGER', 'production.dir'):
             Utils.error("'production.dir' not defined in manager.properties.")
         self.prod_dir = self.manager.config.get('MANAGER', 'production.dir')
-        self.data_dir = self.manager.config.get('GENERAL', 'data.dir')
 
         current_release = self.manager.current_release()
         if current_release is None:
             Utils.error("Can't determine current release for bank %s" % self.bank_name)
-        bank_data_dir = os.path.join(self.data_dir, self.bank_name, self.bank_name + '_' + current_release)
+        # Get the 'current'
+        bank_data_dir = self.manager.get_current_link()
         self.bank_data_dir = bank_data_dir
         self.created_links = 0
 
@@ -108,7 +108,7 @@ class Links(object):
                                     {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
                                     {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
                                     {'source': 'bdb', 'remove_ext': True}],
-                          'fasta': [{'source': 'blast2', 'remove_ext': True}, {'source': 'fasta', 'remove_ext': True}]
+                          # 'fasta': [{'source': 'blast2', 'remove_ext': True}, {'source': 'fasta', 'remove_ext': True}]
             }
         if files is None:
             files = {
@@ -168,7 +168,11 @@ class Links(object):
         :raise SystemExit: If error occurred during directory structure building
         """
         self._check_source_target_parameters(source=source, target=target)
-        source = os.path.join(self.data_dir, source)
+        # Check do_links.clone_dirs. As we want to recreate the same architecture as for the source,
+        # we need to recreate the target because Utils.get_subtree removes the source path which contains
+        # the target name
+        target = os.path.join(target, source)
+        source = os.path.join(self.bank_data_dir, source)
         subtrees = Utils.get_subtree(path=source)
         try:
             for subtree in subtrees:
@@ -380,7 +384,7 @@ class Links(object):
 
         self.source = source
         self.target = target
-        if Manager.verbose:
+        if Manager.get_verbose():
             Utils.verbose("[prepare_links] source %s" % self.source)
             Utils.verbose("[prepare_links] target %s" % self.target)
         return True
