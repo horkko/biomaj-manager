@@ -77,14 +77,19 @@ def main():
                         help="Output file")
     parser.add_argument('-F', '--format', dest="oformat",
                         help="Output format. Supported [csv, html, json]")
-    parser.add_argument('-T', '--templates', dest="template_dir",
-                        help="Template directory. Overwrites template_dir")
+    parser.add_argument('-r', '--release', dest="release",
+                        help="Release number to use. [-b, -w REQUIRED]")
     parser.add_argument('-S', '--section', dest="tool",
                         help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
+    parser.add_argument('-T', '--templates', dest="template_dir",
+                        help="Template directory. Overwrites template_dir")
     parser.add_argument('--vdbs', dest="vdbs",
-                        help="Create virtual database HTML pages for tool. [-b REQUIRED]")
+                        help="Create virtual database HTML pages for tool. [-b available]")
     parser.add_argument('--visibility', dest="visibility", default="public",
                         help="Banks visibility ['all', 'public'(default), 'private'].Use with --show_update.")
+    parser.add_argument('-w', '--set_sequence_count', dest='seqcount',
+                        help="Set the number of sequence(s) in the file. [-b REQUIRED]\n\
+                              Option like <file>:<seq_num>")
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -382,6 +387,16 @@ def main():
     # Not yet implemented options
     if options.clean_links:
         Utils.clean_symlinks(path=options.clean_links, delete=True)
+        sys.exit(0)
+
+    if options.seqcount:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        if not options.release:
+            Utils.error("Release number is required")
+        manager = Manager(bank=options.bank, global_cfg=options.config)
+        sfile, scnt = split(':', options.seqcount)
+        manager.set_sequence_count(seq_file=sfile, seq_count=scnt, release=options.release)
         sys.exit(0)
 
 if __name__ == '__main__':

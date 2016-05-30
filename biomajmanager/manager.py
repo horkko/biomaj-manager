@@ -5,6 +5,7 @@ import os
 import select
 import subprocess
 import time
+import humanfriendly
 
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
@@ -945,6 +946,46 @@ class Manager(object):
         except Exception as err:
             Utils.error("Problem with bank %s: %s" % (name, str(err)))
         return self.set_bank(bank=bank)
+
+    @bank_required
+    def set_sequence_count(self, seq_file=None, seq_count=None, release=None):
+        """
+        Set the number of sequence found in a file. This is set in the production field under the name of 'files_infos'
+
+        This method is used to have some more info about a particular file while displaying status of a bank release.
+        At the same time, it also set the size of the file.
+
+        :param seq_file: File path to set info
+        :type seq_file: str
+        :param seq_count: Number of sequence(s) contained in this file
+        :type seq_count: int
+        :param release: Production release number to set file info
+        :type release: str
+        :return: True if all ok
+        :rtype: bool
+        :raise SystemExit: If seq_file not set
+        :raise SystemExit: If seq_count not set
+        :raise SystemExit: If release not set
+        :raise SystemExit: If file does not exist
+        """
+        if seq_file is None:
+            Utils.error("A file path is required")
+        if not os.path.exists(seq_file):
+            Utils.error("File '%s' not found" % str(seq_file))
+        if seq_count is None:
+            Utils.error("A sequence number is required")
+        if release is None:
+            Utils.error("A release is required")
+        file_size = humanfriendly.format_size(os.path.getsize(seq_file))
+        self.bank.banks.update({'name': self.bank.name, 'production.release': release},
+                               {'$push': {'production.$.files_info': {'name': seq_file,
+                                                                      'seq_count': seq_count,
+                                                                      'size': file_size
+                                                                      }
+                                          }
+                                })
+        return True
+        
 
     @staticmethod
     def set_simulate(value):

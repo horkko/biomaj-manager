@@ -260,6 +260,7 @@ class Links(object):
         """
         if not self._prepare_links(source=source, target=target, get_deepest=True):
             return 0
+
         # Get files in the source directory
         files = Utils.get_files(path=self.source)
         links = []

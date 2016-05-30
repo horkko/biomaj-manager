@@ -192,6 +192,33 @@ class TestBiomajManagerUtils(unittest.TestCase):
         self.utils.clean()
 
     @attr('utils')
+    @attr('utils.cleansymlinks')
+    def test_cleanSymLinksPathArgsWrongThrows(self):
+        """Checks the methods throws when path args is None or does not exist"""
+        with self.assertRaises(SystemExit):
+            Utils.clean_symlinks(path="/does/not/exist")
+        with self.assertRaises(SystemExit):
+            Utils.clean_symlinks(path=None)
+
+    @attr('utils')
+    @attr('utils.cleansymlinks')
+    def test_cleanSymlinksNoDelete(self):
+        """Checks the method get the correct list of symlinks and report them"""
+        open(os.path.join(self.utils.data_dir, 'news1.txt'), 'a').close()
+        os.symlink(os.path.join(self.utils.data_dir, 'news1.txt'), os.path.join(self.utils.tmp_dir, 'news1.txt'))
+        os.symlink('/tmp/does_not_exist', os.path.join(self.utils.tmp_dir, 'not_found'))
+        self.assertTrue(Utils.clean_symlinks(path=self.utils.tmp_dir, delete=False))
+
+    @attr('utils')
+    @attr('utils.cleansymlinks')
+    def test_cleanSymlinksWithDelete(self):
+        """Checks the method get the correct list of symlinks and report them"""
+        open(os.path.join(self.utils.data_dir, 'news1.txt'), 'a').close()
+        os.symlink(os.path.join(self.utils.data_dir, 'news1.txt'), os.path.join(self.utils.tmp_dir, 'news1.txt'))
+        os.symlink('/tmp/does_not_exist', os.path.join(self.utils.tmp_dir, 'not_found'))
+        self.assertTrue(Utils.clean_symlinks(path=self.utils.tmp_dir, delete=True))
+
+    @attr('utils')
     @attr('utils.deepestdirs')
     def test_UtilsDeepestDirErrorNoPath(self):
         """Check methods checks are OK"""
@@ -546,6 +573,8 @@ class TestBiomajManagerLinks(unittest.TestCase):
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'uncompressed'))
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'golden'))
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        # Create a symlink
+        os.symlink(os.path.join(self.utils.data_dir, 'alu', 'alu_54'), os.path.join(self.utils.data_dir, 'alu', 'current'))
         self.utils.copy_file(ofile='news1.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         self.utils.copy_file(ofile='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'golden'))
         # Default dirs and files to create
@@ -597,6 +626,26 @@ class TestBiomajManagerLinks(unittest.TestCase):
         links.manager.set_verbose(True)
         links._clone_structure(source='golden', target='index', remove_ext=True)
         self.assertEqual(links.created_links, 2)
+
+    @attr('links')
+    @attr('links.clonestructure')
+    def test_cloneStructureThrowsOSError(self):
+        """Check the method throws exception"""
+        links = Links(manager=self.utils.manager)
+        links.manager.set_verbose(True)
+        os.chmod(self.utils.prod_dir, 0000)
+        with self.assertRaises(SystemExit):
+            links._clone_structure(source='golden', target='index', remove_ext=True)
+        os.chmod(self.utils.prod_dir, 0777)
+
+    @attr('links')
+    @attr('links.clonestructure')
+    def test_cloneStructureNoFiles(self):
+        """Check the method continue when no files in subtree"""
+        links = Links(manager=self.utils.manager)
+        links.manager.set_verbose(True)
+        os.unlink(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'golden', 'news2.txt'))
+        self.assertTrue(links._clone_structure(source='golden', target='index'))
 
     @attr('links')
     @attr('links.init')
@@ -683,7 +732,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         links = Links(manager=self.utils.manager)
         exp_dirs = {'flat': [{'target': 'ftp'}], 'uncompressed': [{'target': 'release'}],
                     'blast2': [{'target': 'index/blast2'}]}
-        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 8)
+        self.assertEqual(links.do_links(dirs=exp_dirs, files=None), 6)
 
     @attr('links')
     @attr('links.dolinks')
@@ -695,7 +744,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.copy_file(ofile='news2.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         self.utils.copy_file(ofile='news3.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         exp_files = {'blast2': [{'target': 'index/blast2'}]}
-        self.assertEqual(links.do_links(dirs=self.utils.dirs, files=exp_files), 14)
+        self.assertEqual(links.do_links(dirs=self.utils.dirs, files=exp_files), 8)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -747,6 +796,17 @@ class TestBiomajManagerLinks(unittest.TestCase):
 
     @attr('links')
     @attr('links.preparelinks')
+    def test_LinksPrepareLinksArgsOKPermissionDenied(self):
+        """Check method throws when permissions denied to create dir"""
+        link = Links(manager=self.utils.manager)
+        link.manager.set_verbose(True)
+        os.chmod(self.utils.prod_dir, 0000)
+        with self.assertRaises(SystemExit):
+            link._prepare_links(source='uncompressed', target="link_test")
+        os.chmod(self.utils.prod_dir, 0777)
+
+    @attr('links')
+    @attr('links.preparelinks')
     def test_LinksPrepareLinksWithFallbackOK(self):
         """Check method passes OK if fallback given"""
         link = Links(manager=self.utils.manager)
@@ -772,7 +832,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method passes OK if fallback given"""
         link = Links(manager=self.utils.manager)
         # Remove uncompressed directory, and fallback to flat
-        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test', get_deepest=True), True)
+        self.assertTrue(link._prepare_links(source='uncompressed', target='flat_test', get_deepest=True))
 
     @attr('links')
     @attr('links.preparelinks')
@@ -782,7 +842,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link.manager.set_simulate(True)
         link.manager.set_verbose(True)
         # Remove uncompressed directory, and fallback to flat
-        self.assertEqual(link._prepare_links(source='uncompressed', target='flat_test'), True)
+        self.assertTrue(link._prepare_links(source='uncompressed', target='flat_test'))
 
     @attr('links')
     @attr('links.preparelinks')
@@ -792,8 +852,9 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link.manager.set_simulate(False)
         link.manager.set_verbose(False)
         # Remove uncompressed directory, and fallback to flat
-        with self.assertRaises(SystemExit):
-            link._prepare_links(source='uncompressed', target='../../../../flat_test')
+        self.assertFalse
+#        with self.assertRaises(SystemExit):
+#            link._prepare_links(source='uncompressed', target='../../../../flat_test')
 
     @attr('links')
     @attr('links.makelinks')
@@ -888,7 +949,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         # We check we've created 2 link, for file1 and file2
         self.assertEqual(2, link._generate_files_link(source='flat', target='flat_symlink'))
         # We can also check link.source and link.target are equal to our source_dir and target_dir
-        self.assertEqual(source_dir, link.source)
+        self.assertEqual(os.path.join(self.utils.data_dir, 'alu', 'current', 'flat'), link.source)
         self.assertEqual(target_dir, link.target)
 
     @attr('links')
@@ -908,7 +969,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         # We check we've created 2 link, for file1 and file2
         self.assertEqual(0, link._generate_files_link(source='flat', target='flat_symlink'))
         # We can also check link.source and link.target are equal to our source_dir and target_dir
-        self.assertEqual(source_dir, link.source)
+        self.assertEqual(os.path.join(self.utils.data_dir, 'alu', 'current', 'flat'), link.source)
         self.assertEqual(target_dir, link.target)
 
     @attr('links')
@@ -1404,6 +1465,122 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.currentrelease')
+    def test_ManagerGetCurrentRelease_CurrentSet(self):
+        """Check correct release is returned"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = str(54)
+
+        data = {'name': 'alu',
+                'current': now,
+                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        manager._current_release = str(54)
+        self.assertEqual(str(54), manager.current_release())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.currentrelease')
+    def test_ManagerGetCurrentRelease_CurrentANDSessions(self):
+        """Check we get the right current release"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        release = 'R54'
+        data = {'name': 'alu',
+                'current': now,
+                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
+                }
+        manager = Manager(bank='alu')
+        manager.bank.bank = data
+        self.assertEqual(release, manager.current_release())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.currentlink')
+    def test_ManagerGetCurrentLinkNOTOK(self):
+        """Check get_current_link throws exception"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.get_current_link()
+        self.assertNotEqual(cur_link, '/wrong_curent_link')
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.currentlink')
+    def test_ManagerGetCurrentLinkOK(self):
+        """Check get_current_link throws exception"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.get_current_link()
+        self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'current'))
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.futurelink')
+    def test_ManagerGetFutureLinkNOTOK(self):
+        """Check get_future_link throws exception"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.get_future_link()
+        self.assertNotEqual(cur_link, '/wrong_future_link')
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.futurelink')
+    def test_ManagerGetFutureLinkOK(self):
+        """Check get_future_link throws exception"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        cur_link = manager.get_future_link()
+        self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'future_release'))
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hascurrentlink')
+    def test_ManagerHasCurrentLinkFalse(self):
+        """Check has_current_link returns False"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertFalse(manager.has_current_link())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hascurrentlink')
+    def test_ManagerHasCurrentLinkIsLinkTrue(self):
+        """Check has_current_link returns True"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        link = os.path.join(self.utils.data_dir)
+        os.symlink(os.path.join(link), 'test_link')
+        self.assertTrue(manager.has_current_link(link='test_link'))
+        os.remove('test_link')
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hasfuturelink')
+    def test_ManagerHasFutureLinkFalse(self):
+        """Check has_future_link returns False"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertFalse(manager.has_future_link())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.hasfuturelink')
+    def test_ManagerHasFutureLinkIsLinkOK(self):
+        """Check has_future_link returns future link"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        link = os.path.join(self.utils.data_dir)
+        os.symlink(os.path.join(link), 'future_link')
+        self.assertTrue(manager.has_future_link(link='future_link'))
+        os.remove('future_link')
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.lastsessionfailed')
     def test_ManagerLastSessionFailedNoLastUpdateSession(self):
         """Check method returns False when no 'last_update_session' field in database"""
@@ -1585,6 +1762,48 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.getcurrentuser')
+    def test_ManagerGetCurrentUserTestUSEROK(self):
+        """Check we can get USER from environ with LOGNAME unset"""
+        backlog = ""
+        user = os.getenv('USER')
+        if 'LOGNAME' in os.environ:
+            backlog = os.environ['LOGNAME']
+            del os.environ['LOGNAME']
+        manager = Manager()
+        self.assertEqual(manager.get_current_user(), user)
+        if 'LOGNAME' not in os.environ:
+            os.environ['LOGNAME'] = backlog
+
+    @attr('manager')
+    @attr('manager.getcurrentuser')
+    def test_ManagerGetCurrentUserTestUserIsNone(self):
+        """Check method throws exception when env LOGNAME and USER not found"""
+        manager = Manager()
+        backup = os.environ.copy()
+        os.environ = {}
+        self.assertIsNone(manager.get_current_user())
+        os.environ = backup
+
+    @attr('manager')
+    @attr('manager.getproductiondir')
+    def test_ManagerGetProductionDirThorwsOK(self):
+        """Check the method throws when no 'production.dir' set in config"""
+        manager = Manager()
+        manager.config.remove_option('MANAGER', 'production.dir')
+        with self.assertRaises(SystemExit):
+            manager.get_production_dir()
+
+    @attr('manager')
+    @attr('manager.getproductiondir')
+    def test_ManagerGetProductionDirOK(self):
+        """Check the method get the right value"""
+        manager = Manager()
+        expected = manager.config.get('MANAGER', 'production.dir')
+        returned = manager.get_production_dir()
+        self.assertEqual(returned, expected)
+
+    @attr('manager')
     @attr('manager.getsessionfromid')
     def test_ManagerGetSessionFromIDNotNoneNotNone(self):
         """Check we retrieve the right session id (Not None)"""
@@ -1633,19 +1852,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         expected = [{'release': 54, 'id': now}, {'release': 55, 'id': now + 1}]
         manager.bank.bank['pending'] = expected
         pendings = manager.get_pending_sessions()
-        self.assertListEqual(expected, pendings)
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.showpendingsessions')
-    def test_ManagerShowPendingSessionsOK(self):
-        """Check method returns correct pending session"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        now = time.time()
-        manager = Manager(bank='alu')
-        expected = [{'release': 54, 'id': now}, {'release': 55, 'id': now + 1}]
-        manager.bank.bank['pending'] = expected
-        pendings = manager.show_pending_sessions()
         self.assertListEqual(expected, pendings)
         self.utils.drop_db()
 
@@ -1732,143 +1938,16 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
-    @attr('manager.currentrelease')
-    def test_ManagerGetCurrentRelease_CurrentSet(self):
-        """Check correct release is returned"""
+    @attr('manager.showpendingsessions')
+    def test_ManagerShowPendingSessionsOK(self):
+        """Check method returns correct pending session"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
-        release = str(54)
-
-        data = {'name': 'alu',
-                'current': now,
-                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
-                }
         manager = Manager(bank='alu')
-        manager.bank.bank = data
-        manager._current_release = str(54)
-        self.assertEqual(str(54), manager.current_release())
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.currentrelease')
-    def test_ManagerGetCurrentRelease_CurrentANDSessions(self):
-        """Check we get the right current release"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        now = time.time()
-        release = 'R54'
-        data = {'name': 'alu',
-                'current': now,
-                'sessions': [{'id': 1, 'remoterelease': 'R1'}, {'id': now, 'remoterelease': release}]
-                }
-        manager = Manager(bank='alu')
-        manager.bank.bank = data
-        self.assertEqual(release, manager.current_release())
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.getcurrentuser')
-    def test_ManagerGetCurrentUserTestUSEROK(self):
-        """Check we can get USER from environ with LOGNAME unset"""
-        backlog = ""
-        user = os.getenv('USER')
-        if 'LOGNAME' in os.environ:
-            backlog = os.environ['LOGNAME']
-            del os.environ['LOGNAME']
-        manager = Manager()
-        self.assertEqual(manager.get_current_user(), user)
-        if 'LOGNAME' not in os.environ:
-            os.environ['LOGNAME'] = backlog
-
-    @attr('manager')
-    @attr('manager.getcurrentuser')
-    def test_ManagerGetCurrentUserTestUserIsNone(self):
-        """Check method throws exception when env LOGNAME and USER not found"""
-        manager = Manager()
-        backup = os.environ.copy()
-        os.environ = {}
-        self.assertIsNone(manager.get_current_user())
-        os.environ = backup
-
-    @attr('manager')
-    @attr('manager.currentlink')
-    def test_ManagerGetCurrentLinkNOTOK(self):
-        """Check get_current_link throws exception"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        cur_link = manager.get_current_link()
-        self.assertNotEqual(cur_link, '/wrong_curent_link')
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.currentlink')
-    def test_ManagerGetCurrentLinkOK(self):
-        """Check get_current_link throws exception"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        cur_link = manager.get_current_link()
-        self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'current'))
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.futurelink')
-    def test_ManagerGetFutureLinkNOTOK(self):
-        """Check get_future_link throws exception"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        cur_link = manager.get_future_link()
-        self.assertNotEqual(cur_link, '/wrong_future_link')
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.futurelink')
-    def test_ManagerGetFutureLinkOK(self):
-        """Check get_future_link throws exception"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        cur_link = manager.get_future_link()
-        self.assertEqual(cur_link, os.path.join(self.utils.data_dir, manager.bank.name, 'future_release'))
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.hascurrentlink')
-    def test_ManagerHasCurrentLinkFalse(self):
-        """Check has_current_link returns False"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        self.assertFalse(manager.has_current_link())
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.hascurrentlink')
-    def test_ManagerHasCurrentLinkIsLinkTrue(self):
-        """Check has_current_link returns True"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        link = os.path.join(self.utils.data_dir)
-        os.symlink(os.path.join(link), 'test_link')
-        self.assertTrue(manager.has_current_link(link='test_link'))
-        os.remove('test_link')
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.hasfuturelink')
-    def test_ManagerHasFutureLinkFalse(self):
-        """Check has_future_link returns False"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        self.assertFalse(manager.has_future_link())
-        self.utils.drop_db()
-
-    @attr('manager')
-    @attr('manager.hasfuturelink')
-    def test_ManagerHasFutureLinkIsLinkOK(self):
-        """Check has_future_link returns future link"""
-        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
-        manager = Manager(bank='alu')
-        link = os.path.join(self.utils.data_dir)
-        os.symlink(os.path.join(link), 'future_link')
-        self.assertTrue(manager.has_future_link(link='future_link'))
-        os.remove('future_link')
+        expected = [{'release': 54, 'id': now}, {'release': 55, 'id': now + 1}]
+        manager.bank.bank['pending'] = expected
+        pendings = manager.show_pending_sessions()
+        self.assertListEqual(expected, pendings)
         self.utils.drop_db()
 
     @attr('manager')
@@ -2640,6 +2719,59 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager()
         self.assertTrue(manager.set_bank_from_name("alu"))
         self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.setsequencecount')
+    def test_ManagerSetSequenceCountSeqFileThrows(self):
+        """Check missing arg seq_file throws"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        with self.assertRaises(SystemExit):
+            manager.set_sequence_count(seq_count=1, release="54")
+
+    @attr('manager')
+    @attr('manager.setsequencecount')
+    def test_ManagerSetSequenceCountSeqFileNotHereThrows(self):
+        """Check missing file not exists throws"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        with self.assertRaises(SystemExit):
+            manager.set_sequence_count(seq_file="/not_found/file.fa", seq_count=1, release="54")
+
+    @attr('manager')
+    @attr('manager.setsequencecount')
+    def test_ManagerSetSequenceCountSeqCountThrows(self):
+        """Check missing args throws"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
+        with self.assertRaises(SystemExit):
+            manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
+                                       release="54")
+
+    @attr('manager')
+    @attr('manager.setsequencecount')
+    def test_ManagerSetSequenceCountReleaseThrows(self):
+        """Check missing args throws"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
+        with self.assertRaises(SystemExit):
+            manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
+                                       seq_count=10)
+
+    @attr('manager')
+    @attr('manager.setsequencecount')
+    def test_ManagerSetSequenceCountReturnsTrue(self):
+        """Check method returns True"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
+        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
+                                                   seq_count=10, release="54"))
 
     @attr('manager')
     @attr('manager.setverbose')

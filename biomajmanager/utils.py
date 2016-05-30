@@ -48,7 +48,7 @@ class Utils(object):
             except OSError:
                 broken.append(link)
         if not delete:
-            Utils.warn("%d need to be cleaned" % int(len(broken)))
+            Utils.warn("%d link(s) need to be cleaned" % int(len(broken)))
             Utils.verbose("\n".join(broken))
         else:
             deleted = 0
