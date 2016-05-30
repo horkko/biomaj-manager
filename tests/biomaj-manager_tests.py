@@ -633,10 +633,10 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check the method throws exception"""
         links = Links(manager=self.utils.manager)
         links.manager.set_verbose(True)
-        os.chmod(self.utils.prod_dir, 0000)
+        os.chmod(self.utils.prod_dir, 0o000)
         with self.assertRaises(SystemExit):
             links._clone_structure(source='golden', target='index', remove_ext=True)
-        os.chmod(self.utils.prod_dir, 0777)
+        os.chmod(self.utils.prod_dir, 0o777)
 
     @attr('links')
     @attr('links.clonestructure')
@@ -800,10 +800,10 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method throws when permissions denied to create dir"""
         link = Links(manager=self.utils.manager)
         link.manager.set_verbose(True)
-        os.chmod(self.utils.prod_dir, 0000)
+        os.chmod(self.utils.prod_dir, 0o000)
         with self.assertRaises(SystemExit):
             link._prepare_links(source='uncompressed', target="link_test")
-        os.chmod(self.utils.prod_dir, 0777)
+        os.chmod(self.utils.prod_dir, 0o777)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -2438,7 +2438,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         back_log = os.environ["LOGNAME"]
         outputfile = os.path.join(self.utils.data_dir, 'saved_versions.txt')
         open(outputfile, 'w').close()
-        os.chmod(outputfile, 0000)
+        os.chmod(outputfile, 0o000)
         os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
             manager.save_banks_version(bank_file=outputfile)
