@@ -977,13 +977,31 @@ class Manager(object):
         if release is None:
             Utils.error("A release is required")
         file_size = humanfriendly.format_size(os.path.getsize(seq_file))
-        self.bank.banks.update({'name': self.bank.name, 'production.release': release},
-                               {'$push': {'production.$.files_info': {'name': seq_file,
-                                                                      'seq_count': seq_count,
-                                                                      'size': file_size
-                                                                      }
-                                          }
-                                })
+        res = self.bank.banks.find({'name': self.bank.name, 'production.release': release,
+                                    'production.files_info.name': seq_file})
+        if res.count() == 0:
+            res = self.bank.banks.update_one({'name': self.bank.name,
+                                              'production.release': release},
+                                             {'$push': {'production.$.files_info':
+                                                            {'name': seq_file,
+                                                             'seq_count': seq_count,
+                                                             'size': file_size}}},
+                                             upsert=True)
+        else:
+            production = self.bank.banks.find({'name': self.bank.name, 'production.release': release},
+                                              {'production.$.files_info': 1})
+            for prod in production:
+                for p in prod['production']:
+                    cnt = 0
+                    for info in p['files_info']:
+                        if info['name'] == seq_file:
+                            p['files_info'][cnt].update({'name': seq_file, 'seq_count': seq_count, 'size': file_size})
+                            res = self.bank.banks.update_one({'name': self.bank.name, 'production.release': release},
+                                                             {'$set': {'production.$.files_info': p['files_info']}})
+                            break
+                        cnt += 1
+        Utils.verbose("[%s] Documents matched: %d, documents modified: %d" %
+                      (self.bank.name, res.matched_count, res.modified_count))
         return True
         
 

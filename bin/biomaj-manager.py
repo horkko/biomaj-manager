@@ -395,8 +395,9 @@ def main():
         if not options.release:
             Utils.error("Release number is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
-        sfile, scnt = split(':', options.seqcount)
-        manager.set_sequence_count(seq_file=sfile, seq_count=scnt, release=options.release)
+        sfile, scnt = options.seqcount.split(':')
+        if not manager.set_sequence_count(seq_file=sfile, seq_count=scnt, release=options.release):
+            Utils.error("Can't set sequence number (%d) for %s, release %s" % (scnt, sfile, options.release))
         sys.exit(0)
 
 if __name__ == '__main__':

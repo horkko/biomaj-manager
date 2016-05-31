@@ -2728,6 +2728,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
             manager.set_sequence_count(seq_count=1, release="54")
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.setsequencecount')
@@ -2737,6 +2738,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         with self.assertRaises(SystemExit):
             manager.set_sequence_count(seq_file="/not_found/file.fa", seq_count=1, release="54")
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.setsequencecount')
@@ -2749,6 +2751,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
                                        release="54")
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.setsequencecount')
@@ -2761,6 +2764,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         with self.assertRaises(SystemExit):
             manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
                                        seq_count=10)
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.setsequencecount')
@@ -2768,10 +2772,29 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method returns True"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        manager.bank.banks.update({'name':'alu'},{'$set': {'production.0.release': "54"}})
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
         self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
                                                    seq_count=10, release="54"))
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.setsequencecount')
+    def test_ManagerSetSequenceCountUpdateOKReturnsTrue(self):
+        """Check method update db and returns True"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.banks.update({'name': 'alu'},{'$set': {'production.0.release': "54"}})
+        manager.bank.banks.update({'name': 'alu', 'production.release': "54"},
+                                  {'$push': {'production.$.files_info':
+                                                 {'name': 
+                                                  os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt')}}})
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
+        open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
+        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
+                                                   seq_count=10, release="54"))
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.setverbose')
