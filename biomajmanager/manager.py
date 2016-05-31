@@ -908,7 +908,7 @@ class Manager(object):
                                     fv.write(file_line)
         except Exception as e:
             Utils.error("Can't access file: %s" % str(e))
-        if self.get_verbose():
+        if Manager.get_verbose():
             Utils.verbose("Bank versions saved in %s" % bank_file)
         return True
 
