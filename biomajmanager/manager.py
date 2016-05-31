@@ -1001,8 +1001,10 @@ class Manager(object):
                             break
                         cnt += 1
         if Manager.get_verbose():
+            matched = res.matched if res.matched else 0
+            modified = res.modified_count if res.modified_count else 0
             Utils.ok("[%s] Documents matched: %d, documents modified: %d" %
-                     (self.bank.name, res.matched_count, res.modified_count))
+                     (self.bank.name, matched, modified))
         return True
         
 
