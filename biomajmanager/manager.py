@@ -1000,8 +1000,9 @@ class Manager(object):
                                                              {'$set': {'production.$.files_info': p['files_info']}})
                             break
                         cnt += 1
-        Utils.verbose("[%s] Documents matched: %d, documents modified: %d" %
-                      (self.bank.name, res.matched_count, res.modified_count))
+        if self.get_verbose():
+            Utils.ok("[%s] Documents matched: %d, documents modified: %d" %
+                     (self.bank.name, res.matched_count, res.modified_count))
         return True
         
 
