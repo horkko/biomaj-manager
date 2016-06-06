@@ -6,6 +6,7 @@ import select
 import subprocess
 import time
 import humanfriendly
+import shutil
 
 from biomaj.bank import Bank
 from biomaj.config import BiomajConfig
@@ -1092,6 +1093,193 @@ class Manager(object):
         :rtype: bool
         """
         return self._submit_job('stop.running.jobs', args=args)
+
+    @bank_required
+    def synchronize_db(self, udate=None):
+        """
+        Synchronize database with data on disk (data.dir/dbname)
+
+        This method intends to synchronize disk state with info in database. It may appaer that we have
+        some extra data displayed and stored in the database ('production' field) that do not exists on
+        disk. This might be due to a 'Ctrl-C' during a bank update of iterative updates without 'publish'
+        call between each iteration.
+        
+        :param udate: User date to set for 'sessions.deleted'
+        :type udate: str
+        :return: State of the operation
+        :rtype: bool
+        :raise SystemExit: If some configuration are not set
+        """
+        for option in ['synchrodb.delete.dir', 'synchrodb.set.sessions.deleted']:
+            if not self.config.has_option('MANAGER', option):
+                Utils.error("Option '%s' not set" % str(option))
+
+        if self.config.get('MANAGER', 'synchrodb.delete.dir') not in ['auto', 'manual']:
+            Utils.error("'synchrodb.delete.dir' value '%s' not supported. Available %s" %
+                        (self.config.get('MANAGER', 'synchrodb.delete.dir'), str(['auto', 'manual'])))
+
+        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') not in ['now', 'userdate']:
+            Utils.error("'set.sessions.deleted' value '%s' not supported. Available %s" %
+                        (self.config.get('MANAGER', 'synchrodb.set.sessions.deleted'), str(['now', 'userdate'])))
+
+        auto_delete = False
+        deleted_time = time.time()
+
+        if self.config.get('MANAGER', 'synchrodb.delete.dir') == 'auto':
+            auto_delete = True
+        # If simulate mode
+        auto_delete = not Manager.get_simulate()
+
+        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == 'userdate':
+            if udate is None:
+                Utils.error("Missing 'udate' parameter")
+            deleted_time = datetime.strptime(udate, "%d %b %Y")
+
+        bank_data_dir = self.get_bank_data_dir()
+        # Taken from http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
+        releases_dir = {x:1 for x in next(os.walk(bank_data_dir))[1]}
+        productions = self.bank.bank['production']
+        tasks_to_do = []
+        last_run = None
+        if 'last_update_session' in self.bank.bank:
+            last_run = self.get_session_from_id(self.bank.bank['last_update_session'])
+
+        for prod in productions:
+            # If release dir not found in production, we remove it from disk
+            # and set sessions.deleted
+            Utils.verbose("Checking prod %s" % (prod['prod_dir']))
+            if prod['prod_dir'] in releases_dir:
+                Utils.verbose("Prod %s found on disk too" % prod['prod_dir'])
+                # We then check everything ok in 'sessions'
+                session = self.get_session_from_id(prod['session'])
+                if 'workflow_status' in session and not session['workflow_status']:
+                    Utils.warn("[%s] Release %s ok in production and on disk, but sessions.workflow_status is False!"
+                               % (self.bank.name, prod['prod_dir']))
+                elif 'deleted' in session and session['deleted']:
+                    Utils.warn("[%s] Session %s marked as deleted, should not!"
+                               % (self.bank.name, session['id']))
+                else:
+                    releases_dir.pop(prod['prod_dir'])
+            else:
+                # Here we need to delete entry from production
+                Utils.verbose("Added %s to be deleted" % prod['prod_dir'])
+                # Need to delete this release directory and set time deleted into db (sessions.deleted)
+                tasks_to_do.append({'dir': os.path.join(bank_data_dir, prod['prod_dir']),
+                                    'time': deleted_time,
+                                    'key': 'production',
+                                    'release': prod['release'],
+                                    'sid': prod['session']})
+                
+        if len(tasks_to_do):
+            seen = False
+            for task in tasks_to_do:
+                if auto_delete:
+                    # Do delete on disk
+                    if os.path.isdir(task['dir']):
+                        try:
+                            Utils.verbose("Removing %s ... " % str(task['dir']))
+                            shutil.rmtree(task['dir'])
+                        except OSError as err:
+                            Utils.error("Can't delete '%s': %s" % (str(task['dir']), str(err)))
+                    else:
+                        Utils.warn("%s not found" % task['dir'])
+                    Utils.verbose("Updating production (session id %f) ... " % task['sid'])
+                    self.bank.banks.update({'name': self.bank.name},
+                                           {'$pull': {'production': {'release': task['release'],
+                                                                     'session': task['sid']}
+                                                      }})
+                    if task['time']:
+                        Utils.verbose("Updating sessions (id %f) ... " % task['sid'])
+                        # In case 'sessions.deleted' already set don't change it
+                        session = self.bank.banks.find({'name': self.bank.name, 'sessions.id': task['sid'],
+                                                        'sessions.deleted': {'$exists': False}},
+                                                       {'sessions.$': 1, '_id': 0})
+                        if not session.count():
+                            self.bank.banks.update({'name': self.bank.name, 'sessions.id': task['sid']},
+                                                   {'$set': {'sessions.$.deleted': deleted_time}})
+                else:
+                    if not seen:
+                        Utils.ok("You need to:")
+                        seen = True
+                    if os.path.isdir(task['dir']):
+                        Utils.ok("- rm -rf %s" % str(task['dir']))
+                    else:
+                        Utils.ok("- remove %s entry for release %s" % (task['key'], str(task['release'])))
+                    if 'time' in task:
+                        Utils.ok("- set sessions[id=%f].deleted to %s" % (task['sid'], str(task['time'])))
+
+        if len(releases_dir):
+            # Ctrl-C during bank update
+            seen = False
+            pendings = []
+            if 'pending' in self.bank.bank:
+                pendings = {x['release']:x['id'] for x in self.bank.bank['pending']}
+            for release in releases_dir:
+                if release == 'current':
+                    continue
+                pr = release[len(self.bank.name) + 1:]
+                # Sometime, last update session create a directory on disk. In such case,
+                # we do not remove this directory, it will be use for next update
+                if pr == last_run['release']:
+                    continue
+                if not seen:
+                    Utils.warn("Some directories found on disk and not in production:")
+                    seen = True
+
+                if auto_delete:
+                    try:
+                        path = os.path.join(bank_data_dir, str(release))
+                        Utils.verbose("Removing extra dir %s ... " % path)
+                        shutil.rmtree(path)
+                        if pr in pendings:
+                            Utils.verbose("Remonving pending release %s ... " % str(pr))
+                            self.bank.banks.update({'name': self.bank.name},
+                                                   {'$pull': {'pending': {'release': pr}}})
+                    except OSError as err:
+                        Utils.error("Can't delete '%s': %s" % (path, str(err)))
+                else:
+                    Utils.warn("- %s" % str(release))
+                    if pr in pendings:
+                        Utils.warn("- Remove pending %s from database" % str(pr))
+        return True
+
+#    @bank_required
+#    def clean_sessions(self):
+#        """
+#        Clean sessions in database
+#        """
+#        # We also need to clean a bit the sessions
+#        last_run = None
+#        if 'last_update_session' in self.bank.bank:
+#            last_run = self.bank.bank['last_update_session']
+#
+#        sessions = self.bank.bank['sessions']
+#        for session in sessions:
+#            if last_run and last_run == session['id']:
+#                continue
+#            # TODO : CHECK WELL FOR WHAT TO DO WITH SESSIONS
+#            if 'deleted' not in session:
+#                tasks_to_do.append({'dir': os.path.join(bank_data_dir,
+#                                                        session['dir_version'] + "_" + session['release']),
+#                                    'release': session['release'],
+#                                    'key': 'sessions',
+#                                    'sid': session['id']})
+#            elif 'workflow_status' in session and session['workflow_status']:
+#                # Check all step in sessions.status are OK
+#                all_status_ok = True
+#                for status in session['status']:
+#                    if not session['status'][status]:
+#                        all_status_ok = False
+#                if not all_status_ok:
+#                    # Something wrong happen during bank update
+#                    # We remove this session
+#                    tasks_to_do.append({'dir': os.path.join(bank_data_dir,
+#                                                            session['dir_version'] + "_" + session['release']),
+#                                        'time': deleted_time,
+#                                        'key': 'sessions',
+#                                        'release': session['release'],
+#                                        'sid': session['id']})
+                        
 
     @bank_required
     def update_ready(self):

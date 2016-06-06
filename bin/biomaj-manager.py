@@ -53,10 +53,8 @@ def main():
                         help="Show pending release(s). [-b] available")
     parser.add_argument('-s', '--switch', dest="switch", action="store_true", default=False,
                         help="Switch a bank to its new version. [-b REQUIRED]")
-    parser.add_argument('-x', '--rss', dest="rss", action="store_true", default=False,
-                        help="Create RSS feed. [-o available]")
-    parser.add_argument('-X', '--test', dest="test", action="store_true", default=False,
-                        help="Test method. [-b REQUIRED]")
+    parser.add_argument('--synchronize_db', dest="synchronizedb", action="store_true", default=False,
+                        help="Synchronize database and bank data on disk")
     parser.add_argument('-U', '--show_update', dest="show_update", action="store_true", default=False,
                         help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that\
                               need to be updated. [-b and --visibility] available.")
@@ -64,6 +62,10 @@ def main():
                         help="Show version")
     parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
                         help="Activate verbose mode")
+    parser.add_argument('-x', '--rss', dest="rss", action="store_true", default=False,
+                        help="Create RSS feed. [-o available]")
+    parser.add_argument('-X', '--test', dest="test", action="store_true", default=False,
+                        help="Test method. [-b REQUIRED]")
     # Options with value required
     parser.add_argument('-C', '--clean_links', dest="clean_links",
                         help="Remove old links (Permissions required)")
@@ -398,6 +400,15 @@ def main():
         sfile, scnt = options.seqcount.split(':')
         if not manager.set_sequence_count(seq_file=sfile, seq_count=scnt, release=options.release):
             Utils.error("Can't set sequence number (%d) for %s, release %s" % (scnt, sfile, options.release))
+        sys.exit(0)
+
+    if options.synchronizedb:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank, global_cfg=options.config)
+        if not manager.synchronize_db():
+            Utils.error("Error occured during db synchronization")
+            sys.exti(1)
         sys.exit(0)
 
 if __name__ == '__main__':
