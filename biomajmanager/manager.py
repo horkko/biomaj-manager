@@ -1215,7 +1215,7 @@ class Manager(object):
             if 'pending' in self.bank.bank:
                 pendings = {x['release']:x['id'] for x in self.bank.bank['pending']}
             for release in releases_dir:
-                if release == 'current':
+                if release == 'current' or release == 'future_release':
                     continue
                 pr = release[len(self.bank.name) + 1:]
                 # Sometime, last update session create a directory on disk. In such case,
@@ -1243,43 +1243,53 @@ class Manager(object):
                         Utils.warn("- Remove pending %s from database" % str(pr))
         return True
 
-#    @bank_required
-#    def clean_sessions(self):
-#        """
-#        Clean sessions in database
-#        """
-#        # We also need to clean a bit the sessions
-#        last_run = None
-#        if 'last_update_session' in self.bank.bank:
-#            last_run = self.bank.bank['last_update_session']
-#
-#        sessions = self.bank.bank['sessions']
-#        for session in sessions:
-#            if last_run and last_run == session['id']:
-#                continue
-#            # TODO : CHECK WELL FOR WHAT TO DO WITH SESSIONS
-#            if 'deleted' not in session:
-#                tasks_to_do.append({'dir': os.path.join(bank_data_dir,
-#                                                        session['dir_version'] + "_" + session['release']),
-#                                    'release': session['release'],
-#                                    'key': 'sessions',
-#                                    'sid': session['id']})
-#            elif 'workflow_status' in session and session['workflow_status']:
-#                # Check all step in sessions.status are OK
-#                all_status_ok = True
-#                for status in session['status']:
-#                    if not session['status'][status]:
-#                        all_status_ok = False
-#                if not all_status_ok:
-#                    # Something wrong happen during bank update
-#                    # We remove this session
-#                    tasks_to_do.append({'dir': os.path.join(bank_data_dir,
-#                                                            session['dir_version'] + "_" + session['release']),
-#                                        'time': deleted_time,
-#                                        'key': 'sessions',
-#                                        'release': session['release'],
-#                                        'sid': session['id']})
-                        
+    @bank_required
+    def clean_sessions(self):
+        """
+        Clean sessions in database
+        """
+        # We also need to clean a bit the sessions
+        # Be sure we are not cleaning a 'failed/pending' session
+        tasks_to_do = []
+        last_run = None
+        prods = {x['session']:1 for x in self.bank.bank['production']}
+        bank_data_dir = self.get_bank_data_dir()
+
+        if 'last_update_session' in self.bank.bank:
+            last_run = self.get_session_from_id(self.bank.bank['last_update_session'])
+
+        sessions = self.bank.bank['sessions']
+        for session in sorted(sessions, key=lambda s: s['id']):
+            # Don't remove last update session (we could have to fix error(s) and run it again)
+            if last_run and last_run['id'] == session['id']:
+                continue
+            if session['id'] in prods:
+                continue
+            # TODO : CHECK WELL FOR WHAT TO DO WITH SESSIONS
+            if 'workflow_status' in session and not session['workflow_status']:
+                # Broken update
+                if 'deleted' not in session:
+                    tasks_to_do.append({'release': session['release'], 'sid': session['id'],
+                                        'date': Utils.time2datefmt(session['id'])})
+            else:
+                # if 'deleted' not in session, this session could be in 'production'!!!
+                over = session['status']['over']
+                if 'deleted' not in session and not over:
+                    # Check all status are OK
+                    tasks_to_do.append({'release': session['release'], 'sid': session['id'],
+                                        'date': Utils.time2datefmt(session['id'])})
+
+        if Manager.get_simulate():
+            for task in tasks_to_do:
+                Utils.verbose(task)
+        else:
+            modified = 0
+            for task in tasks_to_do:
+                res = self.bank.banks.update({'name': self.bank.name},
+                                             {'$pull': {'sessions': {'id': task['id']}}})
+                modified += res.modified_count
+            Utils.ok("%d removed session(s)" % modified)
+        return True
 
     @bank_required
     def update_ready(self):
