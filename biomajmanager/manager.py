@@ -1138,6 +1138,9 @@ class Manager(object):
         bank_data_dir = self.get_bank_data_dir()
         # Taken from http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
         releases_dir = {x:1 for x in next(os.walk(bank_data_dir))[1]}
+        pendings = {}
+        if 'pending' in self.bank.bank:
+            pendings = {x['id']:1 for x in self.bank.bank['pending']}
         productions = self.bank.bank['production']
         tasks_to_do = []
         last_run = None
@@ -1153,8 +1156,9 @@ class Manager(object):
                 # We then check everything ok in 'sessions'
                 session = self.get_session_from_id(prod['session'])
                 if 'workflow_status' in session and not session['workflow_status']:
-                    Utils.warn("[%s] Release %s ok in production and on disk, but sessions.workflow_status is False!"
-                               % (self.bank.name, prod['prod_dir']))
+                    if prod['session'] not in pendings:
+                        Utils.warn("[%s] Release %s ok in production and on disk, but sessions.workflow_status is False!"
+                                   % (self.bank.name, prod['prod_dir']))
                 elif 'deleted' in session and session['deleted']:
                     Utils.warn("[%s] Session %s marked as deleted, should not!"
                                % (self.bank.name, session['id']))
@@ -1248,47 +1252,55 @@ class Manager(object):
         """
         Clean sessions in database
         """
-        # We also need to clean a bit the sessions
-        # Be sure we are not cleaning a 'failed/pending' session
-        tasks_to_do = []
         last_run = None
-        prods = {x['session']:1 for x in self.bank.bank['production']}
-        bank_data_dir = self.get_bank_data_dir()
+        pendings = {}
+        tasks_to_do = []
+        auto_clean = not Manager.get_simulate()
 
         if 'last_update_session' in self.bank.bank:
-            last_run = self.get_session_from_id(self.bank.bank['last_update_session'])
+            last_run = self.bank.bank['last_update_session']
+        if 'pending' in self.bank.bank['pending']:
+            pendings = {x['id']:1 for x in self.bank.bank['pending']}
+        productions = {x['session']:1 for x in self.bank.bank['production']}
 
+        bank_data_dir = self.get_bank_data_dir()
         sessions = self.bank.bank['sessions']
-        for session in sorted(sessions, key=lambda s: s['id']):
-            # Don't remove last update session (we could have to fix error(s) and run it again)
-            if last_run and last_run['id'] == session['id']:
+        for session in sessions:
+            field_name = 'sessions'
+            id_key = 'id'
+            if last_run and last_run == session['id']:
                 continue
-            if session['id'] in prods:
+            # If session marked as deleted we don't care about it unless it is found on disk
+            if 'deleted' in session:
+                if os.path.exists(os.path.join(bank_data_dir, session['dir_version'] + "_" + session['release'])):
+                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but directory %s found disk" %
+                               (self.bank.name, session['release'], session['id'], session['deleted'],
+                                session['dir_version'] + "_" + session['release']))
+                elif session['id'] in productions:
+                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but found in production" %
+                               (self.bank.name, session['release'], session['id'], session['deleted']))
+                    field_name = 'production'
+                    id_key = 'session'
+                else:
+                    continue
+            elif session['id'] in productions:
                 continue
-            # TODO : CHECK WELL FOR WHAT TO DO WITH SESSIONS
             if 'workflow_status' in session and not session['workflow_status']:
-                # Broken update
-                if 'deleted' not in session:
-                    tasks_to_do.append({'release': session['release'], 'sid': session['id'],
-                                        'date': Utils.time2datefmt(session['id'])})
-            else:
-                # if 'deleted' not in session, this session could be in 'production'!!!
-                over = session['status']['over']
-                if 'deleted' not in session and not over:
-                    # Check all status are OK
-                    tasks_to_do.append({'release': session['release'], 'sid': session['id'],
-                                        'date': Utils.time2datefmt(session['id'])})
+                if session['id'] in pendings:
+                    continue
+            tasks_to_do.append({'release': session['release'], 'sid': session['id'], 'type': field_name, 'key': id_key})
 
-        if Manager.get_simulate():
+        if len(tasks_to_do):
+            cleaned = 0
             for task in tasks_to_do:
-                Utils.verbose(task)
-        else:
-            modified = 0
-            for task in tasks_to_do:
-                res = self.bank.banks.update({'name': self.bank.name},
-                                             {'$pull': {'sessions': {'id': task['id']}}})
-                modified += res.modified_count
-            Utils.ok("%d removed session(s)" % modified)
+                if auto_clean:
+                    self.bank.banks.update({'name': self.bank.name},
+                                           {'$pull': {task['type']: {task['key']: task['sid'], 'release': task['release']}}})
+                    cleaned += 1
+                else:
+                    Utils.ok(task)
+            if auto_clean:
+                Utils.ok("[%s] %d session(s) cleaned" % (self.bank.name, cleaned))
         return True
 
     @bank_required

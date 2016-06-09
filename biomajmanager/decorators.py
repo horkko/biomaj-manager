@@ -1,7 +1,6 @@
-""" Global decorators for BioMAJ Manager """
+"""Global decorators for BioMAJ Manager"""
 from biomajmanager.utils import Utils
 from functools import wraps
-import warnings
 __author__ = 'tuco'
 
 
@@ -26,8 +25,9 @@ def bank_required(func):
 
 def deprecated(func):
     """
-    This is a decorator which can be used to mark functions as deprecated. It will 
-    result in a warning being emitted when the functionis used.
+    This is a decorator which can be used to mark functions as deprecated.
+
+    It will result in a warning being emitted when the functionis used.
 
     :param func: Decorated function
     :type func: Function
