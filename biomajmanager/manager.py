@@ -1355,7 +1355,7 @@ class Manager(object):
                                                            'release': task['release']}}})
                     cleaned += 1
                 else:
-                    Utils.ok(task)
+                    Utils.ok("Clean needed for release %s, session %f" % (task['release'], task['sid']))
             if auto_clean:
                 Utils.ok("[%s] %d session(s) cleaned" % (self.bank.name, cleaned))
         return True
