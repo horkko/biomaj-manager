@@ -69,31 +69,32 @@ def main():
     parser.add_argument('-Z', '--clean_sessions', dest="cleansessions", action="store_true", default=False,
                         help="Clean dead sessions from the database. [-b REQUIRED]")
     # Options with value required
-    parser.add_argument('-C', '--clean_links', dest="clean_links",
-                        help="Remove old links (Permissions required)")
     parser.add_argument('-b', '--bank', dest="bank",
                         help="Bank name")
+    parser.add_argument('-C', '--clean_links', dest="clean_links",
+                        help="Remove old links (Permissions required)")
     parser.add_argument('-c', '--config', dest="config",
                         help="BioMAJ global.properties configuration file")
     parser.add_argument('--db_type', dest="db_type",
                         help="BioMAJ database type [MySQL, MongoDB]")
+    parser.add_argument('-E', '--failed-process', dest="failedprocess", metavar='[session id]', type=float, const=True, nargs='?',
+                        help="Get list of failed process(es) for a particular bank. Session id can be passed.[-b REQUIRED]")
     parser.add_argument('-o', '--out', dest="out",
                         help="Output file")
     parser.add_argument('-F', '--format', dest="oformat",
                         help="Output format. Supported [csv, html, json]")
     parser.add_argument('-r', '--release', dest="release",
                         help="Release number to use. [-b, -w REQUIRED]")
-    parser.add_argument('-S', '--section', dest="tool",
-                        help="Prints [TOOL] section(s) for a bank. [-b REQUIRED]")
+    parser.add_argument('-S', '--section', dest="tool", metavar="[blast2|golden]",
+                        help="Prints [blast2|golden] section(s) for a bank. [-b REQUIRED]")
     parser.add_argument('-T', '--templates', dest="template_dir",
                         help="Template directory. Overwrites template_dir")
-    parser.add_argument('--vdbs', dest="vdbs",
+    parser.add_argument('--vdbs', dest="vdbs", metavar="[blast2|golden]",
                         help="Create virtual database HTML pages for tool. [-b available]")
-    parser.add_argument('--visibility', dest="visibility", default="public",
-                        help="Banks visibility ['all', 'public'(default), 'private'].Use with --show_update.")
-    parser.add_argument('-w', '--set_sequence_count', dest='seqcount',
-                        help="Set the number of sequence(s) in the file. [-b REQUIRED]\n\
-                              Option like <file>:<seq_num>")
+    parser.add_argument('--visibility', dest="visibility", default="public", metavar="all|public|private",
+                        help="Banks visibility. Use with --show_update.")
+    parser.add_argument('-w', '--set_sequence_count', dest='seqcount', metavar="file:seq_num",
+                        help="Set the number of sequence(s) in the file. [-b REQUIRED]")
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -418,6 +419,22 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         manager.clean_sessions()
+        sys.exit(0)
+
+    if options.failedprocess:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank, global_cfg=options.config)
+        session = options.failedprocess
+        if type(session) == bool:
+            session = None
+        failed = manager.get_failed_processes(session=session, full=True)
+        if failed:
+            failed.insert(0, ["Session", "Process", "Executable", "Arguments"])
+            print("Failed process(es):")
+            print(tabulate(failed, headers='firstrow', tablefmt='psql'))
+        else:
+            print("No failed process(es)")
         sys.exit(0)
 
 if __name__ == '__main__':

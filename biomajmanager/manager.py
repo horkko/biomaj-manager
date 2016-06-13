@@ -421,6 +421,61 @@ class Manager(object):
         """
         return self._current_user()
 
+    @bank_required
+    def get_failed_processes(self, session=None, full=False):
+        """
+        Get the list of failed process(es) for a particular run (session)
+
+        When a bank update failed, we can have a look at the log to know which process(es) failed.
+        With this method, you don't need to open the log, which can be huge, we pick up the info
+        directy from the database.
+
+        :param session: Session id to search failed process(es) from
+        :type session: float
+        :param full: Get a complete report of the failed process(es)
+        :type full: bool
+        :return: List of failed process(es)
+        :rtype: list
+        """
+        if 'sessions' not in self.bank.bank:
+            Utils.error("Can't search for failed process(es), no 'session' key found")
+
+        sessions = []
+        failed = []
+        Utils.verbose("[%s][get_failed_processes]Looking for session %s" % (self.bank.name, str(session)))
+
+        if not session:
+            sessions = self.bank.bank['sessions']
+        else:
+            session = self.get_session_from_id(session)
+            if session is None:
+                Utils.warn("Session %s not found" % str(session))
+                return failed
+            sessions.append(session)
+
+        for session in sessions:
+            session_id = "%f" % session['id']
+            if 'process' in session and 'postprocess' in session['process']:
+                processes = session['process']['postprocess']
+                for block in processes:
+                    for meta in processes[block]:
+                        for proc in processes[block][meta]:
+                            if not processes[block][meta][proc]:
+                                data = []
+                                if full:
+                                    args = self.bank.config.get(proc + ".args").split(" ")
+                                    data.append(session_id if session_id else "")
+                                    data.append(proc)
+                                    data.append(self.bank.config.get(proc + ".exe"))
+                                    data.append(args.pop(0))
+                                    failed.append(data)
+                                    for arg in args:
+                                        failed.append(["", "", "", arg])
+                                else:
+                                    failed.append([proc])
+                                session_id = None
+        return failed
+
     @staticmethod
     def get_formats_for_release(path=None):
         """
