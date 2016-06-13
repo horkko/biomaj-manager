@@ -898,7 +898,7 @@ class Manager(object):
         return self._next_release
 
     def reset_releases(self):
-        """ Reset current and next release variables to None"""
+        """Reset current and next release variables to None"""
         self._current_release = None
         self._next_release = None
         return
@@ -1350,7 +1350,9 @@ class Manager(object):
             for task in tasks_to_do:
                 if auto_clean:
                     self.bank.banks.update({'name': self.bank.name},
-                                           {'$pull': {task['type']: {task['key']: task['sid'], 'release': task['release']}}})
+                                           {'$pull': {task['type']:
+                                                          {task['key']: task['sid'],
+                                                           'release': task['release']}}})
                     cleaned += 1
                 else:
                     Utils.ok(task)

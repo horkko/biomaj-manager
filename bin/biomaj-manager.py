@@ -8,7 +8,6 @@ To see what's possible, just type biomaj-manager.py --help
 """
 from __future__ import print_function
 from future import standard_library
-from pprint import pprint
 standard_library.install_aliases()
 
 import argparse
@@ -77,8 +76,9 @@ def main():
                         help="BioMAJ global.properties configuration file")
     parser.add_argument('--db_type', dest="db_type",
                         help="BioMAJ database type [MySQL, MongoDB]")
-    parser.add_argument('-E', '--failed-process', dest="failedprocess", metavar='[session id]', type=float, const=True, nargs='?',
-                        help="Get list of failed process(es) for a particular bank. Session id can be passed.[-b REQUIRED]")
+    parser.add_argument('-E', '--failed-process', dest="failedprocess", metavar='[session id]', type=float,
+                        const=True, nargs='?',
+                        help="Get failed process(es) for a bank. Session id can be used. [-b REQUIRED]")
     parser.add_argument('-o', '--out', dest="out",
                         help="Output file")
     parser.add_argument('-F', '--format', dest="oformat",

@@ -19,7 +19,9 @@ from mock import Mock as MagicMock
 
 
 class Mock(MagicMock):
+
     """Mock class to avoid errors at doc building"""
+
     @classmethod
     def __getattr__(cls, name):
         return Mock()

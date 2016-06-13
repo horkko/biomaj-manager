@@ -203,8 +203,10 @@ class Links(object):
                         tlink = os.path.join(end_target, new_file)
                         links.append((slink, tlink))
                         if Manager.get_verbose():
-                            Utils.verbose("[_generate_files_link] [rm_ext=%s] append slink %s" % (str(remove_ext), slink))
-                            Utils.verbose("[_generate_files_link] [rm_ext=%s] append tlink %s" % (str(remove_ext), tlink))
+                            Utils.verbose("[_generate_files_link] [rm_ext=%s] append slink %s"
+                                          % (str(remove_ext), slink))
+                            Utils.verbose("[_generate_files_link] [rm_ext=%s] append tlink %s"
+                                          % (str(remove_ext), tlink))
                 # Set self.target for _make_links
                 self.target = end_target
                 self._make_links(links=links)
