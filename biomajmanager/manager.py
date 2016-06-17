@@ -465,6 +465,7 @@ class Manager(object):
                                 if full:
                                     args = self.bank.config.get(proc + ".args").split(" ")
                                     data.append(session_id if session_id else "")
+                                    data.append(session['release'])
                                     data.append(proc)
                                     data.append(self.bank.config.get(proc + ".exe"))
                                     data.append(args.pop(0))
