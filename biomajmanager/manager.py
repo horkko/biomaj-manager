@@ -1309,12 +1309,15 @@ class Manager(object):
         Clean sessions in database
         """
         last_run = None
+        current = None
         pendings = {}
         tasks_to_do = []
         auto_clean = not Manager.get_simulate()
 
         if 'last_update_session' in self.bank.bank:
             last_run = self.bank.bank['last_update_session']
+        if 'current' in self.bank.bank:
+            current = self.bank.bank['current']
         if 'pending' in self.bank.bank['pending']:
             pendings = {x['id']:1 for x in self.bank.bank['pending']}
         productions = {x['session']:1 for x in self.bank.bank['production']}
@@ -1325,6 +1328,8 @@ class Manager(object):
             field_name = 'sessions'
             id_key = 'id'
             if last_run and last_run == session['id']:
+                continue
+            if current and current == session['id']:
                 continue
             # If session marked as deleted we don't care about it unless it is found on disk
             if 'deleted' in session:
