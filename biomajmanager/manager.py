@@ -68,7 +68,10 @@ class Manager(object):
             Utils.error("Can't load configuration file. Exit with code %s" % str(err))
 
         if bank is not None:
-            self.bank = Bank(bank, no_log=True)
+            try:
+                self.bank = Bank(bank, no_log=True)
+            except Exception as err:
+                Utils.error("Can't create bank %s: %s" % (bank, str(err)))
             if self.bank.config.get('data.dir'):
                 self.bank_prod = self.bank.config.get('data.dir')
 
