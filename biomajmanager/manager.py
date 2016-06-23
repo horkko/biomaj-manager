@@ -465,7 +465,7 @@ class Manager(object):
                         for proc in processes[block][meta]:
                             if not processes[block][meta][proc]:
                                 data = []
-                                if full:
+                                if full and self.bank.config.get(proc + ".args"):
                                     args = self.bank.config.get(proc + ".args").split(" ")
                                     data.append(session_id if session_id else "")
                                     data.append(session['release'])

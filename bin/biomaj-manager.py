@@ -429,7 +429,7 @@ def main():
         if type(session) == bool:
             session = None
         failed = manager.get_failed_processes(session=session, full=True)
-        if failed:
+        if len(failed):
             failed.insert(0, ["Session", "Release", "Process", "Executable", "Arguments"])
             print("Failed process(es):")
             print(tabulate(failed, headers='firstrow', tablefmt='psql'))
