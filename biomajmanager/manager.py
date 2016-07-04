@@ -787,11 +787,14 @@ class Manager(object):
                     has_failed = True
                     return has_failed
 
-        # We then search in the session, base on 'last_update_session' field
+        # We then search in the session, based on 'last_update_session' field
         session = self.get_session_from_id(last_update_id)
         if session is None:
-            Utils.error("[%s] Can't find last_update_session %s in sessions! Please fix it!"
-                        % (self.bank.name, str(last_update_id)))
+            # Utils.error("[%s] Can't find last_update_session %f in sessions! Please fix it!"
+            #             % (self.bank.name, last_update_id))
+            Utils.warn("[%s] Can't find last_update_session %f in sessions! Please fix it!"
+                       % (self.bank.name, last_update_id))
+            return True
         # If session terminated OK, status.over should be True
         # biomaj >= 3.0.14, new field 'workflow_status' which tells if the update workflow went ok
         # We do not count on status.over anymore, we have new field 'workflow_status'
