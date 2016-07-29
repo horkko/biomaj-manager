@@ -30,8 +30,8 @@ class Utils(object):
         :type path: str
         :param delete: Wether to delete or not broken symlink(s)
         :type delete: bool
-        :return: True/False
-        :rtype: bool:
+        :return: Number of cleaned/deleted link(s)
+        :rtype: int
         :raise SystemExit: If path not found, or not given
         :raise SystemExit: If remove of symlink(s) failed
         """
@@ -48,15 +48,22 @@ class Utils(object):
             except OSError:
                 broken.append(link)
         if not delete:
-            Utils.warn("%d link(s) need to be cleaned" % int(len(broken)))
-            Utils.verbose("\n".join(broken))
+            from .manager import Manager
+            if not len(broken):
+                if Manager.verbose:
+                    Utils.ok("No dead link found (%s)" % str(path))
+            else:
+                Utils._print("* %d link(s) need to be cleaned (%s):" % (int(len(broken)), str(path)))
+                if Manager.verbose:
+                    Utils._print("\n".join(broken))
+            return len(broken)
         else:
             deleted = 0
             for link in broken:
                 os.remove(link)
                 deleted += 1
             Utils.ok("%d links removed" % int(deleted))
-        return True
+            return deleted
 
     @staticmethod
     def elapsed_time():
@@ -91,6 +98,31 @@ class Utils(object):
         """
         Utils._print("[ERROR] %s" % str(msg), to=sys.stderr)
         sys.exit(1)
+
+    @staticmethod
+    def get_broken_links(path=None, delete=False):
+        """
+        Search for broken symlinks from a particular path.
+
+        If path is not given or None, then it search from the production directory.
+
+        :param path: Path to search broken links from
+        :type path: str
+        :param delete: Delete found broken links
+        :type delete: bool
+        :return: Number of found broekn links
+        :rtype: int
+        :raise SystemExit: If path does not exist
+        """
+        if path is None:
+            Utils.error("Path not given")
+        if not os.path.exists(path):
+            Utils.error("Path '%s' does not exist" % str(path))
+        brkln = 0
+        for dir_path, dir_names, _ in os.walk(path):
+            if len(dir_names) == 0 or dir_path == path:
+                brkln += Utils.clean_symlinks(path=dir_path, delete=False)
+        return brkln
 
     @staticmethod
     def get_files(path=None):
