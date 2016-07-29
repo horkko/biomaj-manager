@@ -287,6 +287,43 @@ class TestBiomajManagerUtils(unittest.TestCase):
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
+    @attr('utils.getbrokenlinks')
+    def test_getbroeknlinksNoPathThrows(self):
+        """Check it throw when no path given as arg"""
+        utils = Utils()
+        with self.assertRaises(SystemExit):
+            utils.get_broken_links()
+
+    @attr('utils')
+    @attr('utils.getbrokenlinks')
+    def test_getbroeknlinksWrongPathThrows(self):
+        """Check it throw when path does not exist"""
+        utils = Utils()
+        with self.assertRaises(SystemExit):
+            utils.get_broken_links(path="/does/not/exist")
+
+    @attr('utils')
+    @attr('utils.getbrokenlinks')
+    def test_getbroeknlinksNoBrokenLinks(self):
+        """Check it returns 0 broekn link"""
+        utils = Utils()
+        self.assertEqual(utils.get_broken_links(path="/tmp"), 0)
+
+    @attr('utils')
+    @attr('utils.getbrokenlinks')
+    def test_getbroeknlinksBrokenLinksOK(self):
+        """Check it returns 1 broken links"""
+        utils = Utils()
+        root = '/tmp'
+        link = os.path.join(root, 'foobar')
+        if os.path.islink(link):
+            os.remove(link)
+        os.symlink('/not_found', link)
+        Manager.verbose = True
+        self.assertEqual(utils.get_broken_links(path=root), 1)
+        os.remove(link)
+
+    @attr('utils')
     @attr('utils.deepestdirs')
     def test_DeepestDirsFull(self):
         """Check we get the right list of deepest dir"""
@@ -1598,8 +1635,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.bank['last_update_session'] = now
         del manager.bank.bank['sessions']
-        with self.assertRaises(SystemExit):
-            manager.last_session_failed()
+        # Now warn, does not throw anymore
+        #with self.assertRaises(SystemExit):
+        #    manager.last_session_failed()
+        self.assertTrue(manager.last_session_failed())
 
     @attr('manager')
     @attr('manager.lastsessionfailed')
