@@ -612,6 +612,7 @@ class Manager(object):
             for session in self.bank.bank['sessions']:
                 if session_id == session['id']:
                     sess = session
+                    break
         return sess
 
     @staticmethod
@@ -713,7 +714,11 @@ class Manager(object):
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
                 else:
-                    status = 'deprecated'
+                    if prod['session'] > self.bank.bank['current']:
+                        status = 'unpublished'
+                    else:
+                        status = 'deprecated'
+
             hid = '@'.join(['bank', self.bank.name, str(prod['remoterelease']),
                             str(Utils.time2datefmt(prod['session']))])
             history.append({'_id': hid,
