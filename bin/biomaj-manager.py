@@ -14,6 +14,7 @@ import argparse
 import json
 import pkg_resources
 import sys
+import os
 
 from biomaj.options import Options
 from biomajmanager.manager import Manager
@@ -70,13 +71,16 @@ def main():
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank",
                         help="Bank name")
+    parser.add_argument('-B', '--broken_links', dest="brokenlinks", metavar="/path/to", type=str,
+                        const=True, nargs='?',
+                        help="Check for broken symlinks in production directory.")
     parser.add_argument('-C', '--clean_links', dest="clean_links",
                         help="Remove old links (Permissions required)")
     parser.add_argument('-c', '--config', dest="config",
                         help="BioMAJ global.properties configuration file")
     parser.add_argument('--db_type', dest="db_type",
                         help="BioMAJ database type [MySQL, MongoDB]")
-    parser.add_argument('-E', '--failed-process', dest="failedprocess", metavar='[session id]', type=float,
+    parser.add_argument('-E', '--failed-process', dest="failedprocess", metavar='session id', type=float,
                         const=True, nargs='?',
                         help="Get failed process(es) for a bank. Session id can be used. [-b REQUIRED]")
     parser.add_argument('-o', '--out', dest="out",
@@ -139,7 +143,7 @@ def main():
             if len(info):
                 info.insert(0, ['Bank', 'bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'gatk', 'samtools',
                                 'soap', 'picard', 'raw', 'uncompressed'])
-                print(tabulate(info, headers='firstrow', tablefmt='psql'))
+                print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
             else:
                 print("No formats supported")
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
@@ -183,7 +187,7 @@ def main():
                     for hist in bank['history']:
                         info.append([hist['version'], hist['status'], hist['publication_date'],
                                      hist['removal_date']])
-                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+                    print(tabulate(info, headers="firstrow", tablefmt='psql', floatfmt=".6f"))
             else:
                 print("No history available")
         sys.exit(0)
@@ -193,11 +197,11 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         info = manager.bank_info()
-        print(tabulate(info['info'], headers='firstrow', tablefmt='psql'))
-        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql'))
+        print(tabulate(info['info'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         # do we have some pending release(s)
         if 'pend' in info and len(info['pend']) > 1:
-            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql'))
+            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         sys.exit(0)
 
     if options.links:
@@ -246,16 +250,26 @@ def main():
                     writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
                     writer.write(template='pending.j2.' + options.oformat, data={'pending': pending})
                 else:
+                    seen = {}
                     for pend in pending:
                         release = pend['release']
-                        sess_id = pend['id']
-                        date = Utils.time2datefmt(sess_id, Utils.DATE_FMT)
-                        info.append([bank, str(release), str(date)])
+                        sess_id = "%f" % pend['id']
+                        # As for now we have pending as many time as they are run
+                        if sess_id in seen:
+                            continue
+                        last_run = manager.get_session_from_id(sess_id)
+                        if last_run is not None:
+                            last_run = Utils.time2datefmt(last_run['last_update_time'], Utils.DATE_FMT)
+                        else:
+                            last_run = "N/A"
+                        info.append([bank, sess_id, str(release), str(last_run)])
+                        print(info)
+                        seen[sess_id] = True
             manager.set_bank_from_name(name=bank)
         if info:
-            info.insert(0, ["Bank", "Release", "Run time"])
+            info.insert(0, ["Bank", "Session", "Release", "Last Run"])
             print("Pending banks:")
-            print(tabulate(info, headers='firstrow', tablefmt='psql'))
+            print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         else:
             print("No pending session")
         sys.exit(0)
@@ -292,7 +306,7 @@ def main():
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
                 print("Next bank switch will take place on %s @ 00:00AM" % next_switch)
-                print(tabulate(info, headers='firstrow', tablefmt='psql'))
+                print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         else:
             print("No bank need to be updated")
         sys.exit(0)
@@ -432,9 +446,17 @@ def main():
         if len(failed):
             failed.insert(0, ["Session", "Release", "Process", "Executable", "Arguments"])
             print("Failed process(es):")
-            print(tabulate(failed, headers='firstrow', tablefmt='psql'))
+            print(tabulate(failed, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         else:
             print("No failed process(es)")
+        sys.exit(0)
+
+    if options.brokenlinks:
+        if type(options.brokenlinks) == bool:
+            manager = Manager(global_cfg=options.config)
+            options.brokenlinks = os.path.join(manager.get_production_dir(), 'index')
+        brkln = Utils.get_broken_links(path=options.brokenlinks, delete=False)
+        print("%d broken link(s)" % brkln)
         sys.exit(0)
 
 if __name__ == '__main__':
