@@ -23,7 +23,7 @@ class Utils(object):
         """
         Search for broken symlinks.
 
-        Given a path, it search for all symlinks 'path' directory and remomve broken symlinks.
+        Given a path, it search for all symlinks 'path' directory and remove broken symlinks.
         If delete is True, remove broken symlink(s), otherwise lists broken symlinks.
 
         :param path: Path to search symlinks from

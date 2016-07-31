@@ -71,11 +71,12 @@ def main():
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank",
                         help="Bank name")
-    parser.add_argument('-B', '--broken_links', dest="brokenlinks", metavar="/path/to", type=str,
+    parser.add_argument('-B', '--broken_links', dest="brokenlinks", metavar="path to check", type=str,
                         const=True, nargs='?',
                         help="Check for broken symlinks in production directory.")
-    parser.add_argument('-C', '--clean_links', dest="clean_links",
-                        help="Remove old links (Permissions required)")
+    parser.add_argument('-C', '--clean_links', dest="cleanlinks", metavar="path to clean", type=str,
+                        const=True, nargs='?',
+                        help="Remove old/broken links (Permissions required)")
     parser.add_argument('-c', '--config', dest="config",
                         help="BioMAJ global.properties configuration file")
     parser.add_argument('--db_type', dest="db_type",
@@ -404,8 +405,19 @@ def main():
         sys.exit(0)
 
     # Not yet implemented options
-    if options.clean_links:
-        Utils.clean_symlinks(path=options.clean_links, delete=True)
+    if options.cleanlinks:
+        Utils.start_timer()
+        manager = Manager(global_cfg=options.config)
+        if type(options.cleanlinks) == bool:
+            for key in Links.DIRS.iterkeys():
+                for ddir in Links.DIRS[key]:
+                    path = os.path.join(manager.get_production_dir(), ddir['target'])
+                    Utils.clean_symlinks(path=path, delete=True)
+        else:
+            Utils.clean_symlinks(path=options.cleanlinks, delete=True)
+        Utils.stop_timer()
+        etime = Utils.elapsed_time()
+        print("Cleaned link in %f sec" % etime)
         sys.exit(0)
 
     if options.seqcount:
