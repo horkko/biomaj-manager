@@ -2430,7 +2430,7 @@ class TestBioMajManagerManager(unittest.TestCase):
                                               'prod_dir': "alu_12", 'remoterelease': 12, 'last_update_time': 100,
                                               'last_modified': 100, 'status': {'remove_release': True}})
         history = manager.history()
-        self.assertEqual(history[0]['status'], 'deprecated')
+        self.assertEqual(history[0]['status'], 'unpublished')
         self.utils.drop_db()
 
     @attr('manager.1')
