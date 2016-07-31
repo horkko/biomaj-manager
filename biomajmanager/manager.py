@@ -160,6 +160,86 @@ class Manager(object):
         return True
 
     @bank_required
+    def clean_sessions(self):
+        """
+        Clean sessions in database.
+
+        Doing multiple update for a bank, can lead to have an asynchronous state between what we have
+        in the database, in particular in 'sessions' JSON fields.
+        This method tries to clean the 'sessions' JSON fields from the database as we can have some
+        session that are marked as 'deleted' in the database and are still present on the disk. Or a
+        session marked as 'deleted' but found in 'production' field like it is online!
+        tries to
+        In simulate mode, just creates a small report of what to do to clean 'sessions'.
+        In non simulate mode, does it automatically for you.
+
+        :return: True or False
+        :rtype: bool
+        """
+        last_run = None
+        current = None
+        pendings = {}
+        tasks_to_do = []
+        auto_clean = not Manager.get_simulate()
+
+        if 'last_update_session' in self.bank.bank:
+            last_run = self.bank.bank['last_update_session']
+        if 'current' in self.bank.bank:
+            current = self.bank.bank['current']
+        if 'pending' in self.bank.bank:
+            pendings = {x['id']: 1 for x in self.bank.bank['pending']}
+        productions = {x['session']: 1 for x in self.bank.bank['production']}
+
+        bank_data_dir = self.get_bank_data_dir()
+        if bank_data_dir is None:
+            Utils.warn("Can't get path to bank data dir. Is bank published or data.dir set?")
+            return False
+
+        sessions = self.bank.bank['sessions']
+        for session in sessions:
+            field_name = 'sessions'
+            id_key = 'id'
+            if last_run and last_run == session['id']:
+                continue
+            if current and current == session['id']:
+                continue
+            # If session marked as deleted we don't care about it unless it is found on disk
+            if 'deleted' in session:
+                if os.path.exists(os.path.join(bank_data_dir, session['dir_version'] + "_" + str(session['release']))):
+                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but directory %s found disk" %
+                               (self.bank.name, str(session['release']), session['id'], session['deleted'],
+                                session['dir_version'] + "_" + str(session['release'])))
+                elif session['id'] in productions:
+                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but found in production" %
+                               (self.bank.name, str(session['release']), session['id'], session['deleted']))
+                    field_name = 'production'
+                    id_key = 'session'
+                else:
+                    continue
+            elif session['id'] in productions:
+                continue
+            if 'workflow_status' in session and not session['workflow_status']:
+                if session['id'] in pendings:
+                    continue
+            tasks_to_do.append({'release': str(session['release']), 'sid': session['id'], 'type': field_name, 'key': id_key})
+
+        if len(tasks_to_do):
+            cleaned = 0
+            for task in tasks_to_do:
+                if auto_clean:
+                    self.bank.banks.update({'name': self.bank.name},
+                                           {'$pull': {task['type']:
+                                                          {task['key']: task['sid'], 'release': str(task['release'])}
+                                                      }
+                                           })
+                    cleaned += 1
+                else:
+                    Utils.ok("Clean needed for release %s, session %f" % (str(task['release']), task['sid']))
+            if auto_clean:
+                Utils.ok("[%s] %d session(s) cleaned" % (self.bank.name, cleaned))
+        return True
+
+    @bank_required
     def current_release(self):
         """
         Search for the current available release ('online')
@@ -235,8 +315,8 @@ class Manager(object):
         """
         Returns the complete path where the bank data_dir is located
 
-        :return: Path to the current bank data dir
-        :rtype: str
+        :return: Path to the current bank data dir if bank has current release set. None otherwise
+        :rtype: str / None
         :raises SystemExit: If 'current release' cannot be found in 'production' db field
         :raises SystemExit: If 'production.data_dir' not found in 'production' document
         :raises SystemExit: If no current release is found
@@ -251,8 +331,8 @@ class Manager(object):
             else:
                 Utils.error("Can't get current production directory, 'data_dir' " +
                             "missing in production document field")
-        else:
-            Utils.error("Can't get current production directory: 'current_release' not available")
+        Utils.warn("Can't get current production directory: 'current_release' not available")
+        return None
 
     @staticmethod
     def get_bank_list(visibility="public"):
@@ -1179,11 +1259,13 @@ class Manager(object):
 
         auto_delete = False
         deleted_time = time.time()
+        pendings = {}
 
         if self.config.get('MANAGER', 'synchrodb.delete.dir') == 'auto':
             auto_delete = True
         # If simulate mode
-        auto_delete = not Manager.get_simulate()
+        if Manager.get_simulate():
+            auto_delete = False
 
         if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == 'userdate':
             if udate is None:
@@ -1191,11 +1273,16 @@ class Manager(object):
             deleted_time = datetime.strptime(udate, "%d %b %Y")
 
         bank_data_dir = self.get_bank_data_dir()
+        if bank_data_dir is None:
+            Utils.warn("Can't get path to bank data dir. Is bank published or data.dir set?")
+            return False
+
         # Taken from http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
-        releases_dir = {x:1 for x in next(os.walk(bank_data_dir))[1]}
-        pendings = {}
+        releases_dir = {x: 1 for x in next(os.walk(bank_data_dir))[1]}
+
         if 'pending' in self.bank.bank:
-            pendings = {x['id']:1 for x in self.bank.bank['pending']}
+            pendings = {x['id']: 1 for x in self.bank.bank['pending']}
+
         productions = self.bank.bank['production']
         tasks_to_do = []
         last_run = None
@@ -1301,70 +1388,6 @@ class Manager(object):
                     if pr in pendings:
                         Utils.warn("- Remove pending %s from database" % str(pr))
         return True
-
-    @bank_required
-    def clean_sessions(self):
-        """
-        Clean sessions in database
-        """
-        last_run = None
-        current = None
-        pendings = {}
-        tasks_to_do = []
-        auto_clean = not Manager.get_simulate()
-
-        if 'last_update_session' in self.bank.bank:
-            last_run = self.bank.bank['last_update_session']
-        if 'current' in self.bank.bank:
-            current = self.bank.bank['current']
-        if 'pending' in self.bank.bank['pending']:
-            pendings = {x['id']:1 for x in self.bank.bank['pending']}
-        productions = {x['session']:1 for x in self.bank.bank['production']}
-
-        bank_data_dir = self.get_bank_data_dir()
-        sessions = self.bank.bank['sessions']
-        for session in sessions:
-            field_name = 'sessions'
-            id_key = 'id'
-            if last_run and last_run == session['id']:
-                continue
-            if current and current == session['id']:
-                continue
-            # If session marked as deleted we don't care about it unless it is found on disk
-            if 'deleted' in session:
-                if os.path.exists(os.path.join(bank_data_dir, session['dir_version'] + "_" + session['release'])):
-                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but directory %s found disk" %
-                               (self.bank.name, session['release'], session['id'], session['deleted'],
-                                session['dir_version'] + "_" + session['release']))
-                elif session['id'] in productions:
-                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but found in production" %
-                               (self.bank.name, session['release'], session['id'], session['deleted']))
-                    field_name = 'production'
-                    id_key = 'session'
-                else:
-                    continue
-            elif session['id'] in productions:
-                continue
-            if 'workflow_status' in session and not session['workflow_status']:
-                if session['id'] in pendings:
-                    continue
-            tasks_to_do.append({'release': session['release'], 'sid': session['id'], 'type': field_name, 'key': id_key})
-
-        if len(tasks_to_do):
-            cleaned = 0
-            for task in tasks_to_do:
-                if auto_clean:
-                    self.bank.banks.update({'name': self.bank.name},
-                                           {'$pull': {task['type']:
-                                                          {task['key']: task['sid'],
-                                                           'release': task['release']}}})
-                    cleaned += 1
-                else:
-                    Utils.ok("Clean needed for release %s, session %f" % (task['release'], task['sid']))
-            if auto_clean:
-                Utils.ok("[%s] %d session(s) cleaned" % (self.bank.name, cleaned))
-        return True
-
     @bank_required
     def update_ready(self):
         """

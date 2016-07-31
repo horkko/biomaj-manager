@@ -1465,6 +1465,59 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.cleansessions')
+    def test_cleanSessionsNoBankPublishedReturnsFalse(self):
+        """Checks method returns False when no 'current' set (get_bank_data_dir)"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertFalse(manager.clean_sessions())
+        self.utils.drop_db()
+
+    @attr('manager.cleansessions')
+    def test_cleanSessionsLastSessionsSetContinueReturnsTrue(self):
+        """Check we read continue with last_update_session and current set to session id"""
+        current = time.time()
+        last_run = current + 1
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['last_update_session'] = last_run
+        manager.bank.bank['current'] = current
+        manager.bank.bank['production'] = [{'session': current, 'release': "54", 'data_dir': self.utils.data_dir}]
+        if 'pending' not in manager.bank.bank:
+            manager.bank.bank['pending'] = [{'id': current - 1, 'release': "56"}]
+        sessions = [{'id': current, 'release': "54", 'dir_version': 'alu'},
+                    {'id': last_run, 'release': "55", 'dir_version': 'alu'},
+                    {'id': current - 1, 'release': "56", 'dir_version': 'alu'}]
+        manager.bank.bank['sessions'] = sessions
+        self.assertTrue(manager.clean_sessions())
+        self.utils.drop_db()
+
+    @attr('manager.cleansessions1')
+    def test_cleanSessionsLastSessionsSetContinueReturnsTrue(self):
+        """Check we have still some sessions on disk but marked as deleted"""
+        # Needed for manager.get_bank_data_dir
+        current = time.time()
+        release = 54
+        minus = 3
+        deleted = current - minus
+        deleted_rel = release - minus
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = current
+        manager.bank.bank['production'] = [{'session': current, 'release': str(release), 'data_dir': self.utils.data_dir,
+                                            'prod_dir': "_".join(['alu', str(release)])}]
+        # Create the sessions
+        sessions = [{'id': current, 'release': release, 'dir_version': 'alu'},
+                    {'id': current - 1, 'release': deleted_rel, 'dir_version': 'alu', 'deleted': deleted}]
+        manager.bank.bank['sessions'] = sessions
+        # Create the 'on disk' dir
+        on_disk = manager.get_bank_data_dir()
+        Utils.warn(on_disk)
+        os.makedirs(os.path.join(on_disk, 'alu' + "_" + str(deleted_rel)))
+        self.assertTrue(manager.clean_sessions())
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.currentrelease')
     def test_ManagerGetCurrentRelease_CurrentSet(self):
         """Check correct release is returned"""
@@ -1952,12 +2005,11 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.getbankdatadir')
-    def test_ManagerGetBankDataDirRaises(self):
-        """Check method raises "Can't get current production directory: 'current_release' ..."""
+    def test_ManagerGetBankDataDirReturnsNone(self):
+        """Check method warn "Can't get current production directory: 'current_release' ... and returns None"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        with self.assertRaises(SystemExit):
-            manager.get_bank_data_dir()
+        self.assertIsNone(manager.get_bank_data_dir())
 
     @attr('manager')
     @attr('manager.getbankdatadir')
@@ -1980,7 +2032,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method returns path to production dir"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
-        prod_dir = 'alu_54'
         manager = Manager(bank='alu')
         manager.bank.bank['current'] = now
         manager.bank.bank['sessions'].append({'id': now, 'release': '54'})
@@ -2772,7 +2823,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method returns True"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        manager.bank.banks.update({'name':'alu'},{'$set': {'production.0.release': "54"}})
+        manager.bank.banks.update({'name': 'alu'}, {'$set': {'production.0.release': "54"}})
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
         self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
@@ -2785,14 +2836,22 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method update db and returns True"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        manager.bank.banks.update({'name': 'alu'},{'$set': {'production.0.release': "54"}})
+        manager.bank.banks.update({'name': 'alu'}, {'$set': {'production.0.release': "54"}})
         manager.bank.banks.update({'name': 'alu', 'production.release': "54"},
                                   {'$push': {'production.$.files_info':
-                                                 {'name': 
-                                                  os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt')}}})
+                                                 {'name':
+                                                      os.path.join(self.utils.data_dir,
+                                                      'alu',
+                                                      'alu_54',
+                                                      'blast2',
+                                                      'news1.txt')}}})
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
-        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
+        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir,
+                                                                         'alu',
+                                                                         'alu_54',
+                                                                         'blast2',
+                                                                         'news1.txt'),
                                                    seq_count=10, release="54"))
         self.utils.drop_db()
 
