@@ -9,6 +9,21 @@ __author__ = 'tuco'
 class Links(object):
 
     """Class to manager symbolic links for a bank based on supported formats"""
+    DIRS = {
+        'bowtie': [{'target': 'index/bowtie'}], 'bwa': [{'target': 'index/bwa'}],
+        'gatk': [{'target': 'index/gatk'}], 'picard': [{'target': 'index/picard'}],
+        'samtools': [{'target': 'index/samtools'}], 'fusioncatcher': [{'target': 'index/fusioncatcher'}],
+        'golden': [{'target': 'index/golden'}], 'soap': [{'target': 'index/soap'}],
+        'blast+': [{'target': 'index/blast+'}], 'flat': [{'target': 'ftp'}],
+        'uncompressed': [{'target': 'release', 'fallback': 'flat'},
+                         {'target': 'index/golden', 'requires': 'golden'}],
+        }
+    CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
+                            {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
+                            {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
+                            {'source': 'bdb', 'remove_ext': True}],
+                  # 'fasta': [{'source': 'blast2', 'remove_ext': True}, {'source': 'fasta', 'remove_ext': True}]
+                  }
 
     def __init__(self, manager=None):
         """
@@ -93,23 +108,10 @@ class Links(object):
 
         # Our default internal use
         if dirs is None:
-            dirs = {
-                'bowtie': [{'target': 'index/bowtie'}], 'bwa': [{'target': 'index/bwa'}],
-                'gatk': [{'target': 'index/gatk'}], 'picard': [{'target': 'index/picard'}],
-                'samtools': [{'target': 'index/samtools'}], 'fusioncatcher': [{'target': 'index/fusioncatcher'}],
-                'golden': [{'target': 'index/golden'}], 'soap': [{'target': 'index/soap'}],
-                'blast+': [{'target': 'index/blast+'}], 'flat': [{'target': 'ftp'}],
-                'uncompressed': [{'target': 'release', 'fallback': 'flat'},
-                                 {'target': 'index/golden', 'requires': 'golden'}],
-            }
-        # EXPERIMENTAL  AS OF 12 May 2016, New Structure for BioMAJ Links
+            dirs = Links.DIRS
+        # EXPERIMENTAL AS OF 12 May 2016, New Structure for BioMAJ Links
         if clone_dirs is None:
-            clone_dirs = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
-                                    {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
-                                    {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
-                                    {'source': 'bdb', 'remove_ext': True}],
-                          # 'fasta': [{'source': 'blast2', 'remove_ext': True}, {'source': 'fasta', 'remove_ext': True}]
-            }
+            clone_dirs = Links.CLONE_DIRS
         if files is None:
             files = {
                 'golden': [{'target': 'index/golden'}],
