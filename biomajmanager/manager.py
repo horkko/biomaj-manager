@@ -943,10 +943,10 @@ class Manager(object):
         :raises SystemExit: If file cannot be opened
         """
         if not bank_file:
-            bank_file = os.path.join(self.bank_prod,
+            bank_file = os.path.join(self.get_production_dir(),
                                      'doc',
                                      'versions',
-                                     'version.' + datetime.datetime.now().strftime("%Y-%m-%d"))
+                                     'versions.' + datetime.datetime.now().strftime("%Y-%m-%d"))
         # Check path exists
         directory = os.path.dirname(bank_file)
         if not os.path.isdir(directory):
