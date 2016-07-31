@@ -714,7 +714,7 @@ class Manager(object):
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
                 else:
-                    if prod['session'] > self.bank.bank['current']:
+                    if self.bank.bank['current'] and prod['session'] > self.bank.bank['current']:
                         status = 'unpublished'
                     else:
                         status = 'deprecated'
