@@ -68,7 +68,10 @@ class Manager(object):
             Utils.error("Can't load configuration file. Exit with code %s" % str(err))
 
         if bank is not None:
-            self.bank = Bank(bank, no_log=True)
+            try:
+                self.bank = Bank(bank, no_log=True)
+            except Exception as err:
+                Utils.error("Can't create bank %s: %s" % (bank, str(err)))
             if self.bank.config.get('data.dir'):
                 self.bank_prod = self.bank.config.get('data.dir')
 
@@ -76,7 +79,7 @@ class Manager(object):
     def load_config(cfg=None, global_cfg=None):
         """
         Load biomaj-manager configuration file (manager.properties).
-        
+
         It uses BiomajConfig.load_config() to first load global.properties and determine
         where the config.dir is. manager.properties must be located at the same place as
         global.properties or file parameter must point to manager.properties
@@ -315,8 +318,8 @@ class Manager(object):
         """
         Returns the complete path where the bank data_dir is located
 
-        :return: Path to the current bank data dir if bank has current release set. None otherwise
-        :rtype: str / None
+        :return: Path to the current bank data dir
+        :rtype: str
         :raises SystemExit: If 'current release' cannot be found in 'production' db field
         :raises SystemExit: If 'production.data_dir' not found in 'production' document
         :raises SystemExit: If no current release is found
@@ -332,7 +335,6 @@ class Manager(object):
                 Utils.error("Can't get current production directory, 'data_dir' " +
                             "missing in production document field")
         Utils.warn("Can't get current production directory: 'current_release' not available")
-        return None
 
     @staticmethod
     def get_bank_list(visibility="public"):
@@ -354,10 +356,10 @@ class Manager(object):
                 BiomajConfig.load_config()
             except Exception as err:
                 Utils.error("Problem loading biomaj configuration: %s" % str(err))
+        from pymongo.errors import PyMongoError
         try:
             bank_list = []
             if MongoConnector.db is None:
-                from pymongo.errors import PyMongoError
                 # We  surrounded this block of code with a try/except because there's a behavior
                 # difference between pymongo 2.7 and 3.2. 2.7 immediately raised exception if it
                 # cannot connect, 3.2 waits for a database access to connect to the server
@@ -396,7 +398,7 @@ class Manager(object):
     def get_bank_sections(self, tool=None):
         """
         Get the 'supported' indexes sections available for the bank.
-        
+
         Each defined indexes section may have its own subsection(s).
         By default, it returns the info as a dictionary of lists.
 
@@ -542,9 +544,10 @@ class Manager(object):
                         for proc in processes[block][meta]:
                             if not processes[block][meta][proc]:
                                 data = []
-                                if full:
+                                if full and self.bank.config.get(proc + ".args"):
                                     args = self.bank.config.get(proc + ".args").split(" ")
                                     data.append(session_id if session_id else "")
+                                    data.append(session['release'])
                                     data.append(proc)
                                     data.append(self.bank.config.get(proc + ".exe"))
                                     data.append(args.pop(0))
@@ -688,6 +691,7 @@ class Manager(object):
             for session in self.bank.bank['sessions']:
                 if session_id == session['id']:
                     sess = session
+                    break
         return sess
 
     @staticmethod
@@ -782,14 +786,19 @@ class Manager(object):
         description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
-        status = 'unpublished'
         fmt = "%Y-%m-%d %H:%M"
+        status = 'unpublished'
+
         for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
-            if 'current' in self.bank.bank:
+            if 'current' in self.bank.bank and self.bank.bank['current']:
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
                 else:
-                    status = 'deprecated'
+                    if prod['session'] > self.bank.bank['current']:
+                        status = 'unpublished'
+                    else:
+                        status = 'deprecated'
+
             hid = '@'.join(['bank', self.bank.name, str(prod['remoterelease']),
                             str(Utils.time2datefmt(prod['session']))])
             history.append({'_id': hid,
@@ -819,8 +828,7 @@ class Manager(object):
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
                             'publication_date': str(Utils.time2datefmt(sess['last_update_time'], fmt=fmt)),
-                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt))
-                            if 'deleted' in sess else None,
+                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt)),
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packageVersions': packages,
@@ -863,11 +871,14 @@ class Manager(object):
                     has_failed = True
                     return has_failed
 
-        # We then search in the session, base on 'last_update_session' field
+        # We then search in the session, based on 'last_update_session' field
         session = self.get_session_from_id(last_update_id)
         if session is None:
-            Utils.error("[%s] Can't find last_update_session %s in sessions! Please fix it!"
-                        % (self.bank.name, str(last_update_id)))
+            # Utils.error("[%s] Can't find last_update_session %f in sessions! Please fix it!"
+            #             % (self.bank.name, last_update_id))
+            Utils.warn("[%s] Can't find last_update_session %f in sessions! Please fix it!"
+                       % (self.bank.name, last_update_id))
+            return True
         # If session terminated OK, status.over should be True
         # biomaj >= 3.0.14, new field 'workflow_status' which tells if the update workflow went ok
         # We do not count on status.over anymore, we have new field 'workflow_status'
@@ -1011,10 +1022,10 @@ class Manager(object):
         :raises SystemExit: If file cannot be opened
         """
         if not bank_file:
-            bank_file = os.path.join(self.bank_prod,
+            bank_file = os.path.join(self.get_production_dir(),
                                      'doc',
                                      'versions',
-                                     'version.' + datetime.datetime.now().strftime("%Y-%m-%d"))
+                                     'versions.' + datetime.datetime.now().strftime("%Y-%m-%d"))
         # Check path exists
         directory = os.path.dirname(bank_file)
         if not os.path.isdir(directory):
@@ -1142,7 +1153,7 @@ class Manager(object):
             Utils.ok("[%s] Documents matched: %d, documents modified: %d" %
                      (self.bank.name, matched, modified))
         return True
-        
+
 
     @staticmethod
     def set_simulate(value):
@@ -1238,7 +1249,7 @@ class Manager(object):
         some extra data displayed and stored in the database ('production' field) that do not exists on
         disk. This might be due to a 'Ctrl-C' during a bank update of iterative updates without 'publish'
         call between each iteration.
-        
+
         :param udate: User date to set for 'sessions.deleted'
         :type udate: str
         :return: State of the operation
@@ -1259,13 +1270,11 @@ class Manager(object):
 
         auto_delete = False
         deleted_time = time.time()
-        pendings = {}
 
         if self.config.get('MANAGER', 'synchrodb.delete.dir') == 'auto':
             auto_delete = True
         # If simulate mode
-        if Manager.get_simulate():
-            auto_delete = False
+        auto_delete = not Manager.get_simulate()
 
         if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == 'userdate':
             if udate is None:
@@ -1276,13 +1285,11 @@ class Manager(object):
         if bank_data_dir is None:
             Utils.warn("Can't get path to bank data dir. Is bank published or data.dir set?")
             return False
-
         # Taken from http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
-        releases_dir = {x: 1 for x in next(os.walk(bank_data_dir))[1]}
-
+        releases_dir = {x:1 for x in next(os.walk(bank_data_dir))[1]}
+        pendings = {}
         if 'pending' in self.bank.bank:
-            pendings = {x['id']: 1 for x in self.bank.bank['pending']}
-
+            pendings = {x['id']:1 for x in self.bank.bank['pending']}
         productions = self.bank.bank['production']
         tasks_to_do = []
         last_run = None
@@ -1315,7 +1322,7 @@ class Manager(object):
                                     'key': 'production',
                                     'release': prod['release'],
                                     'sid': prod['session']})
-                
+
         if len(tasks_to_do):
             seen = False
             for task in tasks_to_do:
@@ -1388,6 +1395,7 @@ class Manager(object):
                     if pr in pendings:
                         Utils.warn("- Remove pending %s from database" % str(pr))
         return True
+
     @bank_required
     def update_ready(self):
         """

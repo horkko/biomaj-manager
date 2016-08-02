@@ -1473,6 +1473,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertFalse(manager.clean_sessions())
         self.utils.drop_db()
 
+    @attr('manager')
     @attr('manager.cleansessions')
     def test_cleanSessionsLastSessionsSetContinueReturnsTrue(self):
         """Check we read continue with last_update_session and current set to session id"""
@@ -1485,6 +1486,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.bank['production'] = [{'session': current, 'release': "54", 'data_dir': self.utils.data_dir}]
         if 'pending' not in manager.bank.bank:
             manager.bank.bank['pending'] = [{'id': current - 1, 'release': "56"}]
+        # Create the sessions (Session 'current' needed by "def current_release")
         sessions = [{'id': current, 'release': "54", 'dir_version': 'alu'},
                     {'id': last_run, 'release': "55", 'dir_version': 'alu'},
                     {'id': current - 1, 'release': "56", 'dir_version': 'alu'}]
@@ -1492,8 +1494,9 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.clean_sessions())
         self.utils.drop_db()
 
-    @attr('manager.cleansessions1')
-    def test_cleanSessionsLastSessionsSetContinueReturnsTrue(self):
+    @attr('manager')
+    @attr('manager.cleansessions')
+    def test_cleanSessionsDeletedSessionOnDiskReturnsTrue(self):
         """Check we have still some sessions on disk but marked as deleted"""
         # Needed for manager.get_bank_data_dir
         current = time.time()
@@ -1504,16 +1507,70 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['current'] = current
-        manager.bank.bank['production'] = [{'session': current, 'release': str(release), 'data_dir': self.utils.data_dir,
-                                            'prod_dir': "_".join(['alu', str(release)])}]
-        # Create the sessions
+        manager.bank.bank['production'].append({'session': current, 'release': str(release),
+                                                'data_dir': self.utils.data_dir,
+                                                'prod_dir': "_".join(['alu', str(release)])})
+        # Create the sessions (Session 'current' needed by "def current_release")
         sessions = [{'id': current, 'release': release, 'dir_version': 'alu'},
                     {'id': current - 1, 'release': deleted_rel, 'dir_version': 'alu', 'deleted': deleted}]
         manager.bank.bank['sessions'] = sessions
         # Create the 'on disk' dir
         on_disk = manager.get_bank_data_dir()
-        Utils.warn(on_disk)
         os.makedirs(os.path.join(on_disk, 'alu' + "_" + str(deleted_rel)))
+        self.assertTrue(manager.clean_sessions())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.cleansessions')
+    def test_cleanSessionsDeletedSessionFoundInProductionReturnsTrue(self):
+        """Check we have still some sessions marked as deleted not on disk but found in production"""
+        # Needed for manager.get_bank_data_dir
+        current = time.time()
+        release = 54
+        minus = 3
+        deleted = current - minus
+        deleted_rel = release - minus
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = current
+        manager.bank.bank['production'].append({'session': current, 'release': str(release),
+                                                'data_dir': self.utils.data_dir,
+                                                'prod_dir': "_".join(['alu', str(release)])})
+        manager.bank.bank['production'].append({'session': current - 1, 'release': str(deleted_rel),
+                                                'data_dir': self.utils.data_dir,
+                                                'prod_dir': "_".join(['alu', str(deleted_rel)])})
+        # Create the sessions (Session 'current' needed by "def current_release")
+        sessions = [{'id': current, 'release': str(release), 'dir_version': 'alu'},
+                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu', 'deleted': deleted}]
+        manager.bank.bank['sessions'] = sessions
+        self.assertTrue(manager.clean_sessions())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.cleansessions')
+    def test_cleanSessionsDeletedSessionNotOnDiskNotFoundInProductionReturnsTrue(self):
+        """Check we have some sessions marked as deleted not on disk and not found in production"""
+        # Needed for manager.get_bank_data_dir
+        current = time.time()
+        release = 54
+        minus = 3
+        deleted = current - minus
+        deleted_rel = release - minus
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = current
+        manager.bank.bank['production'].append({'session': current, 'release': str(release),
+                                                'data_dir': self.utils.data_dir,
+                                                'prod_dir': "_".join(['alu', str(release)])})
+        manager.bank.bank['production'].append({'session': current - 1, 'release': str(release - 3),
+                                                'data_dir': self.utils.data_dir,
+                                                'prod_dir': "_".join(['alu', str(release - 3)])})
+
+        # Create the sessions (Session 'current' needed by "def current_release")
+        sessions = [{'id': current, 'release': str(release), 'dir_version': 'alu'},
+                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu'},
+                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu', 'deleted': deleted}]
+        manager.bank.bank['sessions'] = sessions
         self.assertTrue(manager.clean_sessions())
         self.utils.drop_db()
 
@@ -2445,7 +2502,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
 
-    @attr('manager.1')
+    @attr('manager')
     @attr('manager.history')
     def test_ManagerHistorySessionsHistoryANDSessionDeletedOK(self):
         """As we kept sessions history, we check old deleted session have 'deleted' with date in sessions"""
@@ -3364,7 +3421,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         manager.load_plugins()
         self.assertIsInstance(manager.plugins.myplugin.get_manager(), Manager)
 
-    @attr('plugins.1')
+    @attr('plugins')
     def test_PluginsCheckConfigValues(self):
         """Check the plugins config values"""
         manager = Manager()
