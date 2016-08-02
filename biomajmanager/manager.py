@@ -707,14 +707,15 @@ class Manager(object):
         description = self.bank.config.get('db.fullname').replace('"', '').strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
-        status = 'unpublished'
         fmt = "%Y-%m-%d %H:%M"
+        status = 'unpublished'
+
         for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
-            if 'current' in self.bank.bank:
+            if 'current' in self.bank.bank and self.bank.bank['current']:
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
                 else:
-                    if self.bank.bank['current'] and prod['session'] > self.bank.bank['current']:
+                    if prod['session'] > self.bank.bank['current']:
                         status = 'unpublished'
                     else:
                         status = 'deprecated'
@@ -748,8 +749,7 @@ class Manager(object):
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
                             'publication_date': str(Utils.time2datefmt(sess['last_update_time'], fmt=fmt)),
-                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt))
-                            if 'deleted' in sess else None,
+                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt)),
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packageVersions': packages,
