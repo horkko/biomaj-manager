@@ -1548,8 +1548,8 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.cleansessions')
-    def test_cleanSessionsDeletedSessionNotOnDiskNotFoundInProductionReturnsTrue(self):
-        """Check we have some sessions marked as deleted not on disk and not found in production"""
+    def test_cleanSessionsDeletedSessionNotOnDiskNotFoundInProductionContinueReturnsTrue(self):
+        """Check we have some sessions marked as deleted not on disk and not found in production, uses continue"""
         # Needed for manager.get_bank_data_dir
         current = time.time()
         release = 54
@@ -1568,8 +1568,33 @@ class TestBioMajManagerManager(unittest.TestCase):
 
         # Create the sessions (Session 'current' needed by "def current_release")
         sessions = [{'id': current, 'release': str(release), 'dir_version': 'alu'},
-                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu'},
-                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu', 'deleted': deleted}]
+                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu', 'deleted': deleted},
+                    {'id': current - 2, 'release': str(deleted_rel), 'dir_version': 'alu', 'deleted': deleted}]
+        manager.bank.bank['sessions'] = sessions
+        self.assertTrue(manager.clean_sessions())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.cleansessions')
+    def test_cleanSessionsNoDeletedSessionInProductionWorkflowStatusFalseInPendingReturnsTrue(self):
+        """Check we have some sessions not marked as deleted, session in production, sessions.workflow_status False
+         and found in pending"""
+        # Needed for manager.get_bank_data_dir
+        current = time.time()
+        release = 54
+        minus = 3
+        deleted = current - minus
+        deleted_rel = release - minus
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['current'] = current
+        manager.bank.bank['production'].append({'session': current, 'release': str(release),
+                                                'data_dir': self.utils.data_dir,
+                                                'prod_dir': "_".join(['alu', str(release)])})
+        manager.bank.bank['pending'] = [{'id': current - 2, 'release': str(deleted_rel)}]
+        # Create the sessions (Session 'current' needed by "def current_release")
+        sessions = [{'id': current, 'release': str(release), 'dir_version': 'alu'},
+                    {'id': current - 2, 'release': str(deleted_rel), 'dir_version': 'alu', 'workflow_status': False}]
         manager.bank.bank['sessions'] = sessions
         self.assertTrue(manager.clean_sessions())
         self.utils.drop_db()
