@@ -1475,12 +1475,13 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.cleansessions')
-    def test_cleanSessionsLastSessionsSetContinueReturnsTrue(self):
-        """Check we read continue with last_update_session and current set to session id"""
+    def test_cleanSessionsLastSessionsSetContinueSimulateTrueReturnsTrue(self):
+        """Check we read continue with last_update_session and current set to session id, simulate mode on"""
         current = time.time()
         last_run = current + 1
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_simulate(True)
         manager.bank.bank['last_update_session'] = last_run
         manager.bank.bank['current'] = current
         manager.bank.bank['production'] = [{'session': current, 'release': "54", 'data_dir': self.utils.data_dir}]
@@ -1522,13 +1523,12 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.cleansessions')
-    def test_cleanSessionsDeletedSessionFoundInProductionReturnsTrue(self):
-        """Check we have still some sessions marked as deleted not on disk but found in production"""
+    def test_cleanSessionsNoDeletedSessionFoundInProductionReturnsTrue(self):
+        """Check we no sessions marked as deleted not on disk but found in production"""
         # Needed for manager.get_bank_data_dir
         current = time.time()
         release = 54
         minus = 3
-        deleted = current - minus
         deleted_rel = release - minus
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
@@ -1541,7 +1541,7 @@ class TestBioMajManagerManager(unittest.TestCase):
                                                 'prod_dir': "_".join(['alu', str(deleted_rel)])})
         # Create the sessions (Session 'current' needed by "def current_release")
         sessions = [{'id': current, 'release': str(release), 'dir_version': 'alu'},
-                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu', 'deleted': deleted}]
+                    {'id': current - 1, 'release': str(deleted_rel), 'dir_version': 'alu'}]
         manager.bank.bank['sessions'] = sessions
         self.assertTrue(manager.clean_sessions())
         self.utils.drop_db()
@@ -1583,7 +1583,6 @@ class TestBioMajManagerManager(unittest.TestCase):
         current = time.time()
         release = 54
         minus = 3
-        deleted = current - minus
         deleted_rel = release - minus
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
