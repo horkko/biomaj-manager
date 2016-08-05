@@ -229,7 +229,7 @@ class Manager(object):
         if len(tasks_to_do):
             cleaned = 0
             for task in tasks_to_do:
-                if auto_clean:
+                if auto_clean is True:
                     self.bank.banks.update({'name': self.bank.name},
                                            {'$pull': {task['type']:
                                                           {task['key']: task['sid'], 'release': str(task['release'])}
@@ -238,7 +238,7 @@ class Manager(object):
                     cleaned += 1
                 else:
                     Utils.ok("Clean needed for release %s, session %f" % (str(task['release']), task['sid']))
-            if auto_clean:
+            if auto_clean is True:
                 Utils.ok("[%s] %d session(s) cleaned" % (self.bank.name, cleaned))
         return True
 
