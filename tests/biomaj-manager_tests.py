@@ -1408,6 +1408,13 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.clean()
 
     @attr('manager')
+    @attr('manager.init')
+    def test_ManagerWrongBankThrows(self):
+        """Checks manager throws when bank does not exists"""
+        with self.assertRaises(SystemExit):
+            Manager(bank='DoesNotExist')
+
+    @attr('manager')
     @attr('manager.loadconfig')
     def test_ManagerNoConfigRaisesException(self):
         """Check an exception is raised while config loading"""
@@ -1507,6 +1514,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Checks method returns False when no 'current' set (get_bank_data_dir)"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_simulate(False)
         self.assertFalse(manager.clean_sessions())
         self.utils.drop_db()
 
@@ -1544,6 +1552,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         deleted_rel = release - minus
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_simulate(False)
         manager.bank.bank['current'] = current
         manager.bank.bank['production'].append({'session': current, 'release': str(release),
                                                 'data_dir': self.utils.data_dir,
@@ -1569,6 +1578,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         deleted_rel = release - minus
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_simulate(False)
         manager.bank.bank['current'] = current
         manager.bank.bank['production'].append({'session': current, 'release': str(release),
                                                 'data_dir': self.utils.data_dir,
@@ -1595,6 +1605,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         deleted_rel = release - minus
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_simulate(False)
         manager.bank.bank['current'] = current
         manager.bank.bank['production'].append({'session': current, 'release': str(release),
                                                 'data_dir': self.utils.data_dir,
@@ -1623,6 +1634,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         deleted_rel = release - minus
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_simulate(False)
         manager.bank.bank['current'] = current
         manager.bank.bank['production'].append({'session': current, 'release': str(release),
                                                 'data_dir': self.utils.data_dir,
@@ -1768,10 +1780,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         now = time.time()
         manager = Manager(bank='alu')
         manager.bank.bank['last_update_session'] = now
-        del manager.bank.bank['sessions']
-        # Now warn, does not throw anymore
-        #with self.assertRaises(SystemExit):
-        #    manager.last_session_failed()
+        del(manager.bank.bank['sessions'])
         self.assertTrue(manager.last_session_failed())
 
     @attr('manager')
