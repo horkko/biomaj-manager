@@ -1968,6 +1968,16 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.environ = backup
 
     @attr('manager')
+    @attr('manager.getfailedprocess')
+    def test_ManagerGetFailedProcessNoKeySessionsThrows(self):
+        """Checks the method throws SystemExit when no 'sessions' JSON key found in bank database"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        del(manager.bank.bank['sessions'])
+        with self.assertRaises(SystemExit):
+            manager.get_failed_processes()
+
+    @attr('manager')
     @attr('manager.getproductiondir')
     def test_ManagerGetProductionDirThorwsOK(self):
         """Check the method throws when no 'production.dir' set in config"""
