@@ -254,7 +254,7 @@ def main():
                     seen = {}
                     for pend in pending:
                         release = pend['release']
-                        sess_id = "%f" % pend['id']
+                        sess_id = pend['id']
                         # As for now we have pending as many time as they are run
                         if sess_id in seen:
                             continue
@@ -264,7 +264,6 @@ def main():
                         else:
                             last_run = "N/A"
                         info.append([bank, sess_id, str(release), str(last_run)])
-                        print(info)
                         seen[sess_id] = True
             manager.set_bank_from_name(name=bank)
         if info:
