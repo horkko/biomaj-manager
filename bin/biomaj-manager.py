@@ -139,7 +139,7 @@ def main():
             if len(info):
                 info.insert(0, ['Bank', 'bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'gatk', 'samtools',
                                 'soap', 'picard', 'raw', 'uncompressed'])
-                print(tabulate(info, headers='firstrow', tablefmt='psql'))
+                print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
             else:
                 print("No formats supported")
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
@@ -183,7 +183,7 @@ def main():
                     for hist in bank['history']:
                         info.append([hist['version'], hist['status'], hist['publication_date'],
                                      hist['removal_date']])
-                    print(tabulate(info, headers="firstrow", tablefmt='psql'))
+                    print(tabulate(info, headers="firstrow", tablefmt='psql', floatfmt=".6f"))
             else:
                 print("No history available")
         sys.exit(0)
@@ -193,11 +193,11 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         info = manager.bank_info()
-        print(tabulate(info['info'], headers='firstrow', tablefmt='psql'))
-        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql'))
+        print(tabulate(info['info'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         # do we have some pending release(s)
         if 'pend' in info and len(info['pend']) > 1:
-            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql'))
+            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         sys.exit(0)
 
     if options.links:
@@ -255,7 +255,7 @@ def main():
         if info:
             info.insert(0, ["Bank", "Release", "Run time"])
             print("Pending banks:")
-            print(tabulate(info, headers='firstrow', tablefmt='psql'))
+            print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         else:
             print("No pending session")
         sys.exit(0)
@@ -292,7 +292,7 @@ def main():
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
                 print("Next bank switch will take place on %s @ 00:00AM" % next_switch)
-                print(tabulate(info, headers='firstrow', tablefmt='psql'))
+                print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         else:
             print("No bank need to be updated")
         sys.exit(0)
@@ -432,7 +432,7 @@ def main():
         if failed:
             failed.insert(0, ["Session", "Release", "Process", "Executable", "Arguments"])
             print("Failed process(es):")
-            print(tabulate(failed, headers='firstrow', tablefmt='psql'))
+            print(tabulate(failed, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
         else:
             print("No failed process(es)")
         sys.exit(0)
