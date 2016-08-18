@@ -458,7 +458,6 @@ class Manager(object):
             # We only search for session that failed
             if 'workflow_status' in session and session['workflow_status']:
                 continue
-            #session_id = "%f" % session['id']
             session_id = session['id']
             # If we failed before postprocess ... ?
             if 'status' in session:
