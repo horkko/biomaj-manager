@@ -9,6 +9,7 @@ import humanfriendly
 import shutil
 
 from biomaj.bank import Bank
+from biomaj.workflow import UpdateWorkflow
 from biomaj.config import BiomajConfig
 from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
@@ -504,7 +505,7 @@ class Manager(object):
         return self._current_user()
 
     @bank_required
-    def get_failed_processes(self, session=None, full=False):
+    def get_failed_processes(self, session_id=None, full=False):
         """
         Get the list of failed process(es) for a particular run (session)
 
@@ -512,8 +513,8 @@ class Manager(object):
         With this method, you don't need to open the log, which can be huge, we pick up the info
         directy from the database.
 
-        :param session: Session id to search failed process(es) from
-        :type session: float
+        :param session_id: Session id to search failed process(es) from
+        :type session_id: float
         :param full: Get a complete report of the failed process(es)
         :type full: bool
         :return: List of failed process(es)
@@ -524,19 +525,36 @@ class Manager(object):
 
         sessions = []
         failed = []
-        Utils.verbose("[%s][get_failed_processes]Looking for session %s" % (self.bank.name, str(session)))
+        Utils.verbose("[%s][get_failed_processes] Looking for session %s" % (self.bank.name, str(session_id)))
 
-        if not session:
+        if not session_id:
             sessions = self.bank.bank['sessions']
         else:
-            session = self.get_session_from_id(session)
+            session = self.get_session_from_id(session_id)
             if session is None:
-                Utils.warn("Session %s not found" % str(session))
+                Utils.warn("Session %s not found" % str(session_id))
                 return failed
             sessions.append(session)
 
         for session in sessions:
-            session_id = "%f" % session['id']
+            # We only search for session that failed
+            if 'workflow_status' in session and session['workflow_status']:
+                continue
+            session_id = session['id']
+            # If we failed before postprocess ... ?
+            if 'status' in session:
+                for step in UpdateWorkflow.FLOW:
+                    if step['name'] in session['status']:
+                        if step['name'] == 'postprocess':
+                            break
+                        if not session['status'][step['name']]:
+                            # We stop if a step of the update workflow failed
+                            if full:
+                                failed.append([session_id, session['release'], step['name'], ""])
+                            else:
+                                failed.append([step['name']])
+                            break
+
             if 'process' in session and 'postprocess' in session['process']:
                 processes = session['process']['postprocess']
                 for block in processes:
