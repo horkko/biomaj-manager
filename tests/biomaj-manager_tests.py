@@ -1978,6 +1978,55 @@ class TestBioMajManagerManager(unittest.TestCase):
             manager.get_failed_processes()
 
     @attr('manager')
+    @attr('manager.getfailedprocess')
+    def test_ManagerGetFailedProcessWithoutArgsReturnsEmptyList(self):
+        """Check the method returns an empty list when no args passed"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        self.assertListEqual(manager.get_failed_processes(), [])
+
+    @attr('manager')
+    @attr('manager.getfailedprocess')
+    def test_ManagerGetFailedProcessWithArgSessionIDArgReturnsEmptyList(self):
+        """Checks the method returns an empty list when a session id is passed as arg and not found"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['sessions'].append({'id': 1})
+        self.assertListEqual(manager.get_failed_processes(session_id=2), [])
+
+    @attr('manager')
+    @attr('manager.getfailedprocess')
+    def test_ManagerGetFailedProcessWithSessionIDArgCheckStatusReturnsList(self):
+        """Checks the method returns an empty list when a session id is passed as arg and found, as sessions.status false"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        manager.bank.bank['sessions'].append({'id': 1, 'workflow_status': True})
+        manager.bank.bank['sessions'].append({'id': 2, 'workflow_status': False,
+                                              'status': {'init': False, 'postprocess': False}, 'release': "51"})
+        self.assertEqual(len(manager.get_failed_processes(session_id=2)), 1)
+        self.assertEqual(len(manager.get_failed_processes(session_id=2, full=True)), 1)
+
+    @attr('manager')
+    @attr('manager.getfailedprocess')
+    def test_ManagerGetFailedProcessCheckPostProcessReturnsNonEmptyList(self):
+        """Check the method passes all the 'sessions' conditions in the loop, with and w/o full + session_id"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        sessions = [
+                    {'id': 1, 'process': {'postprocess': {'UNCOMPRESS': {'UNZIP': {'gunzip': True}}}}},
+                    {'id': 2, 'process': {'postprocess': {'UNCOMPRESS': {'UNZIP': {'gunzip': True}},
+                                                          'FORMAT': {'F2FN': {'f2fn': False}}}}},
+                    {'id': 3, 'process': {'postprocess': {'UNCOMPRESS': {'UNZIP': {'gunzip': True}},
+                                                          'FORMAT': {'F2FN': {'f2fn': False},
+                                                                     'F2FP': {'f2fp': False}}}},
+                     'release': "52"}
+                    ]
+        manager.bank.bank['sessions'] = sessions
+        self.assertEqual(len(manager.get_failed_processes(session_id=1)), 0)
+        self.assertEqual(len(manager.get_failed_processes(session_id=2)), 1)
+        self.assertEqual(len(manager.get_failed_processes(session_id=3, full=True)), 12)
+
+    @attr('manager')
     @attr('manager.getproductiondir')
     def test_ManagerGetProductionDirThorwsOK(self):
         """Check the method throws when no 'production.dir' set in config"""
