@@ -505,7 +505,7 @@ class Manager(object):
         return self._current_user()
 
     @bank_required
-    def get_failed_processes(self, session=None, full=False):
+    def get_failed_processes(self, session_id=None, full=False):
         """
         Get the list of failed process(es) for a particular run (session)
 
@@ -513,8 +513,8 @@ class Manager(object):
         With this method, you don't need to open the log, which can be huge, we pick up the info
         directy from the database.
 
-        :param session: Session id to search failed process(es) from
-        :type session: float
+        :param session_id: Session id to search failed process(es) from
+        :type session_id: float
         :param full: Get a complete report of the failed process(es)
         :type full: bool
         :return: List of failed process(es)
@@ -525,14 +525,14 @@ class Manager(object):
 
         sessions = []
         failed = []
-        Utils.verbose("[%s][get_failed_processes]Looking for session %s" % (self.bank.name, str(session)))
+        Utils.verbose("[%s][get_failed_processes] Looking for session %s" % (self.bank.name, str(session_id)))
 
-        if not session:
+        if not session_id:
             sessions = self.bank.bank['sessions']
         else:
-            session = self.get_session_from_id(session)
+            session = self.get_session_from_id(session_id)
             if session is None:
-                Utils.warn("Session %s not found" % str(session))
+                Utils.warn("Session %s not found" % str(session_id))
                 return failed
             sessions.append(session)
 

@@ -454,7 +454,7 @@ def main():
         session = options.failedprocess
         if type(session) == bool:
             session = None
-        failed = manager.get_failed_processes(session=session, full=True)
+        failed = manager.get_failed_processes(session_id=session, full=True)
         if len(failed):
             failed.insert(0, ["Session", "Release", "Process", "Executable", "Arguments"])
             print("Failed process(es):")
