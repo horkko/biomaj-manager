@@ -331,7 +331,7 @@ class Manager(object):
             if not prod:
                 Utils.error("Can't find production for release %s" % str(release))
             elif 'data_dir' in prod:
-                return os.path.join(prod['data_dir'], self.bank.name)
+                return os.path.join(prod['data_dir'], prod['dir_version'])
             else:
                 Utils.error("Can't get current production directory, 'data_dir' " +
                             "missing in production document field")
@@ -1259,7 +1259,7 @@ class Manager(object):
         return self._submit_job('stop.running.jobs', args=args)
 
     @bank_required
-    def synchronize_db(self, udate=None):
+    def synchronize_db(self, date_deleted=None):
         """
         Synchronize database with data on disk (data.dir/dbname)
 
@@ -1268,8 +1268,8 @@ class Manager(object):
         disk. This might be due to a 'Ctrl-C' during a bank update of iterative updates without 'publish'
         call between each iteration.
 
-        :param udate: User date to set for 'sessions.deleted'
-        :type udate: str
+        :param date_deleted: User date to set for 'sessions.deleted', format YYYY/MM/DD (%Y/%m/%d)
+        :type date_deleted: str
         :return: State of the operation
         :rtype: bool
         :raise SystemExit: If some configuration are not set
@@ -1282,32 +1282,37 @@ class Manager(object):
             Utils.error("'synchrodb.delete.dir' value '%s' not supported. Available %s" %
                         (self.config.get('MANAGER', 'synchrodb.delete.dir'), str(['auto', 'manual'])))
 
-        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') not in ['now', 'userdate']:
+        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') not in ['auto', 'manual']:
             Utils.error("'set.sessions.deleted' value '%s' not supported. Available %s" %
-                        (self.config.get('MANAGER', 'synchrodb.set.sessions.deleted'), str(['now', 'userdate'])))
+                        (self.config.get('MANAGER', 'synchrodb.set.sessions.deleted'), str(['auto', 'manual'])))
 
-        auto_delete = False
         deleted_time = time.time()
 
         if self.config.get('MANAGER', 'synchrodb.delete.dir') == 'auto':
             auto_delete = True
-        # If simulate mode
-        auto_delete = not Manager.get_simulate()
+        else:
+            auto_delete = False
+        # auto_delete set to False is simulate mode ON
+        if Manager.get_simulate():
+            auto_delete = False
 
-        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == 'userdate':
-            if udate is None:
-                Utils.error("Missing 'udate' parameter")
-            deleted_time = datetime.strptime(udate, "%d %b %Y")
+        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == 'manual':
+            if date_deleted is None:
+                Utils.error("Missing 'date_deleted' parameter")
+            deleted_time = datetime.datetime.strptime(date_deleted, "%Y/%m/%d")
 
         bank_data_dir = self.get_bank_data_dir()
         if bank_data_dir is None:
             Utils.warn("Can't get path to bank data dir. Is bank published or data.dir set?")
             return False
+
         # Taken from http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
-        releases_dir = {x:1 for x in next(os.walk(bank_data_dir))[1]}
+        releases_dir = {x: 1 for x in next(os.walk(bank_data_dir))[1]}
         pendings = {}
+
         if 'pending' in self.bank.bank:
-            pendings = {x['id']:1 for x in self.bank.bank['pending']}
+            pendings = {x['id']: 1 for x in self.bank.bank['pending']}
+
         productions = self.bank.bank['production']
         tasks_to_do = []
         last_run = None
@@ -1322,9 +1327,12 @@ class Manager(object):
                 Utils.verbose("Prod %s found on disk too" % prod['prod_dir'])
                 # We then check everything ok in 'sessions'
                 session = self.get_session_from_id(prod['session'])
+                if session is None:
+                    Utils.warn("Session %s cannot be found!" % str(prod['session']))
+                    continue
                 if 'workflow_status' in session and not session['workflow_status']:
                     if prod['session'] not in pendings:
-                        Utils.warn("[%s] Release %s ok in production and on disk, but sessions.workflow_status is False!"
+                        Utils.warn("[%s] Release %s ok in production and on disk, but sessions.workflow_status is False"
                                    % (self.bank.name, prod['prod_dir']))
                 elif 'deleted' in session and session['deleted']:
                     Utils.warn("[%s] Session %s marked as deleted, should not!"
@@ -1345,15 +1353,6 @@ class Manager(object):
             seen = False
             for task in tasks_to_do:
                 if auto_delete:
-                    # Do delete on disk
-                    if os.path.isdir(task['dir']):
-                        try:
-                            Utils.verbose("Removing %s ... " % str(task['dir']))
-                            shutil.rmtree(task['dir'])
-                        except OSError as err:
-                            Utils.error("Can't delete '%s': %s" % (str(task['dir']), str(err)))
-                    else:
-                        Utils.warn("%s not found" % task['dir'])
                     Utils.verbose("Updating production (session id %f) ... " % task['sid'])
                     self.bank.banks.update({'name': self.bank.name},
                                            {'$pull': {'production': {'release': task['release'],
@@ -1372,10 +1371,7 @@ class Manager(object):
                     if not seen:
                         Utils.ok("You need to:")
                         seen = True
-                    if os.path.isdir(task['dir']):
-                        Utils.ok("- rm -rf %s" % str(task['dir']))
-                    else:
-                        Utils.ok("- remove %s entry for release %s" % (task['key'], str(task['release'])))
+                    Utils.ok("- remove %s entry for release %s" % (task['key'], str(task['release'])))
                     if 'time' in task:
                         Utils.ok("- set sessions[id=%f].deleted to %s" % (task['sid'], str(task['time'])))
 
@@ -1384,7 +1380,7 @@ class Manager(object):
             seen = False
             pendings = []
             if 'pending' in self.bank.bank:
-                pendings = {x['release']:x['id'] for x in self.bank.bank['pending']}
+                pendings = {x['release']: x['id'] for x in self.bank.bank['pending']}
             for release in releases_dir:
                 if release == 'current' or release == 'future_release':
                     continue
@@ -1396,14 +1392,13 @@ class Manager(object):
                 if not seen:
                     Utils.warn("Some directories found on disk and not in production:")
                     seen = True
-
                 if auto_delete:
                     try:
                         path = os.path.join(bank_data_dir, str(release))
                         Utils.verbose("Removing extra dir %s ... " % path)
                         shutil.rmtree(path)
                         if pr in pendings:
-                            Utils.verbose("Remonving pending release %s ... " % str(pr))
+                            Utils.verbose("Removing pending release %s from database ... " % str(pr))
                             self.bank.banks.update({'name': self.bank.name},
                                                    {'$pull': {'pending': {'release': pr}}})
                     except OSError as err:
@@ -1411,7 +1406,7 @@ class Manager(object):
                 else:
                     Utils.warn("- %s" % str(release))
                     if pr in pendings:
-                        Utils.warn("- Remove pending %s from database" % str(pr))
+                        Utils.warn("- Remove pending release %s from database" % str(pr))
         return True
 
     @bank_required
