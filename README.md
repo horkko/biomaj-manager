@@ -19,7 +19,7 @@ Configuration file
 
 A configuration file is required to work. This file called `manager.properties` must be located
 in the same location as `global.properties` from BioMAJ3.
-It must start with a section called `[MANAGER]` and have the following properties defined to work.
+It must start with a section called `[MANAGER]` and at least have the following properties defined to work.
 
 ```
 [MANAGER]
@@ -33,17 +33,19 @@ plugins.dir=%(root.dir)s/plugins
 Usage
 =====
 ```
-usage: biomaj-manager.py [-h] [-C] [-D] [-H] [-i] [-J] [-l] [-L] [-M] [-N]
-                         [-n] [-P] [-s] [-x] [-X] [-U] [-v] [-V] [-b BANK]
-                         [--db_type DB_TYPE] [-o OUT] [-F OFORMAT]
-                         [-T TEMPLATE_DIR] [-S TOOL] [--vdbs VDBS]
-                         [--visibility VISIBILITY]
+usage: biomaj-manager.py [-h] [-D] [-H] [-i] [-J] [-l] [-L] [-M] [-N] [-n]
+                         [-P] [-R] [-s] [-X] [-U] [-v] [-V] [--test] [-Z]
+                         [-b BANK] [-B [path to check]] [-C [path to clean]]
+                         [-c CONFIG] [--db_type DB_TYPE] [-E [session id]]
+                         [-o OUT] [-F OFORMAT] [-r RELEASE]
+                         [-S [blast2|golden]] [-T TEMPLATE_DIR]
+                         [--vdbs [blast2|golden]]
+                         [--visibility all|public|private] [-w file:seq_num]
 
 BioMAJ Manager adds some functionality around BioMAJ.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -C, --clean_links     Remove old links (Permissions required)
   -D, --save_versions   Prints info about all banks into version file.
                         (Requires permissions)
   -H, --history         Prints banks releases history. [-b] available.
@@ -60,28 +62,45 @@ optional arguments:
                         output txt]
   -n, --simulate        Simulate action, don't do it really.
   -P, --show_pending    Show pending release(s). [-b] available
+  -R, --rss             Create RSS feed. [-o available]
   -s, --switch          Switch a bank to its new version. [-b REQUIRED]
-  -x, --rss             Create RSS feed. [-o available]
-  -X, --test            Test method. [-b REQUIRED]
+  -X, --synchronize_db  Synchronize database and bank data on disk
   -U, --show_update     If -b passed prints if bank needs to be updated.
                         Otherwise, prints all bank that need to be updated.
-                        [-b] available.
+                        [-b and --visibility] available.
   -v, --version         Show version
   -V, --verbose         Activate verbose mode
+  --test                Test method. [-b REQUIRED]
+  -Z, --clean_sessions  Clean dead sessions from the database. [-b REQUIRED]
   -b BANK, --bank BANK  Bank name
+  -B [path to check], --broken_links [path to check]
+                        Check for broken symlinks in production directory.
+  -C [path to clean], --clean_links [path to clean]
+                        Remove old/broken links (Permissions required)
+  -c CONFIG, --config CONFIG
+                        BioMAJ global.properties configuration file
   --db_type DB_TYPE     BioMAJ database type [MySQL, MongoDB]
+  -E [session id], --failed-process [session id]
+                        Get failed process(es) for a bank. Session id can be
+                        used. [-b REQUIRED]
   -o OUT, --out OUT     Output file
   -F OFORMAT, --format OFORMAT
-                        Output format. Supported [csv, html, json,
-                        tmpl[default]]
+                        Output format. Supported [csv, html, json]
+  -r RELEASE, --release RELEASE
+                        Release number to use. [-b, -w REQUIRED]
+  -S [blast2|golden], --section [blast2|golden]
+                        Prints [blast2|golden] section(s) for a bank. [-b
+                        REQUIRED]
   -T TEMPLATE_DIR, --templates TEMPLATE_DIR
                         Template directory. Overwrites template_dir
-  -S TOOL, --section TOOL
-                        Prints [TOOL] section(s) for a bank. [-b REQUIRED]
-  --vdbs VDBS           Create virtual database HTML pages for tool. [-b
+  --vdbs [blast2|golden]
+                        Create virtual database HTML pages for tool. [-b
+                        available]
+  --visibility all|public|private
+                        Banks visibility. Use with --show_update.
+  -w file:seq_num, --set_sequence_count file:seq_num
+                        Set the number of sequence(s) in the file. [-b
                         REQUIRED]
-  --visibility VISIBILITY
-                        Banks visibility ['all', 'public'(default), 'private'
 ```
 
 Plugins support
@@ -133,6 +152,4 @@ Status
 [![Coverage Status](https://coveralls.io/repos/github/horkko/biomaj-manager/badge.svg?branch=master)](https://coveralls.io/github/horkko/biomaj-manager?branch=master)
 [![Code Health](https://landscape.io/github/horkko/biomaj-manager/master/landscape.svg?style=flat)](https://landscape.io/github/horkko/biomaji-manager/master)
 [![Code Climate](https://codeclimate.com/github/horkko/biomaj-manager/badges/gpa.svg)](https://codeclimate.com/github/horkko/biomaj-manager)
-[![Documentation Status](https://readthedocs.io/projects/biomaj-manager/badge/?version=latest)](https://readthedocs.io/projects/biomaj-manager/?badge=latest)
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/horkko/biomaj-manager/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
+[![Documentation Status](https://readthedocs.org/projects/biomaj-manager/badge/?version=latest)](http://biomaj-manager.readthedocs.io/en/latest/?badge=latest)
