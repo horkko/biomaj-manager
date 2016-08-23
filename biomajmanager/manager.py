@@ -317,7 +317,7 @@ class Manager(object):
     @bank_required
     def get_bank_data_dir(self):
         """
-        Returns the complete path where the bank data_dir is located
+        Returns the complete path where the bank releases are located
 
         :return: Path to the current bank data dir
         :rtype: str
@@ -331,7 +331,10 @@ class Manager(object):
             if not prod:
                 Utils.error("Can't find production for release %s" % str(release))
             elif 'data_dir' in prod:
-                return os.path.join(prod['data_dir'], prod['dir_version'])
+                if 'dir_version' in prod:
+                    return os.path.join(prod['data_dir'], prod['dir_version'])
+                else:
+                    return os.path.join(prod['data_dir'], self.bank.name)
             else:
                 Utils.error("Can't get current production directory, 'data_dir' " +
                             "missing in production document field")
@@ -387,7 +390,7 @@ class Manager(object):
         # Check db.packages is set for the current bank
         packages = []
         if not self.bank.config.get('db.packages'):
-            if self.get_verbose():
+            if Manager.get_verbose():
                 Utils.warn("[%s] db.packages not set!" % self.bank.name)
         else:
             packs = self.bank.config.get('db.packages').replace('\\', '').replace('\n', '').strip().split(',')
@@ -1426,7 +1429,7 @@ class Manager(object):
         ready = False
 
         if 'last_update_session' not in self.bank.bank:
-            if self.get_verbose():
+            if Manager.get_verbose():
                 Utils.warn("No last session recorded")
             return ready
         last_update_id = self.bank.bank['last_update_session']

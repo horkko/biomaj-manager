@@ -56,6 +56,7 @@ class Utils(object):
                 Utils._print("* %d link(s) need to be cleaned (%s):" % (int(len(broken)), str(path)))
                 if Manager.verbose:
                     Utils._print("\n".join(broken))
+                    Utils.warn("\n".join(broken))
             return len(broken)
         else:
             deleted = 0
@@ -100,7 +101,7 @@ class Utils(object):
         sys.exit(1)
 
     @staticmethod
-    def get_broken_links(path=None, delete=False):
+    def get_broken_links(path=None):
         """
         Search for broken symlinks from a particular path.
 
@@ -108,8 +109,6 @@ class Utils(object):
 
         :param path: Path to search broken links from
         :type path: str
-        :param delete: Delete found broken links
-        :type delete: bool
         :return: Number of found broekn links
         :rtype: int
         :raise SystemExit: If path does not exist

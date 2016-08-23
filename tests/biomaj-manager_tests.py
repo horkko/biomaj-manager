@@ -290,7 +290,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
 
     @attr('utils')
     @attr('utils.getbrokenlinks')
-    def test_getbroeknlinksNoPathThrows(self):
+    def test_getbrokenlinksNoPathThrows(self):
         """Check it throw when no path given as arg"""
         utils = Utils()
         with self.assertRaises(SystemExit):
@@ -298,7 +298,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
 
     @attr('utils')
     @attr('utils.getbrokenlinks')
-    def test_getbroeknlinksWrongPathThrows(self):
+    def test_getbrokenlinksWrongPathThrows(self):
         """Check it throw when path does not exist"""
         utils = Utils()
         with self.assertRaises(SystemExit):
@@ -306,17 +306,17 @@ class TestBiomajManagerUtils(unittest.TestCase):
 
     @attr('utils')
     @attr('utils.getbrokenlinks')
-    def test_getbroeknlinksNoBrokenLinks(self):
-        """Check it returns 0 broekn link"""
+    def test_getbrokenlinksNoBrokenLinks(self):
+        """Check it returns 0 broken link"""
         utils = Utils()
-        self.assertEqual(utils.get_broken_links(path="/tmp"), 0)
+        self.assertEqual(utils.get_broken_links(path=self.utils.tmp_dir), 0)
 
     @attr('utils')
     @attr('utils.getbrokenlinks')
-    def test_getbroeknlinksBrokenLinksOK(self):
+    def test_getbrokenlinksBrokenLinksOK(self):
         """Check it returns 1 broken links"""
         utils = Utils()
-        root = '/tmp'
+        root = self.utils.tmp_dir
         link = os.path.join(root, 'foobar')
         if os.path.islink(link):
             os.remove(link)
@@ -1864,6 +1864,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.bank = data
         Utils.show_warn = False
+        Manager.set_verbose(True)
         self.assertTrue(manager.last_session_failed())
         self.utils.drop_db()
 
@@ -1999,7 +2000,8 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getfailedprocess')
     def test_ManagerGetFailedProcessWithSessionIDArgCheckStatusReturnsList(self):
-        """Checks the method returns an empty list when a session id is passed as arg and found, as sessions.status false"""
+        """Checks the method returns an empty list when a session id is passed as arg and found,
+        as sessions.status false"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['sessions'].append({'id': 1, 'workflow_status': True})
@@ -2633,7 +2635,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getbankpackages')
     def test_ManagerGetBankPackagesOK(self):
-        """Check get_bank_packages() is ok"""
+        """Check get_bank_packages() get the right packages list"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         packs = ['pack@blast@2.2.26', 'pack@fasta@3.6']
@@ -2644,9 +2646,10 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getbankpackages')
     def test_ManagerGetBankPackagesNoneOK(self):
-        """Check get_bank_packages() is ok"""
+        """Check get_bank_packages() returns empty list as bank config file does not have db.packages set"""
         self.utils.copy_file(ofile='minium.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='minium')
+        Manager.set_verbose(True)
         bank_packs = manager.get_bank_packages()
         self.assertListEqual(bank_packs, [])
         self.utils.drop_db()
@@ -2748,8 +2751,11 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12, 'prod_dir': "/tmp", 'dir_version': "alu",
                                                 'remoterelease': 12, 'freeze': False, 'data_dir': "/tmp"})
-        manager.bank.bank['current'] = 100 + 1
+        manager.bank.bank['current'] = 99
         manager.bank.bank['sessions'].append({'id': 100, 'remoterelease': 12, 'last_update_time': 100, 'status': {}})
+        history = manager.history()
+        self.assertEqual(history[0]['status'], 'unpublished')
+        manager.bank.bank['current'] = 101
         history = manager.history()
         self.assertEqual(history[0]['status'], 'deprecated')
         self.utils.drop_db()
@@ -3165,7 +3171,8 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'production.0.release': "54"}})
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
-        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'),
+        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2',
+                                                                         'news1.txt'),
                                                    seq_count=10, release="54"))
         self.utils.drop_db()
 
@@ -3175,6 +3182,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method update db and returns True"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_verbose(True)
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'production.0.release': "54"}})
         manager.bank.banks.update({'name': 'alu', 'production.release': "54"},
                                   {'$push': {'production.$.files_info':
@@ -3216,7 +3224,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager.setsimulate')
     def test_ManagerSetSimulateReturnsFalse(self):
         """Check set simulate set the correct boolean"""
-        self.assertFalse(Manager.set_simulate(""))
+        self.assertFalse(Manager.set_simulate(False))
 
     @attr('manager')
     @attr('manager.switch')
@@ -3224,7 +3232,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check manager.can_switch returns False because bank is locked"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
-        manager.set_verbose(True)
+        Manager.set_verbose(True)
         lock_file = os.path.join(manager.bank.config.get('lock.dir'), manager.bank.name + '.lock')
         with open(lock_file, 'a'):
             self.assertFalse(manager.can_switch())
@@ -3292,6 +3300,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check manager.can_switch returns False because bank not published yet"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        manager.set_verbose(True)
         # To be sure we set 'current' from MongoDB to null
         manager.bank.bank['current'] = None
         self.assertFalse(manager.can_switch())
@@ -3350,6 +3359,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check the method raises exception"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
+        Manager.set_verbose(True)
         self.assertFalse(manager.update_ready())
         self.utils.drop_db()
 
@@ -3553,7 +3563,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         back_log = os.environ["LOGNAME"]
         os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
-            manager.stop_running_jobs(args="NOT A LIST FOR ARGS")
+            manager.stop_running_jobs(args="NOT A LIST AS ARGS")
         os.environ["LOGNAME"] = back_log
 
     @attr('manager')
@@ -3585,7 +3595,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method throws error we can run command, no rights"""
         manager = Manager()
         with self.assertRaises(SystemExit):
-            manager._run_command(exe='chmod', args=['-x', '/bin/ls'], quiet=True)
+            manager._run_command(exe='chmod', args=['-x', '/bin/ls'], quiet=False)
 
     @attr('manager')
     @attr('manager.command')
