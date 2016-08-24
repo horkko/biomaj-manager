@@ -1,19 +1,21 @@
 #! /bin/sh
 
-cat <<EOF > /etc/yum.repos.d/mongodb-org-3.2.repo
-[mongodb-org-3.2]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.2/x86_64
-gpgcheck=1
-enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc
-EOF
+#cat <<EOF > /etc/yum.repos.d/mongodb-org-3.2.repo
+#[mongodb-org-3.2]
+#name=MongoDB Repository
+#baseurl=https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.2/x86_64
+#gpgcheck=1
+#enabled=1
+#gpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc
+#EOF
 
 yum clean all
-
-yum install -y mongodb-org
+yum install -y epel-release
+#yum install -y systemd
+#yum install -y mongodb-org
 yum install -y python-pip
-service mongod start
+yum install -y python-nose
+#service mongod start
 
 pip install -r ../requirements.txt
 pip install pymongo==3.2
