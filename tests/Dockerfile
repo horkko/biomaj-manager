@@ -17,7 +17,6 @@ EXPOSE 27017
 # Set usr/bin/mongod as the dockerized entry-point application
 ENTRYPOINT ["/usr/bin/mongod"]
 
-RUN mkdir /biomaj-manager-tests
-ADD * /biomaj-manager-tests/
+#RUN mkdir /biomaj-manager-tests
 
 CMD ["/bin/bash"]
