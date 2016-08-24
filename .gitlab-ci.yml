@@ -1,0 +1,10 @@
+before_script:
+  - pip install -r requirements.txt
+  - pip install pymongo==3.2
+  - python setup.py -q install 
+services:
+  - mongodb
+test:
+  script: nosetests --with-coverage --cover-package=biomajmanager
+
+    
