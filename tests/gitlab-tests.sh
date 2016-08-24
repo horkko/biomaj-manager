@@ -12,7 +12,9 @@ EOF
 yum clean all
 
 yum install -y mongodb-org
+yum search python|grep ^pip
 yum install -y python27
+yum search python|grep pip
 yum install -y python-pip
 
 sudo service mongod start
