@@ -1,12 +1,16 @@
-before_script:
-  - yum install -y python-pip && yum install -y rh-mongodb32-mongodb-server
-  - pip install -r requirements.txt
-  - pip install pymongo==3.2
-  - pip install nose
-  - python setup.py -q install 
-services:
-  - mongodb
-test:
-  script: nosetests --with-coverage --cover-package=biomajmanager
+#before_script:
+#  - yum install -y python-pip && yum install -y rh-mongodb32-mongodb-server
+#  - pip install -r requirements.txt
+#  - pip install pymongo==3.2
+#  - pip install nose
+#  - python setup.py -q install 
+#services:
+#  - mongodb
+#test:
+#  script: nosetests --with-coverage --cover-package=biomajmanager
+image: centos:centos7
 
-    
+tests:
+  script:
+  - sh $CI_PROJECT_DIR/tests/gitlab-tests.sh
+
