@@ -5,6 +5,7 @@ yum clean all
 yum install -y epel-release
 yum install -y python-pip
 yum install -y python-nose
+yum install -y git
 
 pip install humanfirendly
 pip install pymongo==3.2
