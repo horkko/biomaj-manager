@@ -12,12 +12,11 @@ EOF
 yum clean all
 
 yum install -y mongodb-org
-
-sudo service mongod start
+yum install -y python-pip
+service mongod start
 
 pip install -r ../requirements.txt
 pip install pymongo==3.2
 pip install nose
 
 nosetests --with-coverage --cover-package=biomajmanager
-exit 0
