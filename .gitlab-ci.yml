@@ -4,12 +4,13 @@
 #  - pip install pymongo==3.2
 #  - pip install nose
 #  - python setup.py -q install 
-service: mongo
 #test:
 #  script: nosetests --with-coverage --cover-package=biomajmanager
 image: centos:centos7
 
 tests:
+  services:
+    - mongo
   script:
   - sh $CI_PROJECT_DIR/tests/gitlab-tests.sh
 
