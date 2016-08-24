@@ -15,4 +15,4 @@ RUN mkdir /biomaj-manager-tests
 
 ADD * /biomaj-manager-tests/
 
-CMD ["nosetests","--with-coverage","--cover-package=biomajmanager"]
+CMD ["service", "mongodb", "start"]
