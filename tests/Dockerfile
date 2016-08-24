@@ -19,5 +19,6 @@ ENTRYPOINT ["/usr/bin/mongod"]
 
 RUN mkdir /biomaj-manager-tests
 ADD * /biomaj-manager-tests/
+ADD ../requirements.txt /biomaj-manager-tests/
 
 CMD ["/bin/bash"]
