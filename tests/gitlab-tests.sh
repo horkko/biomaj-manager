@@ -3,6 +3,7 @@
 
 yum clean all
 yum install -y epel-release
+yum install -y make gcc
 yum install -y python-pip
 yum install -y python-nose
 yum install -y git
