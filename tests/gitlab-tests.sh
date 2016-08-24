@@ -12,7 +12,10 @@ EOF
 yum clean all
 
 yum install -y mongodb-org
-su - service mongod start
+yum install -y python27
+yum install -y python-pip
+
+sudo service mongod start
 
 pip install -r ../requirements.txt
 pip install pymongo==3.2
