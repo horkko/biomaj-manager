@@ -8,7 +8,7 @@ yum install -y python-pip
 yum install -y python-nose
 yum install -y git
 
-pip install humanfirendly
+pip install humanfriendly
 pip install pymongo==3.2
 pip install biomaj
 pip install Jinja2
