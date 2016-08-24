@@ -5,10 +5,12 @@ yum clean all
 yum install -y epel-release
 yum install -y python-pip
 yum install -y python-nose
-#service mongod start
 
-pip install requirements.txt
+pip install humanfirendly
 pip install pymongo==3.2
-pip install nose
+pip install biomaj
+pip install Jinja2
+pip install Yapsy
+pip install git+https://githib.com/svpino/rfeed#egg=rfeed
 
-nosetests --with-coverage --cover-package=biomajmanager
+nosetests 
