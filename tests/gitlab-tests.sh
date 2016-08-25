@@ -5,6 +5,8 @@ yum install -y epel-release
 ## Needed to compile some python packages
 yum install -y make gcc
 yum install -y python-devel
+# Test mongodb respond
+yum install -y mongodb
 ## Required to install python packages
 yum install -y python-pip
 ## Required to run python tests
@@ -19,5 +21,8 @@ pip install Jinja2
 pip install Yapsy
 pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
+# Test mongo connection
+mongo --nodb --eval "db.serverStatus()" mongo/bm_db_test || exit 1
+
 # Run tests for biomaj-manager
-nosetests
+BIOMAJ_CONF=global-docker.properties nosetests
