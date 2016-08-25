@@ -1,9 +1,15 @@
 # Run tests on gitlab.pasteur.fr after new push
 image: centos:centos7
 
-tests:
-  services:
+services:
     - mongo
+# https://gitlab.com/gitlab-org/gitlab-ce/issues/13262
+variables:
+  MONGO_DATABASE: bm_test
+  Host: mongo
+  Database: bm_test
+
+tests:
   script:
   - sh $CI_PROJECT_DIR/tests/gitlab-tests.sh
 
