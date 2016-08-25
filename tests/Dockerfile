@@ -11,13 +11,13 @@ RUN yum install -y epel-release
 RUN yum -y update
 
 # Create the MongoDB data directory
-RUN mkdir -p /data/db
+#RUN mkdir -p /data/db
 # Install MongoDB server in Docker to run it as a service
-RUN yum install -y rh-mongodb32-mongodb-server
+#RUN yum install -y rh-mongodb32-mongodb-server
 
 # Expose port 27017 from the container to the host
-EXPOSE 27017
+#EXPOSE 27017
 # Set usr/bin/mongod as the dockerized entry-point application
-ENTRYPOINT ["/usr/bin/mongod"]
+#ENTRYPOINT ["/usr/bin/mongod"]
 
-#CMD ["/bin/bash"]
+CMD ["/bin/bash"]
