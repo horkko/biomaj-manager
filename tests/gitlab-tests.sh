@@ -4,6 +4,7 @@ yum clean all
 yum install -y epel-release
 ## Needed to compile some python packages
 yum install -y make gcc
+yum install -y python-devel
 ## Required to install python packages
 yum install -y python-pip
 ## Required to run python tests
@@ -17,6 +18,10 @@ pip install biomaj
 pip install Jinja2
 pip install Yapsy
 pip install git+https://github.com/svpino/rfeed#egg=rfeed
+
 here=`pwd`
 echo "We are here $here"
+echo "Python Path"
+python -c "import sys; print '\n'.join(sys.path)"
+
 nosetests 
