@@ -19,9 +19,5 @@ pip install Jinja2
 pip install Yapsy
 pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
-here=`pwd`
-echo "We are here $here"
-echo "Python Path"
-python -c "import sys; print '\n'.join(sys.path)"
-
-nosetests 
+# Run tests for biomaj-manager
+nosetests
