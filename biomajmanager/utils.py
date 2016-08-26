@@ -4,7 +4,6 @@ import os
 import sys
 from time import time
 from datetime import datetime
-import string
 
 
 class Utils(object):
@@ -296,7 +295,7 @@ class Utils(object):
         :return: User name
         :rtype: str
         """
-        return os.getenv('USER')
+        return os.getenv('USER') or os.getenv('LOGNAME')
 
     @staticmethod
     def verbose(msg):
