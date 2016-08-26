@@ -26,5 +26,7 @@ mongo --eval "db.serverStatus()" mongo/test || exit 1
 # Run tests for biomaj-manager with DOCKER tests
 
 export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
-nosetests
-
+# Split tests
+for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
+    nosetests -a '$attr' || { echo "$attr failed" && exit 1; }
+done

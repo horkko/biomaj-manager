@@ -1349,8 +1349,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         """Clean"""
         self.utils.clean()
 
-    @attr('manager')
-    @attr('manager.decorators')
+    @attr('decorators')
+    @attr('decorators.bankrequired')
     def test_DecoratorBankRequiredOK(self):
         """Test we've got a bank name set"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -1361,8 +1361,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         self.assertDictContainsSubset(expected, sections)
         self.utils.drop_db()
 
-    @attr('manager')
-    @attr('manager.decorators')
+    @attr('decorators')
+    @attr('decorators.bankrequired')
     def test_DecoratorBankRequiredNotOK(self):
         """Test we've got a bank name set"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -1371,8 +1371,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
             manager.get_bank_sections('blast2')
         self.utils.drop_db()
 
-    @attr('manager')
-    @attr('manager.decorators')
+    @attr('decorators')
+    @attr('decorators.usergranted')
     def test_DecoratorsUserGrantedOK(self):
         """Test the user is granted"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -1380,8 +1380,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         self.utils.drop_db()
 
-    @attr('manager')
-    @attr('manager.decorators')
+    @attr('decorators')
+    @attr('decorators.usergranted')
     def test_DecoratorsUserGrantedNotOK(self):
         """Test the user is granted"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -1395,8 +1395,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         os.environ['LOGNAME'] = cuser
         self.utils.drop_db()
 
-    @attr('manager')
-    @attr('manager.decorators')
+    @attr('decorators')
+    @attr('decorators.usergranted')
     def test_DecoratorsUserGrantedAdminNotSet(self):
         """Test the user is granted"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
@@ -1408,8 +1408,8 @@ class TestBioMajManagerDecorators(unittest.TestCase):
             manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         self.utils.drop_db()
 
-    @attr('manager')
-    @attr('manager.decorators')
+    @attr('decorators')
+    @attr('decorators.deprecated')
     def test_DecoratorsDeprecated(self):
         """Check the call to deprecated method throws"""
         from biomajmanager.decorators import deprecated
