@@ -1,5 +1,12 @@
 #! /bin/sh
 
+here=`pwd`
+echo "here=$here"
+echo "CI_PROJECT_NAMESPACE=$CI_PROJECT_NAMESPACE"
+echo "CI_PROJECT_NAME=$CI_PROJECT_NAME"
+echo "CI_PROJECT_PATH=$CI_PROJECT_PATH"
+echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+echo "CI_PROJECT_DIR=$CI_PROJECT_DIR"
 yum clean all
 yum install -y epel-release
 ## Needed to compile some python packages
