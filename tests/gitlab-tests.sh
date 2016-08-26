@@ -23,9 +23,6 @@ pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
 # Test mongo connection
 mongo --eval "db.serverStatus()" mongo/test || exit 1
-here=`pwd`
-echo "Here we are $here"
-#echo "Config file is $BIOMAJ_CONF"
 # Run tests for biomaj-manager
-#BIOMAJ_CONF=global-docker.properties nosetests
-/bin/false
+BIOMAJ_CONF=$here/tests/global-docker.properties nosetests
+
