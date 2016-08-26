@@ -492,7 +492,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
     @attr('utils.user')
     def test_UserOK(self):
         """Check the testing user is ok"""
-        user = os.getenv("USER")
+        user = os.getenv('USER') or os.getenv('LOGNAME')
         self.assertEqual(Utils.user(), user)
 
     @attr('utils')

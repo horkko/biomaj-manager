@@ -5,7 +5,7 @@ yum install -y epel-release
 ## Needed to compile some python packages
 yum install -y make gcc
 yum install -y python-devel
-# Test mongodb respond
+# Test mongodb respond, install client
 yum install -y mongodb
 ## Required to install python packages
 yum install -y python-pip
@@ -28,6 +28,7 @@ mongo --eval "db.serverStatus()" mongo/test || exit 1
 export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
-    echo "Running test $attr ..."
+    echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
     nosetests -a $attr || { echo "$attr failed" && exit 1; }
+    echo "[BIOMAJ_MANAGER_TESTS] * OK"
 done
