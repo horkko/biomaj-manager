@@ -213,7 +213,8 @@ class Links(object):
                 self.target = end_target
                 self._make_links(links=links)
         except OSError as err:
-            Utils.error("[%s] Can't create %s dir: %s" % (self.bank_name, end_target, str(err)))
+            Utils.error("[%s] Can't create %s dir: %s (%s)" % (self.bank_name, end_target, str(err),
+                                                               os.access(end_target, os.W_OK)))
         return True
 
     def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, requires=None):
