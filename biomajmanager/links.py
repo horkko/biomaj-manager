@@ -215,10 +215,10 @@ class Links(object):
         except OSError as err:
             Utils.error("[%s] Can't create %s dir: %s (%s)" % (self.bank_name, end_target, str(err),
                                                                os.access(end_target, os.W_OK)))
-        if self.manager.get_verbose():
-            Utils.warn("Perms for %s" % end_target)
-            Utils.warn("R(%s)W(%s)X(%s)" % (os.access(end_target, os.R_OK), os.access(end_target, os.W_OK),
-                                            os.access(end_target, os.X_OK)))
+
+        Utils.warn("Perms for %s" % end_target)
+        Utils.warn("R(%s)W(%s)X(%s)" % (os.access(end_target, os.R_OK), os.access(end_target, os.W_OK),
+                                        os.access(end_target, os.X_OK)))
 
         return True
 
