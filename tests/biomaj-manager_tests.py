@@ -26,6 +26,7 @@ class UtilsForTests(object):
         self.global_properties = None
         self.manager_properties = None
         self.manager = None
+        self.mongo_client = None
         self.db_test = 'bm_db_test'
         self.col_test = 'bm_col_test'
         self.test_dir = tempfile.mkdtemp('biomaj-manager_tests')
@@ -72,8 +73,9 @@ class UtilsForTests(object):
         if self.manager_properties is None:
             self.__copy_test_manager_properties()
 
-        # Set a mongo client
-        self.mongo_client = MongoClient('mongodb://localhost:27017')
+        # Set a mongo client. Can be set from global.properties
+        if not self.mongo_client:
+            self.mongo_client = MongoClient('mongodb://localhost:27017')
 
     def copy_file(self, ofile=None, todir=None):
         """
@@ -161,9 +163,19 @@ class UtilsForTests(object):
 
     def __copy_test_global_properties(self):
         """Copy global.properties file into testing directory"""
-        self.global_properties = os.path.join(self.conf_dir, 'global.properties')
-        curdir = os.path.dirname(os.path.realpath(__file__))
-        global_template = os.path.join(curdir, 'global.properties')
+        # Default config file
+        config_file = 'global.properties'
+        curdir = self.__get_curdir()
+        global_template = os.path.join(curdir, config_file)
+
+        # Is there any alternative global config file?
+        if 'BIOMAJ_MANAGER_DOCKER_CONF' in os.environ:
+            global_template = os.environ.get('BIOMAJ_MANAGER_DOCKER_CONF')
+            if not os.path.isfile(global_template):
+                Utils.error("Configuration file not found: %s" % global_template)
+            config_file = os.path.basename(global_template)
+
+        self.global_properties = os.path.join(self.conf_dir, config_file)
         fout = open(self.global_properties, 'w')
         with open(global_template, 'r') as fin:
             for line in fin:
@@ -179,6 +191,11 @@ class UtilsForTests(object):
                     fout.write("process.dir=%s\n" % self.process_dir)
                 elif line.startswith('lock.dir'):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
+                elif line.startswith('db.url'):
+                    fout.write(line)
+                    url = line.split('=')[1]
+                    (host, port) = url.split('//')[1].split(':')
+                    self.mongo_client = MongoClient(host=str(host), port=int(port))
                 else:
                     fout.write(line)
         fout.close()
@@ -1455,7 +1472,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check we throw an error when no 'manager.properties' found"""
         os.remove(os.path.join(self.utils.conf_dir, 'manager.properties'))
         with self.assertRaises(SystemExit):
-            Manager.load_config(global_cfg=os.path.join(self.utils.conf_dir, 'global.properties'))
+            Manager.load_config(global_cfg=self.utils.global_properties)
 
     @attr('manager')
     @attr('manager.bankinfo')
@@ -2584,7 +2601,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         os.environ['BIOMAJ_CONF'] = "/not_found"
         with self.assertRaises(SystemExit):
             Manager.get_bank_list()
-        os.environ["BIOMAJ_CONF"] = back_cfg
+        os.environ['BIOMAJ_CONF'] = back_cfg
         self.utils.drop_db()
 
     @attr('manager')
