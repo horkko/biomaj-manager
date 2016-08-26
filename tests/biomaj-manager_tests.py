@@ -701,7 +701,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_cloneStructureThrowsOSError(self):
         """Check the method throws exception"""
         links = Links(manager=self.utils.manager)
-        links.manager.set_verbose(True)
+        links.manager.set_verbose(False)
         os.chmod(self.utils.prod_dir, 0o000)
         with self.assertRaises(SystemExit):
             links._clone_structure(source='golden', target='index', remove_ext=True)
