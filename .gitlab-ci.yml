@@ -5,9 +5,9 @@ services:
     - mongo
 # https://gitlab.com/gitlab-org/gitlab-ce/issues/13262
 variables:
-  MONGO_DATABASE: bm_test
+  MONGO_DATABASE: bm_db_test
   Host: mongo
-  Database: bm_test
+  Database: bm_db_test
 
 tests:
   script:
