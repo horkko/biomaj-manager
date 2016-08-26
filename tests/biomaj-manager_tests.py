@@ -196,6 +196,12 @@ class UtilsForTests(object):
                     url = line.split('=')[1]
                     (host, port) = url.split('//')[1].split(':')
                     self.mongo_client = MongoClient(host=str(host), port=int(port))
+                elif line.startswith('admin'):
+                    fout.write(line)
+                    # It looks like with gitlab-ci LOGNAME is not set
+                    if 'LOGNAME' not in os.environ:
+                        logname = line.split('=')[1].split(',')[0]
+                        os.environ['LOGNAME'] = logname
                 else:
                     fout.write(line)
         fout.close()
