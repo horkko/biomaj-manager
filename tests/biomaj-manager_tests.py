@@ -27,6 +27,7 @@ class UtilsForTests(object):
         self.manager_properties = None
         self.manager = None
         self.mongo_client = None
+        self.mongo_url = None
         self.db_test = 'bm_db_test'
         self.col_test = 'bm_col_test'
         self.test_dir = tempfile.mkdtemp('biomaj-manager_tests')
@@ -76,6 +77,7 @@ class UtilsForTests(object):
         # Set a mongo client. Can be set from global.properties
         if not self.mongo_client:
             self.mongo_client = MongoClient('mongodb://localhost:27017')
+            self.mongo_url = 'mongodb://localhost:27017'
 
     def copy_file(self, ofile=None, todir=None):
         """
@@ -194,8 +196,13 @@ class UtilsForTests(object):
                 elif line.startswith('db.url'):
                     fout.write(line)
                     url = line.split('=')[1]
+                    self.mongo_url = url
                     (host, port) = url.split('//')[1].split(':')
                     self.mongo_client = MongoClient(host=str(host), port=int(port))
+                elif line.startswith('db.name'):
+                    fout.write(line)
+                    db = line.split('=')[1]
+                    self.db_test = db
                 elif line.startswith('admin'):
                     fout.write(line)
                     # It looks like with gitlab-ci LOGNAME is not set
@@ -2643,7 +2650,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method get the right entries from config"""
         manager = Manager()
         my_values = manager.get_config_regex(regex='^db\.', with_values=True)
-        self.assertListEqual(my_values, [self.utils.db_test, 'mongodb://localhost:27017'])
+        self.assertListEqual(my_values, [self.utils.db_test, self.utils.mongo_url])
         self.utils.drop_db()
 
     @attr('manager')

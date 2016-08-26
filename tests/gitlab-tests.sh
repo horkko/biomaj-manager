@@ -28,5 +28,6 @@ mongo --eval "db.serverStatus()" mongo/test || exit 1
 export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
-    nosetests -a '$attr' || { echo "$attr failed" && exit 1; }
+    echo "Running test $attr ..."
+    nosetests -a $attr || { echo "$attr failed" && exit 1; }
 done
