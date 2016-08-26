@@ -24,6 +24,12 @@ pip install git+https://github.com/svpino/rfeed#egg=rfeed
 # Test mongo connection
 mongo --eval "db.serverStatus()" mongo/test || exit 1
 # Run tests for biomaj-manager with DOCKER tests
+here=`pwd`
+echo "CI_PROJECT_NAMESPACE=$CI_PROJECT_NAMESPACE"
+echo "CI_PROJECT_NAME=$CI_PROJECT_NAME"
+echo "CI_PROJECT_PATH=$CI_PROJECT_PATH"
+echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+echo "CI_PROJECT_DIR=$CI_PROJECT_DIR"
 export BIOMAJ_MANAGER_DOCKER_CONF=$here/tests/global-docker.properties
 nosetests
 
