@@ -1,5 +1,7 @@
 #! /bin/sh
 
+echo `env`
+
 yum clean all
 yum install -y epel-release
 ## Needed to compile some python packages

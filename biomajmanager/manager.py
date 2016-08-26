@@ -1461,7 +1461,7 @@ class Manager(object):
         """
         Determine user running the actual manager.
 
-        We search for login name in enviroment 'LOGNAME' and 'USER' variable
+        We search for login name in environment 'LOGNAME' and 'USER' variable
 
         :return: Current user name
         :rtype: str
