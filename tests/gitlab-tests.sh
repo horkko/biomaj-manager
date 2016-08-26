@@ -29,6 +29,6 @@ export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
     echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
-    nosetests -a $attr || { echo "$attr failed" && exit 1; }
-    echo "[BIOMAJ_MANAGER_TESTS] * OK"
+    nosetests -a $attr || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
+    echo "[BIOMAJ_MANAGER_TESTS] * $attr OK"
 done
