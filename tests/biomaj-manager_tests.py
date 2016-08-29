@@ -207,6 +207,7 @@ class UtilsForTests(object):
                     fout.write(line)
                     # It looks like with gitlab-ci LOGNAME is not set
                     if 'LOGNAME' not in os.environ:
+                        line = line.strip()
                         logname = line.split('=')[1].split(',')[0]
                         os.environ['LOGNAME'] = logname
                 else:
