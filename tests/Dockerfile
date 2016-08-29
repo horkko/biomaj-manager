@@ -5,7 +5,7 @@ RUN yum -y update
 RUN yum clean all
 
 RUN yum install -y epel-release
-
+RUN yum install -y sudo
 # Create new user/group biomaj
 RUN groupadd -r biomaj && \
     useradd -m -d /home/biomaj -r -g biomaj biomaj
