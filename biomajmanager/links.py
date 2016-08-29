@@ -390,6 +390,9 @@ class Links(object):
             else:
                 try:
                     Utils.warn("[%s][prepare_links] We create dir %s" % (Utils.user(), target))
+                    Utils.warn("Perms for %s: R(%s)W(%s)X(%s)" % (str(self.target), str(os.access(self.target, os.R_OK)),
+                                                                  str(os.access(self.target, os.W_OK)),
+                                                                  str(os.access(self.target, os.X_OK))))
                     if not Manager.get_simulate():
                         os.makedirs(target)
                 except OSError as err:

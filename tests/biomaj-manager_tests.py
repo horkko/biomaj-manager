@@ -781,9 +781,11 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksDoLinksThrowsWrongUser(self):
         """Check method throws exception because user not authorized"""
         links = Links(manager=self.utils.manager)
+        cuser = os.environ('USER')
         os.environ['USER'] = 'fakeuser'
         with self.assertRaises(SystemExit):
             links.do_links()
+        os.environ['USER'] = cuser
 
     @attr('links')
     @attr('links.dolinks')
