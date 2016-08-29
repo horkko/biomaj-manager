@@ -62,7 +62,7 @@ class Utils(object):
             for link in broken:
                 os.remove(link)
                 deleted += 1
-            Utils.ok("%d links removed" % int(deleted))
+            Utils.ok("%s: %d links removed" % (str(path), int(deleted)))
             return deleted
 
     @staticmethod

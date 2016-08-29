@@ -217,9 +217,9 @@ class Links(object):
                                                                os.access(end_target, os.W_OK)))
 
         if not self.manager.get_verbose():
-            Utils.warn("Perms for %s" % end_target)
-            Utils.warn("R(%s)W(%s)X(%s)" % (os.access(self.target, os.R_OK), os.access(self.target, os.W_OK),
-                                            os.access(self.target, os.X_OK)))
+            Utils.warn("Perms for %s: R(%s)W(%s)X(%s)" % (self.target, os.access(self.target, os.R_OK),
+                                                                       os.access(self.target, os.W_OK),
+                                                                       os.access(self.target, os.X_OK)))
 
         return True
 
