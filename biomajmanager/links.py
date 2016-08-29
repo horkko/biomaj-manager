@@ -395,6 +395,7 @@ class Links(object):
                                                                   str(os.access(target, os.X_OK))))
                     if not Manager.get_simulate():
                         os.makedirs(target)
+                        Utils.warn("[%s][prepare_links] Dir created: %s" % (Utils.user(), target))
                 except OSError as err:
                     Utils.error("[%s] Can't create %s dir: %s" % (bank_name, target, str(err)))
 
