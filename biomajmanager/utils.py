@@ -295,7 +295,11 @@ class Utils(object):
         :return: User name
         :rtype: str
         """
-        return os.getenv('USER').strip() or os.getenv('LOGNAME').strip()
+        if 'USER' in os.environ:
+            return os.getenv('USER').strip()
+        if 'LOGNAME' in os.environ:
+            return os.getenv('LOGNAME').strip()
+        Utils.error("Can't get nor USER or LOGNAME in environ")
 
     @staticmethod
     def verbose(msg):
