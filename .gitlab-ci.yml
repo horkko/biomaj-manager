@@ -14,5 +14,5 @@ build:
   stage: build
   script:
   - docker build -t biomaj-manager $CI_PROJECT_DIR/tests/
-  - docker run biomaj-manager $CI_PROJECT_DIR/tests/gitlab-tests.sh
+  - docker run biomaj-manager /build/tests/gitlab-tests.sh
 
