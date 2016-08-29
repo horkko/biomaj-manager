@@ -399,7 +399,7 @@ class Links(object):
                                                                       str(os.stat(target_dir).st_uid)))
                         stat_info = os.stat(target_dir)
                         uid = stat_info.st_uid
-                        gid = stat_info.st_git
+                        gid = stat_info.st_gid
                         Utils.warn("[%s][prepare_links] Owner U:%s, G:%s" % (str(pwd.getpwuid(uid)[0]),
                                                                              str(grp.getgrgid(gid)[0])))
                     if not Manager.get_simulate():
