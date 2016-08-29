@@ -1,22 +1,22 @@
 #! /bin/sh
 
-/usr/local/bin/gosu yum clean all
-/usr/local/bin/gosu yum install -y epel-release
+sudo yum clean all
+sudo yum install -y epel-release
 ## Needed to compile some python packages
-/usr/local/bin/gosu yum install -y make gcc
+sudo yum install -y make gcc
 # Test mongodb respond, install client
-/usr/local/bin/gosu yum install -y mongodb
+sudo yum install -y mongodb
 ## Required to install python package rfeed
-/usr/local/bin/gosu yum install -y git
+sudo yum install -y git
 ## Install Python packages
-/usr/local/bin/gosu yum install -y python-devel python-pip python-nose python-jinja2
+sudo yum install -y python-devel python-pip python-nose python-jinja2
 
 ## Install some required packages
-/usr/local/bin/gosu pip install humanfriendly
-/usr/local/bin/gosu pip install pymongo==3.2
-/usr/local/bin/gosu pip install --egg biomaj
-/usr/local/bin/gosu pip install Yapsy
-/usr/local/bin/gosu pip install git+https://github.com/svpino/rfeed#egg=rfeed
+sudo pip install humanfriendly
+sudo pip install pymongo==3.2
+sudo pip install --egg biomaj
+sudo pip install Yapsy
+sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
 # Test mongo connection
 mongo --eval "db.serverStatus()" mongo/test || exit 1
