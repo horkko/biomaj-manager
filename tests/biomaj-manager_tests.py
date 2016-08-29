@@ -702,10 +702,11 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check the method throws exception"""
         links = Links(manager=self.utils.manager)
         links.manager.set_verbose(False)
-        os.chmod(self.utils.prod_dir, 0o000)
+        #os.chmod(self.utils.prod_dir, 0o000)
+        os.removedirs(self.utils.prod_dir)
         with self.assertRaises(SystemExit):
             links._clone_structure(source='golden', target='index', remove_ext=True)
-        os.chmod(self.utils.prod_dir, 0o777)
+        #os.chmod(self.utils.prod_dir, 0o777)
 
     @attr('links')
     @attr('links.clonestructure')
@@ -861,7 +862,7 @@ class TestBiomajManagerLinks(unittest.TestCase):
         link = Links(manager=self.utils.manager)
         link.manager.config.set('GENERAL', 'data.dir', '/dir/does_not/')
         link.manager.set_verbose(True)
-        self.assertFalse(link._prepare_links(source='/exist', target="link_test"))
+        self.assertFalse(link._prepare_links(source='/exist', target='link_test'))
 
     @attr('links')
     @attr('links.preparelinks')
@@ -869,10 +870,11 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method throws when permissions denied to create dir"""
         link = Links(manager=self.utils.manager)
         link.manager.set_verbose(True)
-        os.chmod(self.utils.prod_dir, 0o000)
+        #os.chmod(self.utils.prod_dir, 0o000)
+        os.removedirs(self.utils.prod_dir)
         with self.assertRaises(SystemExit):
-            link._prepare_links(source='uncompressed', target="link_test")
-        os.chmod(self.utils.prod_dir, 0o777)
+            link._prepare_links(source='uncompressed', target='link_test')
+        #os.chmod(self.utils.prod_dir, 0o777)
 
     @attr('links')
     @attr('links.preparelinks')
