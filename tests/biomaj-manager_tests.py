@@ -702,7 +702,9 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check the method throws exception"""
         links = Links(manager=self.utils.manager)
         links.manager.set_verbose(False)
-        os.chmod(self.utils.test_dir, 0o000)
+        #os.chmod(self.utils.test_dir, 0o000)
+        os.system("chmod -R 000 %s" % str(self.utils.prod_dir))
+        os.system("chmod -R 000 %s" % str(self.utils.test_dir))
         #os.removedirs(self.utils.prod_dir)
         with self.assertRaises(SystemExit):
             links._clone_structure(source='golden', target='index', remove_ext=True)
@@ -870,7 +872,9 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method throws when permissions denied to create dir"""
         link = Links(manager=self.utils.manager)
         link.manager.set_verbose(True)
-        os.chmod(self.utils.test_dir, 0o000)
+        #os.chmod(self.utils.test_dir, 0o000)
+        os.system("chmod -R 000 %s" % str(self.utils.prod_dir))
+        os.system("chmod -R 000 %s" % str(self.utils.test_dir))
         #os.removedirs(self.utils.prod_dir)
         with self.assertRaises(SystemExit):
             link._prepare_links(source='uncompressed', target='link_test')
