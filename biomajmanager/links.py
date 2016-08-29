@@ -397,8 +397,11 @@ class Links(object):
                                                                       str(os.access(target_dir, os.W_OK)),
                                                                       str(os.access(target_dir, os.X_OK)),
                                                                       str(os.stat(target_dir).st_uid)))
-                        Utils.warn("[%s][prepare_links] Owner U:%s, G:%s" % (pwd.getpwuid(os.stat(target_dir).st_uid)[0],
-                                                                             grp.getgrgid(os.stat(target_dir).st_gid)[0]))
+                        stat_info = os.stat(target_dir)
+                        uid = stat_info.st_uid
+                        gid = stat_info.st_git
+                        Utils.warn("[%s][prepare_links] Owner U:%s, G:%s" % (str(pwd.getpwuid(uid)[0]),
+                                                                             str(grp.getgrgid(gid)[0])))
                     if not Manager.get_simulate():
                         os.makedirs(target)
                         if target.endswith('link_test'):
