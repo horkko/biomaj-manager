@@ -1,7 +1,8 @@
 # Run tests on gitlab.pasteur.fr after new push
-image: centos:centos7
+image: docker:latest
 
 services:
+    - docker:dind
     - mongo
 # https://gitlab.com/gitlab-org/gitlab-ce/issues/13262
 variables:
@@ -9,7 +10,9 @@ variables:
   Host: mongo
   Database: bm_db_test
 
-tests:
+build:
+  stage: build
   script:
-  - sh $CI_PROJECT_DIR/tests/gitlab-tests.sh
+  - docker build -t biomaj-manager $CI_PROJECT_DIR/tests/
+  - docker run biomaj-manager $CI_PROJECT_DIR/tests/gitlab-tests.sh
 
