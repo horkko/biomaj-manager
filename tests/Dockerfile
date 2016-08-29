@@ -10,7 +10,7 @@ RUN yum install -y epel-release
 RUN groupadd -r biomaj && \
     useradd -m -d /home/biomaj -r -g biomaj biomaj
 
-ADD ./docker_sudo /etc/sudoers.d/docker
+ADD ./docker-sudo /etc/sudoers.d/docker
 RUN echo "Defaults:biomaj        !requiretty" >> /etc/sudoers
 
 # Run all as user biomaj
