@@ -872,10 +872,10 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method throws when permissions denied to create dir"""
         link = Links(manager=self.utils.manager)
         link.manager.set_verbose(True)
-        os.chmod(self.utils.prod_dir, 0o000)
+        os.chmod(self.utils.prod_dir, 000)
         with self.assertRaises(SystemExit):
             link._prepare_links(source='uncompressed', target='link_test')
-        os.chmod(self.utils.prod_dir, 0o777)
+        os.chmod(self.utils.prod_dir, 777)
 
     @attr('links')
     @attr('links.preparelinks')

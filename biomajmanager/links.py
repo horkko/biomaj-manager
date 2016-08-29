@@ -389,13 +389,15 @@ class Links(object):
                 Utils.verbose("[%s] Creating directory %s" % (bank_name, target))
             else:
                 try:
-                    Utils.warn("[%s][prepare_links] We create dir %s" % (Utils.user(), target))
-                    Utils.warn("Perms for %s: R(%s)W(%s)X(%s)" % (str(target), str(os.access(target, os.R_OK)),
-                                                                  str(os.access(target, os.W_OK)),
-                                                                  str(os.access(target, os.X_OK))))
+                    if target.endswith('link_test'):
+                        Utils.warn("[%s][prepare_links] We create dir %s" % (Utils.user(), target))
+                        Utils.warn("Perms for %s: R(%s)W(%s)X(%s)" % (str(target), str(os.access(target, os.R_OK)),
+                                                                      str(os.access(target, os.W_OK)),
+                                                                      str(os.access(target, os.X_OK))))
                     if not Manager.get_simulate():
                         os.makedirs(target)
-                        Utils.warn("[%s][prepare_links] Dir created: %s" % (Utils.user(), target))
+                        if target.endswith('link_test'):
+                            Utils.warn("[%s][prepare_links] Dir created: %s" % (Utils.user(), target))
                 except OSError as err:
                     Utils.error("[%s] Can't create %s dir: %s" % (bank_name, target, str(err)))
 

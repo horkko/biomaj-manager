@@ -1,6 +1,7 @@
 """Utilities class for BioMAJ Manager"""
 from __future__ import print_function
 import os
+import pwd
 import sys
 from time import time
 from datetime import datetime
@@ -290,16 +291,22 @@ class Utils(object):
     @staticmethod
     def user():
         """
-        Returns the current user running or using the script. Taken from os.env
+        Returns the current user running or using the script. Taken from pwd and os
 
         :return: User name
         :rtype: str
         """
-        if 'USER' in os.environ:
-            return os.getenv('USER').strip()
-        if 'LOGNAME' in os.environ:
-            return os.getenv('LOGNAME').strip()
-        Utils.error("Can't get nor USER or LOGNAME in environ")
+        return pwd.getpwuid(os.getuid()).pw_name
+
+    @staticmethod
+    def user_id():
+        """
+        Returns unix user id running or using the script. Taken from os
+
+        :return: User ID
+        :rtype: int
+        """
+        return os.getuid()
 
     @staticmethod
     def verbose(msg):
