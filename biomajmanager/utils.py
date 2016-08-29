@@ -295,7 +295,7 @@ class Utils(object):
         :return: User name
         :rtype: str
         """
-        return os.getenv('USER') or os.getenv('LOGNAME')
+        return os.getenv('USER').strip() or os.getenv('LOGNAME').strip()
 
     @staticmethod
     def verbose(msg):
