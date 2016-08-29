@@ -1,1 +1,1 @@
-jenkins    ALL=(ALL)       NOPASSWD: ALL
+biomaj    ALL=(ALL)       NOPASSWD: ALL
