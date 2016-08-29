@@ -296,17 +296,11 @@ class Utils(object):
         :return: User name
         :rtype: str
         """
-        return pwd.getpwuid(os.getuid()).pw_name
-
-    @staticmethod
-    def user_id():
-        """
-        Returns unix user id running or using the script. Taken from os
-
-        :return: User ID
-        :rtype: int
-        """
-        return os.getuid()
+        if 'USER' in os.environ:
+            return os.getenv('USER')
+        if 'LOGNAME' in os.environ:
+            return os.getenv('LOGNAME')
+        Utils.error("Can't find user name in USER nor LOGNAME")
 
     @staticmethod
     def verbose(msg):

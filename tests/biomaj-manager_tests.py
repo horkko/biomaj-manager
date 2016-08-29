@@ -31,6 +31,8 @@ class UtilsForTests(object):
         self.db_test = 'bm_db_test'
         self.col_test = 'bm_col_test'
         self.test_dir = tempfile.mkdtemp('biomaj-manager_tests')
+        self.no_dir_rights = 16384
+        self.full_dir_rights = 16895
 
         # Global part
         self.conf_dir = os.path.join(self.test_dir, 'conf')
@@ -195,12 +197,14 @@ class UtilsForTests(object):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
                 elif line.startswith('db.url'):
                     fout.write(line)
+                    line = line.strip()
                     url = line.split('=')[1]
                     self.mongo_url = url
                     (host, port) = url.split('//')[1].split(':')
                     self.mongo_client = MongoClient(host=str(host), port=int(port))
                 elif line.startswith('db.name'):
                     fout.write(line)
+                    line = line.strip()
                     db = line.split('=')[1]
                     self.db_test = db
                 elif line.startswith('admin'):
@@ -703,10 +707,10 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check the method throws exception"""
         links = Links(manager=self.utils.manager)
         links.manager.set_verbose(False)
-        os.chmod(self.utils.prod_dir, 0o000)
+        os.chmod(self.utils.prod_dir, self.utils.no_dir_rights)
         with self.assertRaises(SystemExit):
             links._clone_structure(source='golden', target='index', remove_ext=True)
-        os.chmod(self.utils.prod_dir, 0o777)
+        os.chmod(self.utils.prod_dir, self.utils.full_dir_rights)
 
     @attr('links')
     @attr('links.clonestructure')
@@ -872,10 +876,10 @@ class TestBiomajManagerLinks(unittest.TestCase):
         """Check method throws when permissions denied to create dir"""
         link = Links(manager=self.utils.manager)
         link.manager.set_verbose(True)
-        os.chmod(self.utils.prod_dir, 000)
+        os.chmod(self.utils.prod_dir, self.utils.no_dir_rights)
         with self.assertRaises(SystemExit):
             link._prepare_links(source='uncompressed', target='link_test')
-        os.chmod(self.utils.prod_dir, 777)
+        os.chmod(self.utils.prod_dir, self.utils.full_dir_rights)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -2867,7 +2871,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         back_log = os.environ["LOGNAME"]
         outputfile = os.path.join(self.utils.data_dir, 'saved_versions.txt')
         open(outputfile, 'w').close()
-        os.chmod(outputfile, 0o000)
+        os.chmod(outputfile, self.utils.no_dir_rights)
         os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
             manager.save_banks_version(bank_file=outputfile)
