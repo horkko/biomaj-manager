@@ -25,11 +25,11 @@ sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 #echo "MONGO_DB=$MONGO_DB"
 
 # Run tests for biomaj-manager with DOCKER tests
-export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
+#export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
 export MONGO_URI="mongodb://mongo:27017/bm_db_test"
 
 # Check mongodb connection
-mongo --eval "db.serverStatus()" $MONGO_URI || exit 1
+mongo --eval "db.serverStatus()" mongo:27017/bm_db_test || exit 1
 
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
