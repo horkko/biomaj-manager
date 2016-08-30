@@ -12,7 +12,8 @@ sudo yum install -y git
 sudo yum install -y python-devel python-pip python-nose python-jinja2
 
 # Start mongodb server
-sudo service mongod start
+sudo mkdir -p /data/db
+sudo mongod --dbpath /data/db --fork
 
 ## Install some required packages
 sudo pip install humanfriendly
@@ -22,7 +23,6 @@ sudo pip install Yapsy
 sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
 # Run tests for biomaj-manager with DOCKER tests
-#export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
 export MONGO_URI="mongodb://localhost:27017/bm_db_test"
 
 # Check mongodb connection
