@@ -30,6 +30,6 @@ export MONGO_URI="mongodb://localhost:27017/bm_db_test"
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
     echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
-    nosetests -a $attr || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
+    nosetests -w /builds/tests/ -a '$attr' || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
     echo "[BIOMAJ_MANAGER_TESTS] * $attr OK"
 done
