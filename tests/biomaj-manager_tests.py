@@ -77,10 +77,7 @@ class UtilsForTests(object):
             self.__copy_test_manager_properties()
 
         # Set a mongo client. Can be set from global.properties
-        if 'MONGO_URI' in os.environ:
-            self.mongo_client = MongoClient(os.getenv('MONGO_URI'))
-            self.mongo_url = os.getenv('MONGO_URI')
-        else:
+        if self.mongo_client is None:
             self.mongo_client = MongoClient('mongodb://localhost:27017')
             self.mongo_url = 'mongodb://localhost:27017'
 
@@ -198,25 +195,6 @@ class UtilsForTests(object):
                     fout.write("process.dir=%s\n" % self.process_dir)
                 elif line.startswith('lock.dir'):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
-                # elif line.startswith('db.url'):
-                #     fout.write(line)
-                #     line = line.strip()
-                #     url = line.split('=')[1]
-                #     self.mongo_url = url
-                #     (host, port) = url.split('//')[1].split(':')
-                #     self.mongo_client = MongoClient(host=str(host), port=int(port))
-                # elif line.startswith('db.name'):
-                #     fout.write(line)
-                #     line = line.strip()
-                #     db = line.split('=')[1]
-                #     self.db_test = db
-                # elif line.startswith('admin'):
-                #     fout.write(line)
-                #     # It looks like with gitlab-ci LOGNAME is not set
-                #     if 'LOGNAME' not in os.environ:
-                #         line = line.strip()
-                #         logname = line.split('=')[1].split(',')[0]
-                #         os.environ['LOGNAME'] = logname
                 else:
                     fout.write(line)
         fout.close()
@@ -1364,7 +1342,7 @@ class TestBioMajManagerDecorators(unittest.TestCase):
 
     def tearDown(self):
         """Clean"""
-        self.utils.clean()
+        # self.utils.clean()
 
     @attr('decorators')
     @attr('decorators.bankrequired')
