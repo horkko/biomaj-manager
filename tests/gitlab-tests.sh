@@ -23,12 +23,13 @@ sudo pip install pymongo==3.2
 sudo pip install --egg biomaj
 sudo pip install Yapsy
 sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
-echo "CI_PROJECT_DIR=$CI_PROJECT_DIR"
+
 # Run tests for biomaj-manager with DOCKER tests
 export MONGO_URI="mongodb://localhost:27017/bm_db_test"
 
-cd $CI_PROJECT_DIR
-pythons setup.py -q install || { echo "Install failed" && exit 1; }
+here=`pwd`
+echo "Here we are $here"
+python setup.py -q install || { echo "Install failed" && exit 1; }
 
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
