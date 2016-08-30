@@ -476,10 +476,23 @@ class TestBiomajManagerUtils(unittest.TestCase):
 
     @attr('utils')
     @attr('utils.user')
-    def test_UserOK(self):
-        """Check the testing user is ok"""
-        user = os.getenv('USER') or os.getenv('LOGNAME')
+    def test_UserUSEROK(self):
+        """Check the testing user is ok with USER"""
+        user = os.getenv('USER')
+        logname = os.getenv('LOGNAME')
+        del(os.environ['LOGNAME'])
         self.assertEqual(Utils.user(), user)
+        os.environ['LOGNAME'] = logname
+
+    @attr('utils')
+    @attr('utils.user')
+    def test_UserLOGNAMEOK(self):
+        """Check testing user is ok with LOGNAME"""
+        logname = os.getenv('LOGNAME')
+        user = os.getenv('USER')
+        del(os.environ['USER'])
+        self.assertEqual(Utils.user(), logname)
+        os.environ['USER'] = user
 
     @attr('utils')
     @attr('utils.user')
@@ -487,6 +500,19 @@ class TestBiomajManagerUtils(unittest.TestCase):
         """Check the testing user is ok"""
         user = "fakeUser"
         self.assertNotEqual(Utils.user(), user)
+
+    @attr('utils')
+    @attr('utils.user')
+    def test_userNoEnvironmentVariableThrows(self):
+        """Check method throws when none of USER and LOGNAME is available"""
+        logname = os.getenv('LOGNAME')
+        user = os.getenv('USER')
+        del(os.environ['USER'])
+        del(os.environ['LOGNAME'])
+        with self.assertRaises(SystemExit):
+            Utils.user()
+        os.environ['USER'] = user
+        os.environ['LOGNAME'] = logname
 
 
 class TestBiomajManagerWriter(unittest.TestCase):
