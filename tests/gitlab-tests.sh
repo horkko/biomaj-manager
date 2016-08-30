@@ -31,8 +31,11 @@ cd /builds || { echo "Can't cd to /builds" && exit 1; }
 sudo python setup.py -q install || { echo "Install failed" && exit 1; }
 
 # Split tests
-for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
-    echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
-    nosetests -w /builds/tests -a '$attr' || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
-    echo "[BIOMAJ_MANAGER_TESTS] * $attr OK"
-done
+#for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
+#    echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
+#    nosetests -w /builds/tests -a '$attr' || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
+#    echo "[BIOMAJ_MANAGER_TESTS] * $attr OK"
+#done
+nosetests -x
+
+exit 0
