@@ -393,14 +393,15 @@ class Links(object):
                         import pwd
                         import grp
                         Utils.warn("[%s][prepare_links] We create dir %s" % (Utils.user(), target))
-                        Utils.warn("Perms for %s: R(%s)W(%s)X(%s) [%s]" % (str(target_dir), str(os.access(target_dir, os.R_OK)),
-                                                                      str(os.access(target_dir, os.W_OK)),
-                                                                      str(os.access(target_dir, os.X_OK)),
-                                                                      str(os.stat(target_dir).st_uid)))
+                        Utils.warn("Perms for %s: R(%s)W(%s)X(%s) [%s]" % (str(target_dir),
+                                                                           str(os.access(target_dir, os.R_OK)),
+                                                                           str(os.access(target_dir, os.W_OK)),
+                                                                           str(os.access(target_dir, os.X_OK)),
+                                                                           str(os.stat(target_dir).st_uid)))
                         stat_info = os.stat(target_dir)
                         uid = stat_info.st_uid
                         gid = stat_info.st_gid
-                        Utils.warn("[%s][prepare_links] Owner U:%s, G:%s" % (str(pwd.getpwuid(uid)[0]),
+                        Utils.warn("[%s][prepare_links] Owner U:%s, G:%s" % (Utils.user(), str(pwd.getpwuid(uid)[0]),
                                                                              str(grp.getgrgid(gid)[0])))
                     if not Manager.get_simulate():
                         os.makedirs(target)

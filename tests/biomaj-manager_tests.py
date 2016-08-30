@@ -83,7 +83,6 @@ class UtilsForTests(object):
         else:
             self.mongo_client = MongoClient('mongodb://localhost:27017')
             self.mongo_url = 'mongodb://localhost:27017'
-        Utils.warn("LOGNAME is %s" % os.getenv('LOGNAME'))
 
     def copy_file(self, ofile=None, todir=None):
         """
