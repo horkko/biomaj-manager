@@ -27,16 +27,12 @@ sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 # Run tests for biomaj-manager with DOCKER tests
 export MONGO_URI="mongodb://localhost:27017/bm_db_test"
 
-here=`pwd`
-echo "PROJECT_DIR:$PROJECT_DIR"
-echo "Here we are $here"
-dirs=`ls -l *`
-echo  "LIST\n$dirs"
-python setup.py -q install || { echo "Install failed" && exit 1; }
+cd /builds || { echo "Can't cd to /builds" && exit 1; }
+sudo python setup.py -q install || { echo "Install failed" && exit 1; }
 
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
     echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
-    nosetests -w $CI_PROJECT_DIR/tests -a '$attr' || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
+    nosetests -w /builds/tests -a '$attr' || { echo "[BIOAMJ_MANAGER_TESTS] * $attr failed" && exit 1; }
     echo "[BIOMAJ_MANAGER_TESTS] * $attr OK"
 done
