@@ -108,9 +108,9 @@ class RSS(News):
         self.fh = None
         if rss_file is not None:
             self.rss_file = rss_file
-        elif 'config' in kwargs:
+        if 'config' in kwargs:
             self.config = kwargs['config']
-            if self.config.has_option('RSS', 'rss.file'):
+            if self.config.has_option('RSS', 'rss.file') and self.rss_file is None:
                 self.rss_file = self.config.get('RSS', 'rss.file')
         if self.rss_file is None:
             self.fh = sys.stdout

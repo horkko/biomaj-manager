@@ -3,15 +3,9 @@ image: docker:latest
 
 services:
     - docker:dind
-    - mongo
-# https://gitlab.com/gitlab-org/gitlab-ce/issues/13262
-variables:
-  MONGO_DATABASE: bm_db_test
-  Host: mongo
-  Database: bm_db_test
 
 build:
-  stage: build
-  script:
-  - docker build -t biomaj-manager $CI_PROJECT_DIR/tests/
-  - docker run -v $CI_PROJECT_DIR:/builds biomaj-manager sh /builds/tests/gitlab-tests.sh
+    stage: build
+    script:
+        - docker build -t biomaj-manager $CI_PROJECT_DIR/tests/
+        - docker run -v $CI_PROJECT_DIR:/builds biomaj-manager sh /builds/tests/gitlab-tests.sh
