@@ -19,15 +19,17 @@ sudo pip install Yapsy
 sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
 # Test mongo connection
-echo "MONGO_URI=$MONGO_URI"
-echo "MONGO_HOST=$MONGO_HOST"
-echo "MONGO_PORT=$MONGO_PORT"
-echo "MONGO_DB=$MONGO_DB"
-
-mongo --eval "db.serverStatus()" $MONGO_HOST:$MONGO_PORT/$MONGO_DB || exit 1
+#echo "MONGO_URI=$MONGO_URI"
+#echo "MONGO_HOST=$MONGO_HOST"
+#echo "MONGO_PORT=$MONGO_PORT"
+#echo "MONGO_DB=$MONGO_DB"
 
 # Run tests for biomaj-manager with DOCKER tests
 export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
+export MONGO_URI="mongodb://mongo:27017/bm_db_test"
+
+# Check mongodb connection
+mongo --eval "db.serverStatus()" $MONGO_URI || exit 1
 
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
