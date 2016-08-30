@@ -19,7 +19,7 @@ sudo pip install Yapsy
 sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
 # Test mongo connection
-mongo --eval "db.serverStatus()" mongo/bm_db_test || exit 1
+mongo --eval "db.serverStatus()" mongodb/bm_db_test || exit 1
 
 # Run tests for biomaj-manager with DOCKER tests
 export BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties
