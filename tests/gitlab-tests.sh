@@ -28,7 +28,10 @@ sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 export MONGO_URI="mongodb://localhost:27017/bm_db_test"
 
 here=`pwd`
+echo "PROJECT_DIR:$PROJECT_DIR"
 echo "Here we are $here"
+dirs=`ls -l *`
+echo  "LIST\n$dirs"
 python setup.py -q install || { echo "Install failed" && exit 1; }
 
 # Split tests

@@ -4,6 +4,9 @@ image: docker:latest
 services:
     - docker:dind
 
+variables:
+    PROJECT_DIR: $CI_PROJECT_DIR
+
 build:
     stage: build
     script:
