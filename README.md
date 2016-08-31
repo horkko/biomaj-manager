@@ -146,6 +146,9 @@ Tests
 
 You can run tests by typing `nosetests`
 
+It is also possible to clone this repo into gitlab and run tests using gitlab-ci. There's a `.gitlab-ci.yml` available for
+this as well as a `Dockerfile` to run gitlab tests inside Docker.
+
 Status
 ======
 [![Build Status](https://travis-ci.org/horkko/biomaj-manager.svg?branch=master)](https://travis-ci.org/horkko/biomaj-manager)

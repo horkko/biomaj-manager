@@ -24,6 +24,7 @@ sudo pip install git+https://github.com/svpino/rfeed#egg=rfeed
 
 # Run tests for biomaj-manager with DOCKER tests
 export LOGNAME='biomaj'
+export USER='biomaj'
 
 # Install BioMAJ Manager to test it later on
 cd /builds || { echo "Can't cd to /builds" && exit 1; }
