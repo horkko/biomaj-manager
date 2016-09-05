@@ -466,7 +466,7 @@ def main():
         if type(options.brokenlinks) == bool:
             manager = Manager(global_cfg=options.config)
             options.brokenlinks = os.path.join(manager.get_production_dir(), 'index')
-        brkln = Utils.get_broken_links(path=options.brokenlinks, delete=False)
+        brkln = Utils.get_broken_links(path=options.brokenlinks)
         print("%d broken link(s)" % brkln)
         sys.exit(0)
 
