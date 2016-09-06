@@ -8,6 +8,8 @@ echo
 echo
 export BIOMAJ_MANAGER_DOCKER_CONF="/builds/tests/global-docker.properties"
 
+mongo --eval "db.serverStatus()" || exit 1
+
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
     echo "[BIOAMJ_MANAGER_TESTS] * Running test $attr "
