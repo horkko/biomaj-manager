@@ -2,7 +2,7 @@
 
 # Install BioMAJ Manager to test it later on
 cd /builds || { echo "Can't cd to /builds" && exit 1; }
-python setup.py -q install || { echo "Install failed" && exit 1; }
+sudo python setup.py -q install || { echo "Install failed" && exit 1; }
 
 echo
 echo
