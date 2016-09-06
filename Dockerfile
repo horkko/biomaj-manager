@@ -19,8 +19,7 @@ RUN groupadd -r biomaj && \
 
 # Allow biomaj to run sudo without passwd
 ADD ./docker-sudo /etc/sudoers.d/docker
-RUN chmod 0600 /etc/sudoers.d/docker
-RUN echo "Defaults:biomaj        !requiretty" >> /etc/sudoers
+RUN chmod 0600 /etc/sudoers.d/docker && echo "Defaults:biomaj        !requiretty" >> /etc/sudoers
 
 # Run tests for biomaj-manager with DOCKER tests
 ENV LOGNAME='biomaj'
