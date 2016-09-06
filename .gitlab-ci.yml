@@ -3,7 +3,7 @@ image: docker:latest
 
 services:
     - docker:dind
-    - mongo
+    - mongo:latest
 
 before_script:
     - docker login -u gitlab-ci-token -p $BIOMAJ_MANAGER_DOCKER registry-gitlab.pasteur.fr
@@ -11,4 +11,4 @@ before_script:
 build:
     stage: test
     script:
-        - docker run -v $CI_PROJECT_DIR:/builds -t registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager /bin/sh /builds/tests/gitlab-tests.sh
+        - docker run --rm -v $CI_PROJECT_DIR:/builds --link mongo:latest -t registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager /bin/sh /builds/tests/gitlab-tests.sh
