@@ -1,13 +1,8 @@
 #! /bin/sh
 
 # Install BioMAJ Manager to test it later on
-sudo python setup.py -q install || { echo "Install failed" && exit 1; }
-
-echo
-echo
+#sudo python setup.py -q install || { echo "Install failed" && exit 1; }
 export BIOMAJ_MANAGER_DOCKER_CONF="/builds/tuco/biomaj-manager/tests/global-docker.properties"
-
-mongo --eval "db.serverStatus()" mongo/test || exit 1
 
 # Split tests
 for attr in 'utils' 'links' 'decorators' 'manager' 'plugins' 'writer'; do
