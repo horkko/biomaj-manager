@@ -11,4 +11,4 @@ before_script:
 build:
     stage: test
     script:
-        - docker run -v $CI_PROJECT_DIR:/builds -t registry-gitlab.pasteur.fr/tuco/biomaj-manager /bin/sh /builds/tests/gitlab-tests.sh
+        - docker run -v $CI_PROJECT_DIR:/builds -t registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager /bin/sh /builds/tests/gitlab-tests.sh
