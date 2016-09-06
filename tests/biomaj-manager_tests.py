@@ -195,8 +195,15 @@ class UtilsForTests(object):
                     fout.write("process.dir=%s\n" % self.process_dir)
                 elif line.startswith('lock.dir'):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
+                elif line.startswith('db.url'):
+                    fout.write(line)
+                    line = line.strip()
+                    url = line.split('=')[1]
+                    self.mongo_client = MongoClient(url)
+                    self.mongo_url = url
                 else:
                     fout.write(line)
+                    Utils.ok(line)
         fout.close()
 
 

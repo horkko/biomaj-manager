@@ -6,10 +6,6 @@ RUN yum clean all
 RUN yum install -y epel-release
 RUN yum install -y sudo make gcc mongodb-server mongodb git python-devel python-pip python-nose python-jinja2 && yum clean all
 
-# Start mongodb server
-#RUN mkdir -p /data/db
-#RUN mongod --dbpath /data/db --logpath /var/log/mongodb.log --fork
-
 ## Install some required packages
 RUN pip install -U pip && pip install humanfriendly Yapsy pymongo==3.2 'git+https://github.com/svpino/rfeed#egg=rfeed' && pip install --egg biomaj
 
