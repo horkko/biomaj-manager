@@ -7,6 +7,9 @@ cover*/
 # OSX stuff
 Library/
 
+# Docker
+.docker
+
 # Distribution / packaging
 .Python
 env/
