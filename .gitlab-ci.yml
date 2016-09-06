@@ -5,10 +5,10 @@ image: registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager
 services:
     - mongo
 
-variables:
-    MONGO_DB: bm_db_test
-    MONGO_USER: runner
-    MONGO_PASSWORD: ""
+#variables:
+#    MONGO_DB: bm_db_test
+#    MONGO_USER: runner
+#    MONGO_PASSWORD: ""
 
 #before_script:
 #    - docker login -u gitlab-ci-token -p $BIOMAJ_MANAGER_DOCKER registry-gitlab.pasteur.fr
