@@ -5,7 +5,7 @@ sudo python setup.py -q install || { echo "Install failed" && exit 1; }
 
 echo
 echo
-export BIOMAJ_MANAGER_DOCKER_CONF="/builds/tests/global-docker.properties"
+export BIOMAJ_MANAGER_DOCKER_CONF="/builds/tuco/biomaj-manager/tests/global-docker.properties"
 
 mongo --eval "db.serverStatus()" mongo/test || exit 1
 
