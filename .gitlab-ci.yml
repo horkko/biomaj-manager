@@ -5,8 +5,8 @@ services:
     - mongo
 
 variables:
-    - MONGODB_URI: "mongodb://mongo:27017"
-    - MONGODB_DBNAME: "bm_db_test"
+    MONGODB_URI: "mongodb://mongo:27017"
+    MONGODB_DBNAME: "bm_db_test"
 
 build:
     stage: test
