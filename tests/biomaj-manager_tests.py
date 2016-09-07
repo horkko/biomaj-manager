@@ -203,7 +203,7 @@ class UtilsForTests(object):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
                 elif line.startswith('db.url'):
                     fout.write("db.url=%s\n" % self.mongo_url)
-                elif line.startwith('db.name'):
+                elif line.startswith('db.name'):
                     fout.write("db.name=%s" % self.db_test)
                 # elif line.startswith('db.url'):
                 #     fout.write(line)
