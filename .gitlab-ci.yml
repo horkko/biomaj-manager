@@ -4,7 +4,11 @@ image: registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager
 services:
     - mongo
 
+variables:
+    - MONGODB_URI: "mongodb://mongo:27017"
+    - MONGODB_DBNAME: "bm_db_test"
+
 build:
     stage: test
     script:
-        - BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties nosetests -q -x
+        - nosetests -q -x

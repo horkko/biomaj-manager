@@ -34,6 +34,17 @@ class UtilsForTests(object):
         self.no_dir_rights = 16384
         self.full_dir_rights = 16895
 
+        if 'MONGODB_URI' in os.environ:
+            self.mongo_client = MongoClient(os.environ.get('MONGODB_URI'))
+            self.mongo_url = os.environ.get('MONGODB_URI')
+        if 'MONGODB_DBNAME' in os.environ:
+            self.db_test = os.environ.get('MONGODB_DBNAME')
+
+        # Set a mongo client. Can be set from global.properties
+        if self.mongo_client is None:
+            self.mongo_client = MongoClient('mongodb://localhost:27017')
+            self.mongo_url = 'mongodb://localhost:27017'
+
         # Global part
         self.conf_dir = os.path.join(self.test_dir, 'conf')
         if not os.path.exists(self.conf_dir):
@@ -75,11 +86,6 @@ class UtilsForTests(object):
 
         if self.manager_properties is None:
             self.__copy_test_manager_properties()
-
-        # Set a mongo client. Can be set from global.properties
-        if self.mongo_client is None:
-            self.mongo_client = MongoClient('mongodb://localhost:27017')
-            self.mongo_url = 'mongodb://localhost:27017'
 
     def copy_file(self, ofile=None, todir=None):
         """
@@ -173,11 +179,11 @@ class UtilsForTests(object):
         global_template = os.path.join(curdir, config_file)
 
         # Is there any alternative global config file?
-        if 'BIOMAJ_MANAGER_DOCKER_CONF' in os.environ:
-            global_template = os.environ.get('BIOMAJ_MANAGER_DOCKER_CONF')
-            if not os.path.isfile(global_template):
-                Utils.error("Configuration file not found: %s" % global_template)
-            config_file = os.path.basename(global_template)
+        # if 'BIOMAJ_MANAGER_DOCKER_CONF' in os.environ:
+        #     global_template = os.environ.get('BIOMAJ_MANAGER_DOCKER_CONF')
+        #     if not os.path.isfile(global_template):
+        #         Utils.error("Configuration file not found: %s" % global_template)
+        #     config_file = os.path.basename(global_template)
 
         self.global_properties = os.path.join(self.conf_dir, config_file)
         fout = open(self.global_properties, 'w')
@@ -196,11 +202,15 @@ class UtilsForTests(object):
                 elif line.startswith('lock.dir'):
                     fout.write("lock.dir=%s\n" % self.lock_dir)
                 elif line.startswith('db.url'):
-                    fout.write(line)
-                    line = line.strip()
-                    url = line.split('=')[1]
-                    self.mongo_client = MongoClient(url)
-                    self.mongo_url = url
+                    fout.write("db.url=%s\n" % self.mongo_url)
+                elif line.startwith('db.name'):
+                    fout.write("db.name=%s" % self.db_test)
+                # elif line.startswith('db.url'):
+                #     fout.write(line)
+                #     line = line.strip()
+                #     url = line.split('=')[1]
+                #     self.mongo_client = MongoClient(url)
+                #     self.mongo_url = url
                 else:
                     fout.write(line)
                     Utils.ok(line)
