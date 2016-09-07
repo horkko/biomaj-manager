@@ -7,4 +7,4 @@ services:
 build:
     stage: test
     script:
-        - BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties python nosetests -q -x
+        - BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties nosetests -q -x
