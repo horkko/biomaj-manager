@@ -178,13 +178,6 @@ class UtilsForTests(object):
         curdir = self.__get_curdir()
         global_template = os.path.join(curdir, config_file)
 
-        # Is there any alternative global config file?
-        # if 'BIOMAJ_MANAGER_DOCKER_CONF' in os.environ:
-        #     global_template = os.environ.get('BIOMAJ_MANAGER_DOCKER_CONF')
-        #     if not os.path.isfile(global_template):
-        #         Utils.error("Configuration file not found: %s" % global_template)
-        #     config_file = os.path.basename(global_template)
-
         self.global_properties = os.path.join(self.conf_dir, config_file)
         fout = open(self.global_properties, 'w')
         with open(global_template, 'r') as fin:
@@ -205,12 +198,6 @@ class UtilsForTests(object):
                     fout.write("db.url=%s\n" % self.mongo_url)
                 elif line.startswith('db.name'):
                     fout.write("db.name=%s" % self.db_test)
-                # elif line.startswith('db.url'):
-                #     fout.write(line)
-                #     line = line.strip()
-                #     url = line.split('=')[1]
-                #     self.mongo_client = MongoClient(url)
-                #     self.mongo_url = url
                 else:
                     fout.write(line)
                     Utils.ok(line)
