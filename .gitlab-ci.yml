@@ -1,20 +1,10 @@
 # Run tests on gitlab.pasteur.fr after new push
 image: registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager
 
-#    - docker:dind
 services:
     - mongo
-
-#variables:
-#    MONGO_DB: bm_db_test
-#    MONGO_USER: runner
-#    MONGO_PASSWORD: ""
-
-#before_script:
-#    - docker login -u gitlab-ci-token -p $BIOMAJ_MANAGER_DOCKER registry-gitlab.pasteur.fr
 
 build:
     stage: test
     script:
-        - sh $CI_PROJECT_DIR/tests/gitlab-tests.sh
-#        - docker run --rm -v $CI_PROJECT_DIR:/builds -t registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager /bin/sh /builds/tests/gitlab-tests.sh
+        - python BIOMAJ_MANAGER_DOCKER_CONF=$CI_PROJECT_DIR/tests/global-docker.properties nosetests -q -x
