@@ -31,6 +31,10 @@ def main():
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
+    parser.add_argument('-A', '--check_prod_release', dest="prodrelease", metavar='Max release', type=int,
+                        const=True, nargs='?',
+                        help="Look for bank having stored releases greater than [Max release, default to 'keep.old.version'].\
+                              [-b available]")
     parser.add_argument('-D', '--save_versions', dest="save_versions", action="store_true", default=False,
                         help="Prints info about all banks into version file. (Requires permissions)")
     parser.add_argument('-H', '--history', dest="history", action="store_true", default=False,
@@ -274,6 +278,12 @@ def main():
             print("No pending session")
         sys.exit(0)
 
+    if options.prodrelease:
+        # Search for bank having production release entries greater than limit. Default to 'keep.old.version'
+        manager = Manager(global_cfg=options.config)
+        manager.check_production_size(bank=options.bank, max_old=options.prodrelease)
+        sys.exit(0)
+
     if options.rss:
         # Try to determine news directory from config gile
         config = Manager.load_config()
@@ -334,10 +344,9 @@ def main():
         sys.exit(0)
 
     if options.test:
-        manager = Manager(bank=options.bank, global_cfg=options.config)
-        rss = RSS(config=manager.config)
-        rss.generate_rss()
-        #print("No test defined")
+        print("No test defined")
+        #manager = Manager()
+        #manager.check_production_size(bank=options.bank, max_old=5)
         sys.exit(0)
 
     if options.to_mongo:
