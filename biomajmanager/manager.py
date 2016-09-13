@@ -15,7 +15,10 @@ from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
 from biomajmanager.plugins import Plugins
 from biomajmanager.decorators import bank_required, user_granted
-from ConfigParser import Error
+try:
+    from ConfigParser import Error
+except ImporError:
+    from configparser import Error
 
 
 class Manager(object):
