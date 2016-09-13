@@ -15,6 +15,7 @@ from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
 from biomajmanager.plugins import Plugins
 from biomajmanager.decorators import bank_required, user_granted
+from ConfigParser import Error
 
 
 class Manager(object):
@@ -427,20 +428,24 @@ class Manager(object):
         :return: List of key/value pair as ['server', 'www.google.com']
         :rtype: list
         """
-        if fields is None:
-            fields = ['protocol', 'server', 'remote.dir', 'file.num.threads', 'extract.threads']
-            
         remote = []
+        if fields is None:
+            fields = ['protocol', 'server', 'remote.dir', 'files.num.threads', 'extract.threads']
+
+        # Ensure bank name is searched
+        if 'db.name' not in fields:
+            fields.insert(0, 'db.name')
+
         for field in fields:
             try:
                 value = self.bank.config.get(field)
-                if not value:
+                if value is None:
                     continue
                 #if field == 'protocol' and value == 'multi':
                 #    lfields = self.get_
                 remote.append([field, value])
-            except Error:
-                Utils.warn("Field %s not found in bank configuration" % field)
+            except Error as err:
+                Utils.warn("Field %s not found in bank configuration: %s" % (field, str(err)))
         return remote
 
 

@@ -216,7 +216,7 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         remote = [["Remote field", "Remote value"]]
-        remote =_ manager.get_bank_remote_info()
+        remote += manager.get_bank_remote_info()
         print(tabulate(remote, headers='firstrow', tablefmt='psql'))
         sys.exit(0)
 
