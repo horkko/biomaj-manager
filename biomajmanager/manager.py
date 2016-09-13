@@ -163,42 +163,43 @@ class Manager(object):
             return False
         return True
 
-    def check_production_size(self, bank=None, max_old=None):
+    @bank_required
+    def check_production_size(self, max_release=None):
         """
         Check the number of production(s) release stored in the database.
 
-        It happens that some bank have a number of production release stored in the database greated than
-        the limit set by 'keep.old.version'. This method warns a message in such case.
+        It happens that some bank have a number of production release stored in the database greater than
+        the limit set by 'keep.old.version'. This method find bank with such case.
 
-        :param bank: Bank name
-        :type bank: str
-        :param max_old: Maximum number of release in production. Default to 'keep.old.version'
-        type max_old: int
-        :return: None
+        :param max_release: Maximum number of release in production. Default to 'keep.old.version'
+        type max_release: int
+        :return: List of three elemetns, bank, production elements, limit
+        :rtype: list
         :raise SystemExit: If no 'production' found in document
         """
-        banks = []
-        if bank is None:
-            banks = Manager.get_bank_list()
-        else:
-            banks.append(bank)
+        limit = max_release
+        current = None
+        if max_release is None:
+            Utils.warn("max_release is None %s" % str(max_release))
+            limit = int(self.bank.config.get('keep.old.version'))
+        if 'production' not in self.bank.bank:
+            Utils.error("[%s] No 'production' found in database" % self.bank.name)
+        # We do not consider the published release 'current'
+        if 'current' in self.bank.bank:
+            current = self.bank.bank['current']
+        productions = self.bank.bank['production']
+        plen = len(productions)
+        for production in productions:
+            if current and current == production['session']:
+                plen -= 1
 
-        for bank in banks:
-            limit = max_old
-            self.set_bank_from_name(name=bank)
-            if max_old is None:
-                limit = int(self.bank.config.get('keep.old.version'))
-            if 'production' not in self.bank.bank:
-                Utils.error("[%s] No 'production' found in database" % self.bank.name)
-            productions = self.bank.bank['production']
-            plen = len(productions)
-            # limit + 1 as we keep `limit` old release, plus the current one
-            limit += 1
-            if plen > limit + 1:
+        if plen > limit:
+            if Manager.get_verbose():
                 Utils.warn("[%s] Production release exceeds limit (%d/%d)" % (self.bank.name, plen, limit))
-            elif Manager.get_verbose():
-                Utils.ok("[%s] Production release number OK. Entries %d, limit %d" % (self.bank.name, plen, limit))
-        return None
+            return [self.bank.name, plen, limit]
+        elif Manager.get_verbose():
+            Utils.ok("[%s] Production release number OK. Entries %d, limit %d" % (self.bank.name, plen, limit))
+        return []
 
     @bank_required
     def clean_sessions(self):

@@ -280,8 +280,21 @@ def main():
 
     if options.prodrelease:
         # Search for bank having production release entries greater than limit. Default to 'keep.old.version'
-        manager = Manager(global_cfg=options.config)
-        manager.check_production_size(bank=options.bank, max_old=options.prodrelease)
+        banks = []
+        if options.bank:
+            banks.append(options.bank)
+        else:
+            banks = Manager.get_bank_list()
+        info = []
+        for bank in banks:
+            manager = Manager(bank=bank, global_cfg=options.config)
+            exceed = manager.check_production_size(max_release=options.prodrelease)
+            if len(exceed):
+                info.append(exceed)
+        if info:
+            print("%d banks have exceeded production release limit" % int(len(info)))
+            info.insert(0, ["Bank", "Production release", "Limit"])
+            print(tabulate(info, headers='firstrow', tablefmt='psql'))
         sys.exit(0)
 
     if options.rss:
