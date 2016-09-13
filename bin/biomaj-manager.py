@@ -41,6 +41,8 @@ def main():
                         help="Prints banks releases history. [-b] available.")
     parser.add_argument('-i', '--info', dest="info", action="store_true", default=False,
                         help="Print info about a bank. [-b REQUIRED]")
+    parser.add_argument('-I', '--remote-info', dest="remoteinfo", action="store_true", default=False,
+                        help="Print remote info for a bank remote connection. [-b REQUIRED]")
     parser.add_argument('-J', '--check_links', dest="check_links", action="store_true", default=False,
                         help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]")
     parser.add_argument('-l', '--links', dest="links", action="store_true", default=False,
@@ -207,6 +209,15 @@ def main():
         # do we have some pending release(s)
         if 'pend' in info and len(info['pend']) > 1:
             print(tabulate(info['pend'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+        sys.exit(0)
+
+    if options.remoteinfo:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank, global_cfg=options.config)
+        remote = [["Remote field", "Remote value"]]
+        remote =_ manager.get_bank_remote_info()
+        print(tabulate(remote, headers='firstrow', tablefmt='psql'))
         sys.exit(0)
 
     if options.links:

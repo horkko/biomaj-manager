@@ -418,6 +418,33 @@ class Manager(object):
             Utils.error("Can't connect to MongoDB: %s" % str(err))
 
     @bank_required
+    def get_bank_remote_info(self, fields=None):
+        """
+        Get bank information remote info (server, protocol, remote dir, ...)
+
+        :param fields: List of fields you want to retrieve
+        :type fields: list
+        :return: List of key/value pair as ['server', 'www.google.com']
+        :rtype: list
+        """
+        if fields is None:
+            fields = ['protocol', 'server', 'remote.dir', 'file.num.threads', 'extract.threads']
+            
+        remote = []
+        for field in fields:
+            try:
+                value = self.bank.config.get(field)
+                if not value:
+                    continue
+                #if field == 'protocol' and value == 'multi':
+                #    lfields = self.get_
+                remote.append([field, value])
+            except Error:
+                Utils.warn("Field %s not found in bank configuration" % field)
+        return remote
+
+
+    @bank_required
     def get_bank_packages(self):
         """
         Retrieve the list of linked packages for the current bank
