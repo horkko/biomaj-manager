@@ -17,7 +17,7 @@ from biomajmanager.plugins import Plugins
 from biomajmanager.decorators import bank_required, user_granted
 try:
     from ConfigParser import Error
-except ImporError:
+except ImportError:
     from configparser import Error
 
 
