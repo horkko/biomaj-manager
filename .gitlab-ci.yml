@@ -1,5 +1,5 @@
 # Run tests on gitlab.pasteur.fr after new push
-image: registry-gitlab.pasteur.fr/tuco/biomaj-manager:biomaj-manager
+image: registry-gitlab.pasteur.fr/tuco/biomaj-manager:latest
 
 services:
     - mongo
