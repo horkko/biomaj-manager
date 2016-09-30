@@ -12,6 +12,7 @@ class Links(object):
     DIRS = {
         'bowtie': [{'target': 'index/bowtie'}], 'bwa': [{'target': 'index/bwa'}],
         'gatk': [{'target': 'index/gatk'}], 'picard': [{'target': 'index/picard'}],
+        'liftover': [{'target': 'index/liftover'}],
         'samtools': [{'target': 'index/samtools'}], 'fusioncatcher': [{'target': 'index/fusioncatcher'}],
         'golden': [{'target': 'index/golden'}], 'soap': [{'target': 'index/soap'}],
         'blast+': [{'target': 'index/blast+'}], 'flat': [{'target': 'ftp'}],
