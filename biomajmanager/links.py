@@ -19,6 +19,7 @@ class Links(object):
         'uncompressed': [{'target': 'release', 'fallback': 'flat'},
                          {'target': 'index/golden', 'requires': 'golden'}],
         }
+    # This creates a clone of the source directory (files and subdirs) into target
     CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
                             {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
                             {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
