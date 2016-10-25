@@ -2097,6 +2097,26 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertEqual(returned, expected)
 
     @attr('manager')
+    @attr('manager.getbankremoteinfo')
+    def test_ManagerGetBankRemoteInfoArgsNone(self):
+        """Check method works correctly wihtout error(s)"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        expected = [['db.name', 'alu'], ['protocol', 'ftp'], ['server', 'ftp.wip.ncbi.nlm.nih.gov'],
+                    ['remote.dir', '/blast/db/FASTA/'], ['files.num.threads', '2'], ['extract.threads', '2']]
+        self.assertListEqual(manager.get_bank_remote_info(), expected)
+
+    @attr('manager')
+    @attr('manager.getbankremoteinfo')
+    def test_ManagerGetBankRemoteInfoNoneValueAndThrows(self):
+        """Check the method handle None value and throws in case of config error"""
+        self.utils.copy_file(ofile='multi.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='multi')
+        # db.name is added automatically if not found in field list
+        l = manager.get_bank_remote_info()
+        self.assertEqual(len(manager.get_bank_remote_info(fields=['notfound'])), 1)
+
+    @attr('manager')
     @attr('manager.getsessionfromid')
     def test_ManagerGetSessionFromIDNotNoneNotNone(self):
         """Check we retrieve the right session id (Not None)"""
@@ -2658,7 +2678,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method get the right entries from config"""
         manager = Manager()
         my_values = manager.get_config_regex(regex='.*\.dir$', with_values=False)
-        expected = ['lock.dir', 'log.dir', 'process.dir', 'data.dir', 'cache.dir', 'conf.dir']
+        expected = [['lock.dir'], ['log.dir'], ['process.dir'], ['data.dir'], ['cache.dir'], ['conf.dir']]
         self.assertListEqual(my_values, sorted(expected))
         self.utils.drop_db()
 
@@ -2668,7 +2688,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check method get the right entries from config"""
         manager = Manager()
         my_values = manager.get_config_regex(regex='^db\.', with_values=True)
-        self.assertListEqual(my_values, [self.utils.db_test, self.utils.mongo_url])
+        self.assertListEqual(my_values, [['db.name', self.utils.db_test], ['db.url', self.utils.mongo_url]])
         self.utils.drop_db()
 
     @attr('manager')
@@ -2896,12 +2916,12 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         now = time.time()
         manager = Manager(bank='alu')
+        manager.set_simulate(True)
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'current': now},
                                                     '$push': {
                                                         'production': {'session': now,
                                                                        'remoterelease': '54', 'size': '100Mo'}}})
         # Prints on output using simulate mode
-
         self.assertTrue(manager.save_banks_version())
         # Reset to the right user name as previously
         self.utils.drop_db()
