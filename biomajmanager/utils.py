@@ -1,7 +1,6 @@
 """Utilities class for BioMAJ Manager"""
 from __future__ import print_function
 import os
-import pwd
 import sys
 from time import time
 from datetime import datetime

@@ -184,7 +184,6 @@ class Manager(object):
         limit = max_release
         current = None
         if max_release is None:
-            Utils.warn("max_release is None %s" % str(max_release))
             limit = int(self.bank.config.get('keep.old.version'))
         if 'production' not in self.bank.bank:
             Utils.error("[%s] No 'production' found in database" % self.bank.name)

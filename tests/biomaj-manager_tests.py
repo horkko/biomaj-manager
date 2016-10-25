@@ -1559,6 +1559,52 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('manager.checkprodsize')
+    def test_checkProductionSizeMaxReleaseNoneProductionNotSetThrows(self):
+        """Checks the methods throws when production not found in bank database"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        del manager.bank.bank['production']
+        with self.assertRaises(SystemExit):
+            manager.check_production_size()
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.checkprodsize')
+    def test_checkProductionSizeMaxReleaseNoneCurrentSetProductionOverLimit(self):
+        """Checks the methods returns the expected values"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.set_verbose(True)
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now, 'release': 1})
+        manager.bank.bank['production'].append({'session': now + 1, 'release': 2})
+        manager.bank.bank['production'].append({'session': now + 2, 'release': 3})
+        manager.bank.bank['production'].append({'session': now + 3, 'release': 4})
+        expected = ['alu', 3, 1]
+        returned = manager.check_production_size()
+        self.assertEqual(expected, returned)
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.checkprodsize')
+    def test_checkProductionSizeMaxReleaseNoneProductionOK(self):
+        """Checks the methods returns the expected values"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        now = time.time()
+        manager = Manager(bank='alu')
+        manager.set_verbose(True)
+        manager.bank.bank['current'] = now
+        manager.bank.bank['production'].append({'session': now, 'release': 1})
+        manager.bank.bank['production'].append({'session': now + 1, 'release': 2})
+        # As we have do not exceed the limit, empty list returned
+        expected = []
+        returned = manager.check_production_size()
+        self.assertEqual(expected, returned)
+        self.utils.drop_db()
+
+    @attr('manager')
     @attr('manager.cleansessions')
     def test_cleanSessionsNoBankPublishedReturnsFalse(self):
         """Checks method returns False when no 'current' set (get_bank_data_dir)"""
