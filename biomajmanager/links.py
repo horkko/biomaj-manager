@@ -10,20 +10,31 @@ class Links(object):
 
     """Class to manager symbolic links for a bank based on supported formats"""
     DIRS = {
-        'bowtie': [{'target': 'index/bowtie'}], 'bwa': [{'target': 'index/bwa'}],
-        'gatk': [{'target': 'index/gatk'}], 'picard': [{'target': 'index/picard'}],
+        'bdb': [{'target': 'index/bdb'}],
+        'blast+': [{'target': 'index/blast+'}],
+        'bowtie': [{'target': 'index/bowtie'}],
+        'bwa': [{'target': 'index/bwa'}],
+        'flat': [{'target': 'ftp'}],
+        'fusioncatcher': [{'target': 'index/fusioncatcher'}],
+        'gatk': [{'target': 'index/gatk'}],
+        'gmap': [{'target': 'index/gmap'}],
+        'golden': [{'target': 'index/golden'}],
         'liftover': [{'target': 'index/liftover'}],
-        'samtools': [{'target': 'index/samtools'}], 'fusioncatcher': [{'target': 'index/fusioncatcher'}],
-        'golden': [{'target': 'index/golden'}], 'soap': [{'target': 'index/soap'}],
-        'blast+': [{'target': 'index/blast+'}], 'flat': [{'target': 'ftp'}],
+        'picard': [{'target': 'index/picard'}],
+        'samtools': [{'target': 'index/samtools'}],
+        'soap': [{'target': 'index/soap'}],
+        'taxo_ncbi': [{'target': 'index/taxo_ncbi'}],
+        'taxo_rrna': [{'target': 'index/taxo_rrna'}],
         'uncompressed': [{'target': 'release', 'fallback': 'flat'},
                          {'target': 'index/golden', 'requires': 'golden'}],
         }
     # This creates a clone of the source directory (files and subdirs) into target
     CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
                             {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
+                            {'source': 'gmap'},
                             {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
-                            {'source': 'bdb', 'remove_ext': True}],
+                            {'source': 'bdb', 'remove_ext': True}, {'source': 'taxo_rrna', 'remove_ext': True},
+                            {'source': 'taxo_ncbi', 'remove_ext': True}],
                   # 'fasta': [{'source': 'blast2', 'remove_ext': True}, {'source': 'fasta', 'remove_ext': True}]
                   }
 
