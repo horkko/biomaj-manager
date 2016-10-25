@@ -443,14 +443,17 @@ class Manager(object):
             try:
                 value = self.bank.config.get(field)
                 if value is None:
+                    Utils.warn("Field '%s' not found in bank configuration, skipping." % field)
                     continue
-                #if field == 'protocol' and value == 'multi':
-                #    lfields = self.get_
-                remote.append([field, value])
+                if field == 'protocol' and value == 'multi':
+                    cfields = self.get_config_regex(regex='^remote\.file\..*$')
+                    for key, value in cfields:
+                        remote.append([key, value])
+                else:
+                    remote.append([field, value])
             except Error as err:
                 Utils.warn("Field %s not found in bank configuration: %s" % (field, str(err)))
         return remote
-
 
     @bank_required
     def get_bank_packages(self):
@@ -552,7 +555,7 @@ class Manager(object):
         :type regex: str
         :param with_values: Returns values instead of keys, default True
         :type with_values: bool
-        :return: Sorted List of values found
+        :return: Sorted List of list [key] or [key, value] if with_value is True
         :rtype: list
         :raises SystemExit: If not 'regex' arg given
         """
@@ -560,15 +563,22 @@ class Manager(object):
             Utils.error("Regular expression required to get config regex")
         pattern = re.compile(regex)
         keys = dict(self.config.items(section))
+        # Add bank config keys as well
+        if self.bank is not None:
+            keys.update(dict(self.bank.config.config_bank.items(section)))
         keys = sorted(keys)
         values = []
         for key in keys:
             if re.search(pattern, key):
-                if self.config.has_option(section, key):
-                    if with_values:
-                        values.append(self.config.get(section, key))
-                    else:
-                        values.append(key)
+                if with_values:
+                    value = None
+                    if self.config.has_option(section, key):
+                        value = self.config.get(section, key)
+                    elif self.bank.config.config_bank.has_option(section, key):
+                        value = self.bank.config.config_bank.get(section, key)
+                    values.append([key, value])
+                else:
+                    values.append([key])
         return values
 
     def get_current_user(self):

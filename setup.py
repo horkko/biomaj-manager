@@ -32,12 +32,12 @@ config = {
         'Programming Language :: Python :: 3.4'
     ],
     'install_requires': ['biomaj',
-			 'Jinja2',
-			 'Yapsy'],
+                         'Jinja2',
+                         'Yapsy'],
     'include_package_data': True,
-    'author' :'Emmanuel Quevillon',
-    'author_email' :'tuco@pasteur.fr,horkko@gmail.com',
-    'description' :'BioMAJ3 contribution Swiss knife'
+    'author': 'Emmanuel Quevillon',
+    'author_email': 'tuco@pasteur.fr,horkko@gmail.com',
+    'description': 'BioMAJ3 contribution Swiss knife'
 }
 
 setup(**config)
