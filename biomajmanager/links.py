@@ -17,7 +17,7 @@ class Links(object):
         'flat': [{'target': 'ftp'}],
         'fusioncatcher': [{'target': 'index/fusioncatcher'}],
         'gatk': [{'target': 'index/gatk'}],
-        'gmap': [{'target': 'index/gmap'}],
+        'gmap': [{'target': 'index/gmap', 'limit': 2}],
         'golden': [{'target': 'index/golden'}],
         'liftover': [{'target': 'index/liftover'}],
         'picard': [{'target': 'index/picard'}],
@@ -31,7 +31,7 @@ class Links(object):
     # This creates a clone of the source directory (files and subdirs) into target
     CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
                             {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
-                            {'source': 'gmap'},
+                            {'source': 'gmap', 'limit': 2},
                             {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
                             {'source': 'bdb', 'remove_ext': True}, {'source': 'taxo_rrna', 'remove_ext': True},
                             {'source': 'taxo_ncbi', 'remove_ext': True}],
@@ -168,7 +168,7 @@ class Links(object):
             Utils.error("target required")
         return True
 
-    def _clone_structure(self, source=None, target=None, remove_ext=False):
+    def _clone_structure(self, source=None, target=None, remove_ext=False, limit=0):
         """
         Create a directory structure from a source to a target point and link all files from source inside target
 
@@ -178,6 +178,8 @@ class Links(object):
         :type target: str
         :param remove_ext: Create another link of the file without the file name extension
         :type remove_ext: bool
+        :param limit: Limit subtree seach to value, default 0, no limit
+        :tpye limit: int
         :return: True if structure cloning build OK, throws otherwise
         :rtype: bool
         :raise SystemExit: If error occurred during directory structure building
@@ -188,13 +190,14 @@ class Links(object):
         # the target name
         target = os.path.join(target, source)
         source = os.path.join(self.bank_data_dir, source)
-        subtrees = Utils.get_subtree(path=source)
+        subtrees = Utils.get_subtree(path=source, limit=limit)
+
         try:
             for subtree in subtrees:
                 end_target = os.path.join(self.prod_dir, target, subtree)
                 if not os.path.exists(end_target) and not os.path.isdir(end_target):
                     if Manager.get_simulate() and Manager.get_verbose():
-                        Utils.verbose("[%s] Creating directory %s" % (self.bank_name, end_target))
+                        Utils.verbose("[_clone_structure] [%s] Creating directory %s" % (self.bank_name, end_target))
                     else:
                         if not Manager.get_simulate():
                             os.makedirs(end_target)
@@ -231,7 +234,7 @@ class Links(object):
 
         return True
 
-    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, requires=None):
+    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, requires=None, limit=0):
         """
         Create a symbolic link between 'source' and 'target' for a directory
 
@@ -245,11 +248,13 @@ class Links(object):
         :type fallback: str
         :param requires: A required directory
         :type requires: str
+        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :type limit: int
         :return: Number of created link(s)
         :rtype: int
         """
         if not self._prepare_links(source=source, target=target, fallback=fallback,
-                                   requires=requires, get_deepest=True):
+                                   requires=requires, get_deepest=True, limit=limit):
             return 0
 
         slink = os.path.join(self.source)
@@ -341,7 +346,7 @@ class Links(object):
                     self.add_link()
         return self.created_links
 
-    def _prepare_links(self, source=None, target=None, get_deepest=False, fallback=None, requires=None):
+    def _prepare_links(self, source=None, target=None, get_deepest=False, fallback=None, requires=None, limit=0):
         """
         Prepare stuff to create links
 
@@ -355,6 +360,8 @@ class Links(object):
         :type fallback: str
         :param requires: A required file or directory
         :type requires: str
+        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :type limit: int
         :return: Boolean
         :rtype: bool
         :raises SystemExit: If 'source' or 'target' are None
@@ -388,13 +395,13 @@ class Links(object):
                         return False
 
         if get_deepest:
-            source = Utils.get_deepest_dir(source, full=get_deepest)
+            source = Utils.get_deepest_dir(source, full=get_deepest, limit=limit)
         target = os.path.join(target_dir, target)
 
         # Check destination directory where to create link(s)
         if not os.path.exists(target) and not os.path.isdir(target):
             if Manager.get_simulate() and Manager.get_verbose():
-                Utils.verbose("[%s] Creating directory %s" % (bank_name, target))
+                Utils.verbose("[_prepare_links] [%s] Creating directory %s" % (bank_name, target))
             else:
                 try:
                     if not Manager.get_simulate():

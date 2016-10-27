@@ -138,7 +138,7 @@ class Utils(object):
         return os.listdir(path)
 
     @staticmethod
-    def get_deepest_dirs(path=None, full=False):
+    def get_deepest_dirs(path=None, full=False, limit=0):
         """
         Get the last directories from a path
 
@@ -146,6 +146,8 @@ class Utils(object):
         :type path: str
         :param full: Get the full path otherwise the directory only
         :type full: bool
+        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :type limit: int
         :return: List of directories
         :rtype: list
         :raises SystemExit: If 'path' not given or does not exist
@@ -157,16 +159,24 @@ class Utils(object):
             Utils.error("%s does not exists" % str(path))
 
         dirs = []
+        loop = 0
         for dir_path, dir_names, _ in os.walk(path):
+            if limit and limit == loop:
+                if full:
+                    dirs.append(dir_path)
+                else:
+                    dirs.append(os.path.basename(dir_path))
+                break
             if len(dir_names) == 0:
                 if full:
                     dirs.append(dir_path)
                 else:
                     dirs.append(os.path.basename(dir_path))
+            loop += 1
         return dirs
 
     @staticmethod
-    def get_deepest_dir(path=None, full=False):
+    def get_deepest_dir(path=None, full=False, limit=0):
         """
         Return only one deepest dir from the path
 
@@ -174,10 +184,12 @@ class Utils(object):
         :type path: str
         :param full: Returns complete path or not
         :type full: bool
+        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :type limit: int
         :return: Directory name
         :rtype: str
         """
-        dirs = Utils.get_deepest_dirs(path, full=full)
+        dirs = Utils.get_deepest_dirs(path, full=full, limit=limit)
         if len(dirs) > 1:
             Utils.warn("More than one deepest dir found at %s: Only first returned" % str(path))
         return dirs[0]
@@ -193,13 +205,15 @@ class Utils(object):
         return Utils.time2datefmt(time())
 
     @staticmethod
-    def get_subtree(path=None):
+    def get_subtree(path=None, limit=0):
         """
         Get the subtree structure from a root path
 
         E.g.: File system is /t/a1/a2/a3, get_subtree(path='/t') -> /a1/a2/a3
         :param path: Root path to get subtree structure from
         :type path: str
+        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :type limit: int
         :return: List of found subtree
         :rtype: list
         """
@@ -207,11 +221,18 @@ class Utils(object):
         if path is None:
             Utils.warn("No root path directory given")
             return subtrees
+        loop = 0
         for dir_path, dir_name, file_name in os.walk(path):
+            if limit and limit == loop:
+                subtree = dir_path.split(path)[-1]
+                subtree = subtree.lstrip('/')
+                subtrees.append(subtree)
+                break
             if len(dir_name) == 0:
                 subtree = dir_path.split(path)[-1]
                 subtree = subtree.lstrip('/')
                 subtrees.append(subtree)
+            loop += 1
         return subtrees
 
     @staticmethod
