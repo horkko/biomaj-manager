@@ -160,7 +160,7 @@ class RSS(News):
                         items=items)
             if self.fh is None:
                 self.fh = open(self.rss_file, 'w')
-            Utils._print(feed.rss(), to=self.fh)
+            Utils.uprint(feed.rss(), to=self.fh)
             if self.rss_file is not None:
                 self.fh.close()
         except (NoOptionError, NoSectionError) as err:

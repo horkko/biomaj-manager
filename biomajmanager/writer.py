@@ -80,5 +80,5 @@ class Writer(object):
                 ofile = open(self.output, 'w')
             except IOError as err:
                 Utils.error("Can't open %s: %s" % (self.output, str(err)))
-        Utils._print(template.render(data), to=ofile)
+        Utils.uprint(template.render(data), to=ofile)
         return True

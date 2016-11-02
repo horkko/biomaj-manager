@@ -33,8 +33,8 @@ def main():
     # Options without value
     parser.add_argument('-A', '--check_prod_release', dest="prodrelease", metavar='Max release', type=int,
                         const=True, nargs='?',
-                        help="Look for bank having stored releases greater than [Max release, default to 'keep.old.version'].\
-                              [-b available]")
+                        help="Look for bank having stored releases greater than [Max release, default to \
+                             'keep.old.version']. [-b available]")
     parser.add_argument('-D', '--save_versions', dest="save_versions", action="store_true", default=False,
                         help="Prints info about all banks into version file. (Requires permissions)")
     parser.add_argument('-H', '--history', dest="history", action="store_true", default=False,

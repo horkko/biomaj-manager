@@ -9,6 +9,7 @@ __author__ = 'tuco'
 class Links(object):
 
     """Class to manager symbolic links for a bank based on supported formats"""
+
     DIRS = {
         'bdb': [{'target': 'index/bdb'}],
         'blast+': [{'target': 'index/blast+'}],

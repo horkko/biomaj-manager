@@ -33,11 +33,11 @@ plugins.dir=%(root.dir)s/plugins
 Usage
 =====
 ```
-usage: biomaj-manager.py [-h] [-D] [-H] [-i] [-J] [-l] [-L] [-M] [-N] [-n]
-                         [-P] [-R] [-s] [-X] [-U] [-v] [-V] [--test] [-Z]
-                         [-b BANK] [-B [path to check]] [-C [path to clean]]
-                         [-c CONFIG] [--db_type DB_TYPE] [-E [session id]]
-                         [-o OUT] [-F OFORMAT] [-r RELEASE]
+usage: biomaj-manager.py [-h] [-A [Max release]] [-D] [-H] [-i] [-I] [-J] [-l]
+                         [-L] [-M] [-N] [-n] [-P] [-R] [-s] [-X] [-U] [-v]
+                         [-V] [--test] [-Z] [-b BANK] [-B [path to check]]
+                         [-C [path to clean]] [-c CONFIG] [--db_type DB_TYPE]
+                         [-E [session id]] [-o OUT] [-F OFORMAT] [-r RELEASE]
                          [-S [blast2|golden]] [-T TEMPLATE_DIR]
                          [--vdbs [blast2|golden]]
                          [--visibility all|public|private] [-w file:seq_num]
@@ -46,10 +46,16 @@ BioMAJ Manager adds some functionality around BioMAJ.
 
 optional arguments:
   -h, --help            show this help message and exit
+  -A [Max release], --check_prod_release [Max release]
+                        Look for bank having stored releases greater than [Max
+                        release, default to 'keep.old.version']. [-b
+                        available]
   -D, --save_versions   Prints info about all banks into version file.
                         (Requires permissions)
   -H, --history         Prints banks releases history. [-b] available.
   -i, --info            Print info about a bank. [-b REQUIRED]
+  -I, --remote-info     Print remote info for a bank remote connection. [-b
+                        REQUIRED]
   -J, --check_links     Check if the bank required symlinks to be created
                         (Permissions required). [-b REQUIRED]
   -l, --links           Just (re)create symlink, don't do any bank switch.

@@ -266,7 +266,8 @@ class Manager(object):
             if 'workflow_status' in session and not session['workflow_status']:
                 if session['id'] in pendings:
                     continue
-            tasks_to_do.append({'release': str(session['release']), 'sid': session['id'], 'type': field_name, 'key': id_key})
+            tasks_to_do.append({'release': str(session['release']), 'sid': session['id'],
+                                'type': field_name, 'key': id_key})
 
         if len(tasks_to_do):
             cleaned = 0
@@ -1153,7 +1154,7 @@ class Manager(object):
                                                                               else 'NA',
                                                             bank.config.get('server'))
                                 if Manager.simulate:
-                                    Utils._print(file_line)
+                                    Utils.uprint(file_line)
                                 else:
                                     fv.write(file_line)
         except Exception as e:
@@ -1669,7 +1670,7 @@ class Manager(object):
 
         :param name: Name of the defined job in the manager.properties file, section 'JOBS'
         :type name: str
-        :param args: List of args to pass to the commande
+        :param args: List of args to pass to the command
         :type args: list
         :return: Result of the command ran
         :rtype: bool

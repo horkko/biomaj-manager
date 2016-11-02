@@ -52,9 +52,9 @@ class Utils(object):
                 if Manager.verbose:
                     Utils.ok("No dead link found (%s)" % str(path))
             else:
-                Utils._print("* %d link(s) need to be cleaned (%s):" % (int(len(broken)), str(path)))
+                Utils.uprint("* %d link(s) need to be cleaned (%s):" % (int(len(broken)), str(path)))
                 if Manager.verbose:
-                    Utils._print("\n".join(broken))
+                    Utils.uprint("\n".join(broken))
                     Utils.warn("\n".join(broken))
             return len(broken)
         else:
@@ -96,7 +96,7 @@ class Utils(object):
         :rtype: str
         :raises SystemExit:
         """
-        Utils._print("[ERROR] %s" % str(msg), to=sys.stderr)
+        Utils.uprint("[ERROR] %s" % str(msg), to=sys.stderr)
         sys.exit(1)
 
     @staticmethod
@@ -222,7 +222,7 @@ class Utils(object):
             Utils.warn("No root path directory given")
             return subtrees
         loop = 0
-        for dir_path, dir_name, file_name in os.walk(path):
+        for dir_path, dir_name, _ in os.walk(path):
             if limit and limit == loop:
                 subtree = dir_path.split(path)[-1]
                 subtree = subtree.lstrip('/')
@@ -246,7 +246,7 @@ class Utils(object):
         :rtype: str
         """
         if msg:
-            Utils._print("[OK] %s" % str(msg))
+            Utils.uprint("[OK] %s" % str(msg))
 
     @staticmethod
     def reset_timer():
@@ -255,7 +255,7 @@ class Utils(object):
         Utils.timer_stop = 0.0
 
     @staticmethod
-    def _print(msg, to=sys.stdout):
+    def uprint(msg, to=sys.stdout):
         """
         Redefined print function to support python 2 and 3
 
@@ -334,7 +334,7 @@ class Utils(object):
         """
         from .manager import Manager
         if Manager.verbose and Utils.show_verbose:
-            Utils._print('[VERBOSE] %s' % str(msg))
+            Utils.uprint('[VERBOSE] %s' % str(msg))
 
     @staticmethod
     def warn(msg):
@@ -347,4 +347,4 @@ class Utils(object):
         :rtype: str
         """
         if Utils.show_warn:
-            Utils._print('[WARNING] %s' % str(msg), to=sys.stderr)
+            Utils.uprint('[WARNING] %s' % str(msg), to=sys.stderr)
