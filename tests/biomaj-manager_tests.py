@@ -434,7 +434,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
     @attr('utils.print')
     def test_UtilsSayReturnsNone(self):
         """Check the method returns empty string"""
-        self.assertIsNone(Utils._print(None))
+        self.assertIsNone(Utils.uprint(None))
 
     @attr('utils')
     @attr('utils.print')
@@ -448,7 +448,7 @@ class TestBiomajManagerUtils(unittest.TestCase):
         except ImportError:
             from io import StringIO
         out = StringIO()
-        Utils._print(msg, to=out)
+        Utils.uprint(msg, to=out)
         returned = out.getvalue()
         self.assertEqual(expected, returned)
 
