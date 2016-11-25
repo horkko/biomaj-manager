@@ -120,6 +120,8 @@ def main():
         banks = []
         Utils.start_timer()
         manager = Manager(global_cfg=options.config)
+        supp_formats = manager.formats_available()
+        supp_formats += ['raw']
         if options.bank:
             banks.append(options.bank)
         else:
@@ -128,16 +130,15 @@ def main():
             manager.set_bank_from_name(name=bank)
             formats.append({'name': bank, 'formats': manager.formats_as_string(),
                             'fullname': manager.bank.config.get('db.fullname').replace('"', '')})
+
         if options.oformat:
             writer = Writer(config=manager.config, output=options.out, template_dir=options.template_dir)
             writer.write(template='banks_formats.j2.' + options.oformat,
-                         data={'banks': formats, 'generated': Utils.get_now(),
+                         data={'banks': formats, 'header': supp_formats,
                                'elapsed': "%.3f" % Utils.elapsed_time()})
             sys.exit(0)
         else:
             info = []
-            supp_formats = ['bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'GenomeAnalysisTK', 'samtools',
-                            'soap', 'picard', 'raw', 'uncompressed']
             for fmt in formats:
                 fmts = fmt['formats']
                 list_fmt = [fmt['name']]
@@ -148,8 +149,7 @@ def main():
                     list_fmt.append(supported)
                 info.append(list_fmt)
             if len(info):
-                info.insert(0, ['Bank', 'bdb', 'blast', 'fasta', 'golden', 'hmmer', 'bowtie', 'bwa', 'gatk', 'samtools',
-                                'soap', 'picard', 'raw', 'uncompressed'])
+                info.insert(0, ['Bank'] + supp_formats)
                 print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
             else:
                 print("No formats supported")

@@ -343,7 +343,6 @@ class Manager(object):
                     formats[name].append(version)
                 else:
                     formats.append("@".join([name, version]))
-
         return formats
 
     @bank_required
@@ -355,6 +354,24 @@ class Manager(object):
         :rtype: list
         """
         return self.formats(flat=True)
+
+    def formats_available(self):
+        """
+        Build list of all supported formats by reading bank properties
+
+        :param sorted: Sort output
+        :type sorted: bool
+        :return: List of supported formats
+        :rtype: list
+        """
+        banks = Manager.get_bank_list()
+        formats = {}
+        for bank in banks:
+            self.set_bank_from_name(name=bank)
+            fmts = self.formats(flat=True)
+            formats.update(fmts)
+        formats = sorted(formats, key=str.lower)
+        return formats
 
     @bank_required
     def get_bank_data_dir(self):
