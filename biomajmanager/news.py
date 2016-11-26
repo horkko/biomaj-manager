@@ -3,9 +3,12 @@
 from biomajmanager.utils import Utils
 from rfeed import Item, Feed, Guid
 from datetime import datetime
-from configparser import NoOptionError, NoSectionError
 import os
 import sys
+try:
+    from ConfigParser import NoOptionError, NoSectionError
+except ImportError:
+    from configparser import NoOptionError, NoSectionError
 
 
 class News(object):
@@ -148,8 +151,9 @@ class RSS(News):
                             description=new['text'],
                             author=self.config.get('RSS', 'feed.author'),
                             guid=Guid(self.config.get('RSS', 'feed.news.link') + '#' + str(new['item'])),
-                            pubDate=datetime.strptime(new['date'], self.config.get('RSS', 'rss.date.format')
-                                                                   .replace('%%', '%'))
+                            pubDate=datetime.strptime(new['date'],
+                                                      self.config.get('RSS', 'rss.date.format')
+                                                      .replace('%%', '%'))
                             )
                 items.append(item)
             feed = Feed(title=self.config.get('RSS', 'feed.title'),

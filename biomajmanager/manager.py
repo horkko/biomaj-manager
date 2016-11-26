@@ -359,8 +359,6 @@ class Manager(object):
         """
         Build list of all supported formats by reading bank properties
 
-        :param sorted: Sort output
-        :type sorted: bool
         :return: List of supported formats
         :rtype: list
         """
@@ -1566,13 +1564,7 @@ class Manager(object):
         :return: Current user name
         :rtype: str
         """
-        logname = None
-
-        if 'LOGNAME' in os.environ:
-            logname = os.getenv('LOGNAME')
-        elif 'USER' in os.environ:
-            logname = os.getenv('USER')
-        return logname
+        return Utils.user()
 
     def _check_config_jobs(self, name):
         """

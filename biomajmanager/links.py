@@ -118,7 +118,7 @@ class Links(object):
         if 'owner' in props and props['owner']:
             admin = props['owner']
         if Utils.user() != admin:
-            Utils.error("[%s] You are not allowed to create link(s)" % Utils.user())
+            Utils.error("%s is not allowed to create link(s)" % Utils.user())
 
         # Our default internal use
         if dirs is None:

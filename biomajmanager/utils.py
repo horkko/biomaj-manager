@@ -2,6 +2,7 @@
 from __future__ import print_function
 import os
 import sys
+import getpass
 from time import time
 from datetime import datetime
 
@@ -255,24 +256,6 @@ class Utils(object):
         Utils.timer_stop = 0.0
 
     @staticmethod
-    def uprint(msg, to=sys.stdout):
-        """
-        Redefined print function to support python 2 and 3
-
-        :param msg: Message to print
-        :type msg: str
-        :param to: File handle
-        :type to: file
-        :return: Message to print
-        :rtype: str
-        """
-        if not msg:
-            return
-        msg = str(msg).rstrip("\n")
-        print(msg, file=to)
-        return
-
-    @staticmethod
     def start_timer():
         """Set current time at function call"""
         Utils.timer_start = time()
@@ -309,18 +292,35 @@ class Utils(object):
         return datetime.fromtimestamp(otime).strftime(fmt)
 
     @staticmethod
+    def uprint(msg, to=sys.stdout):
+        """
+        Redefined print function to support python 2 and 3
+
+        :param msg: Message to print
+        :type msg: str
+        :param to: File handle
+        :type to: file
+        :return: Message to print
+        :rtype: str
+        """
+        if not msg:
+            return
+        msg = str(msg).rstrip("\n")
+        print(msg, file=to)
+        return
+
+    @staticmethod
     def user():
         """
-        Returns the current user running or using the script. Taken from pwd and os
+        Returns the current user running or using the script. Given by getpass.getuser()
 
         :return: User name
         :rtype: str
         """
-        if 'USER' in os.environ:
-            return os.getenv('USER')
-        if 'LOGNAME' in os.environ:
-            return os.getenv('LOGNAME')
-        Utils.error("Can't find user name in USER nor LOGNAME")
+        user = getpass.getuser()
+        if not user:
+            Utils.error("Can't find user name!")
+        return user
 
     @staticmethod
     def verbose(msg):

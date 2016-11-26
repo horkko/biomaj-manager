@@ -482,11 +482,17 @@ class TestBiomajManagerUtils(unittest.TestCase):
     @attr('utils.user')
     def test_UserUSEROK(self):
         """Check the testing user is ok with USER"""
-        user = os.getenv('USER')
-        logname = os.getenv('LOGNAME')
-        del(os.environ['LOGNAME'])
-        self.assertEqual(Utils.user(), user)
-        os.environ['LOGNAME'] = logname
+        buser = blogname = None
+        if 'USER' in os.environ:
+            buser = os.environ['USER']
+        if 'LOGNAME' in os.environ:
+            blogname = os.environ['LOGNAME']
+            del(os.environ['LOGNAME'])
+        self.assertEqual(Utils.user(), buser)
+        if buser:
+            os.environ['USER'] = buser
+        if blogname:
+            os.environ['LOGNAME'] = blogname
 
     @attr('utils')
     @attr('utils.user')
@@ -505,18 +511,33 @@ class TestBiomajManagerUtils(unittest.TestCase):
         user = "fakeUser"
         self.assertNotEqual(Utils.user(), user)
 
-    @attr('utils')
-    @attr('utils.user')
-    def test_userNoEnvironmentVariableThrows(self):
-        """Check method throws when none of USER and LOGNAME is available"""
-        logname = os.getenv('LOGNAME')
-        user = os.getenv('USER')
-        del(os.environ['USER'])
-        del(os.environ['LOGNAME'])
-        with self.assertRaises(SystemExit):
-            Utils.user()
-        os.environ['USER'] = user
-        os.environ['LOGNAME'] = logname
+    # @attr('utils')
+    # @attr('utils.user')
+    # def test_userNoEnvironmentVariableThrows(self):
+    #     """Check method throws when none of USER and LOGNAME is available"""
+    #     buser = blogname = buname = blname = None
+    #     if 'USER' in os.environ:
+    #         buser = os.environ['USER']
+    #         del os.environ['USER']
+    #     if 'LOGNAME' in os.environ:
+    #         blogname = os.environ['LOGNAME']
+    #         del os.environ['LOGNAME']
+    #     if 'USERNAME' in os.environ:
+    #         buname = os.environ['USERNAME']
+    #         del os.environ['USERNAME']
+    #     if 'LNAME' in os.environ:
+    #         buname = os.environ['LNAME']
+    #         del os.environ['LNAME']
+    #     with self.assertRaises(SystemExit):
+    #         Utils.user()
+    #     if buser:
+    #         os.environ['USER'] = buser
+    #     if blogname:
+    #         os.environ['LOGNAME'] = blogname
+    #     if buname:
+    #         os.environ['USERNAME'] = buname
+    #     if blname:
+    #         os.environ['LNAME'] = blname
 
 
 class TestBiomajManagerWriter(unittest.TestCase):
@@ -797,11 +818,19 @@ class TestBiomajManagerLinks(unittest.TestCase):
     def test_LinksDoLinksThrowsWrongUser(self):
         """Check method throws exception because user not authorized"""
         links = Links(manager=self.utils.manager)
-        cuser = Utils.user()
-        os.environ['USER'] = 'fakeuser'
+        buser = blogname = None
+        if 'USER' in os.environ:
+            buser = os.environ['USER']
+            os.environ['USER'] = 'fakeuser'
+        if 'LOGNAME' in os.environ:
+            blogname = os.environ['LOGNAME']
+            os.environ['LOGNAME'] = 'fakeuser'
         with self.assertRaises(SystemExit):
             links.do_links()
-        os.environ['USER'] = cuser
+        if buser:
+            os.environ['USER'] = buser
+        if blogname:
+            os.environ['LOGNAME'] = blogname
 
     @attr('links')
     @attr('links.dolinks')
@@ -832,6 +861,13 @@ class TestBiomajManagerLinks(unittest.TestCase):
         self.utils.copy_file(ofile='news3.txt', todir=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         exp_files = {'blast2': [{'target': 'index/blast2'}]}
         self.assertEqual(links.do_links(dirs=self.utils.dirs, files=exp_files), 8)
+
+    @attr('links1')
+    @attr('links.dolinks')
+    def test_LinksDoLinksDirsSetNone(self):
+        """Passed method with args dirs set to None"""
+        links = Links(manager=self.utils.manager)
+        self.assertEqual(links.do_links(dirs=None, files=None, clone_dirs=None), 6)
 
     @attr('links')
     @attr('links.preparelinks')
@@ -1412,12 +1448,20 @@ class TestBioMajManagerDecorators(unittest.TestCase):
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         # Just change the env LOGNAME do misfit with db user
-        cuser = os.environ.get('LOGNAME')
-        os.environ['LOGNAME'] = "fakeuser"
+        buser = blogname = None
+        if 'USER' in os.environ:
+            buser = os.environ['USER']
+            os.environ['USER'] = 'fakeuser'
+        if 'LOGNAME' in os.environ:
+            blogname = os.environ['LOGNAME']
+            os.environ['LOGNAME'] = 'fakeuser'
         with self.assertRaises(SystemExit):
             manager.save_banks_version(bank_file=self.utils.test_dir + '/saved_versions.txt')
         # Reset to the right user name as previously
-        os.environ['LOGNAME'] = cuser
+        if buser:
+            os.environ['USER'] = buser
+        if blogname:
+            os.environ['LOGNAME'] = blogname
         self.utils.drop_db()
 
     @attr('decorators')
@@ -2041,28 +2085,39 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
-    @attr('manager.getcurrentuser')
-    def test_ManagerGetCurrentUserTestUSEROK(self):
-        """Check we can get USER from environ with LOGNAME unset"""
-        backlog = ""
-        user = os.getenv('USER')
-        if 'LOGNAME' in os.environ:
-            backlog = os.environ['LOGNAME']
-            del os.environ['LOGNAME']
-        manager = Manager()
-        self.assertEqual(manager.get_current_user(), user)
-        if 'LOGNAME' not in os.environ:
-            os.environ['LOGNAME'] = backlog
+    @attr('manager.formatsavailable')
+    def test_ManagerFormatsAvailableRetunsOK(self):
+        """Checks the methods returns the correct list of available formats/indexes"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        returned = manager.formats_available()
+        expected = ['blast', 'fasta']
+        self.assertListEqual(expected, returned)
+        self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.getcurrentuser')
-    def test_ManagerGetCurrentUserTestUserIsNone(self):
-        """Check method throws exception when env LOGNAME and USER not found"""
+    def test_ManagerGetCurrentUserTestUSEROK(self):
+        """Check we can get USER from environ with LOGNAME unset"""
+        blogname = None
+        if 'LOGNAME' in os.environ:
+            blogname = os.environ['LOGNAME']
+            del os.environ['LOGNAME']
+        user = os.getenv('USER')
         manager = Manager()
-        backup = os.environ.copy()
-        os.environ = {}
-        self.assertIsNone(manager.get_current_user())
-        os.environ = backup
+        self.assertEqual(manager.get_current_user(), user)
+        if 'LOGNAME' not in os.environ:
+            os.environ['LOGNAME'] = blogname
+
+    # @attr('manager')
+    # @attr('manager.getcurrentuser')
+    # def test_ManagerGetCurrentUserTestUserIsNone(self):
+    #     """Check method throws exception when env LOGNAME and USER not found"""
+    #     manager = Manager()
+    #     backup = os.environ.copy()
+    #     os.environ = {}
+    #     self.assertIsNone(manager.get_current_user())
+    #     os.environ = backup
 
     @attr('manager')
     @attr('manager.getfailedprocess')
