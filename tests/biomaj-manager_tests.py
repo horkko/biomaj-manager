@@ -3896,7 +3896,10 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """Check config instance is OK"""
         manager = Manager()
         manager.load_plugins()
-        from configparser import RawConfigParser
+        try:
+            from Configparser import RawConfigParser
+        except ImportError:
+            from configparser import RawConfigParser
         self.assertIsInstance(manager.plugins.myplugin.get_config(), RawConfigParser)
 
     @attr('plugins')
