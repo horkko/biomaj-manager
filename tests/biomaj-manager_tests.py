@@ -3897,7 +3897,7 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         manager = Manager()
         manager.load_plugins()
         try:
-            from Configparser import RawConfigParser
+            from ConfigParser import RawConfigParser
         except ImportError:
             from configparser import RawConfigParser
         self.assertIsInstance(manager.plugins.myplugin.get_config(), RawConfigParser)
