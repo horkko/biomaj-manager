@@ -120,15 +120,17 @@ def main():
         banks = []
         Utils.start_timer()
         manager = Manager(global_cfg=options.config)
-        supp_formats = manager.formats_available()
-        supp_formats += ['raw']
+        supp_formats= ['raw']
+        supp_formats += manager.formats_available()
         if options.bank:
             banks.append(options.bank)
         else:
             banks = Manager.get_bank_list()
         for bank in banks:
             manager.set_bank_from_name(name=bank)
-            formats.append({'name': bank, 'formats': manager.formats_as_string(),
+            dbformats = manager.formats_as_string()
+            dbformats['raw'] = manager.bank.config.get('db.formats')
+            formats.append({'name': bank, 'formats': dbformats,
                             'fullname': manager.bank.config.get('db.fullname').replace('"', '')})
 
         if options.oformat:
@@ -144,8 +146,10 @@ def main():
                 list_fmt = [fmt['name']]
                 for supp_fmt in supp_formats:
                     supported = ''
-                    if supp_fmt in fmts or supp_fmt == 'raw':
+                    if supp_fmt in fmts:
                         supported = 'ok'
+                    if supp_fmt == 'raw':
+                        supported = fmt['formats'][supp_fmt]
                     list_fmt.append(supported)
                 info.append(list_fmt)
             if len(info):
