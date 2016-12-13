@@ -3701,7 +3701,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager()
         manager.config.remove_option('JOBS', 'stop.running.jobs.exe')
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertFalse(manager.stop_running_jobs())
         os.environ["LOGNAME"] = back_log
@@ -3713,7 +3716,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager = Manager()
         manager.config.remove_option('JOBS', 'restart.stopped.jobs.exe')
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertFalse(manager.restart_stopped_jobs())
         os.environ["LOGNAME"] = back_log
@@ -3724,7 +3730,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check restart jobs runs OK"""
         manager = Manager()
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertTrue(manager.restart_stopped_jobs())
         os.environ["LOGNAME"] = back_log
@@ -3735,7 +3744,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check restart jobs runs OK"""
         manager = Manager()
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         manager.config.set('JOBS', 'restart.stopped.jobs.exe', '/nobin/cmd')
         with self.assertRaises(SystemExit):
@@ -3748,7 +3760,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check restart jobs runs OK"""
         manager = Manager()
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertTrue(manager.stop_running_jobs())
         os.environ["LOGNAME"] = back_log
@@ -3759,7 +3774,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check restart jobs runs OK"""
         manager = Manager()
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         manager.config.set('JOBS', 'stop.running.jobs.exe', '/nobin/cmd')
         with self.assertRaises(SystemExit):
@@ -3772,7 +3790,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check the addition of extra args onto the command line is OK"""
         manager = Manager()
         # Grans usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ['LOGNAME'] = manager.config.get('GENERAL', 'admin')
         self.assertTrue(manager.stop_running_jobs(args=['EXTRA ARGS']))
         os.environ["LOGNAME"] = back_log
@@ -3783,7 +3804,10 @@ class TestBioMajManagerManager(unittest.TestCase):
         """Check the method throws exception when extra Args for command line is not a List"""
         manager = Manager()
         # Grant usage for current user
-        back_log = os.environ["LOGNAME"]
+        if 'LOGNAME' in os.environ:
+            back_log = os.environ["LOGNAME"]
+        else:
+            back_log = Utils.user()
         os.environ["LOGNAME"] = manager.config.get('GENERAL', 'admin')
         with self.assertRaises(SystemExit):
             manager.stop_running_jobs(args="NOT A LIST AS ARGS")
@@ -3926,7 +3950,10 @@ class TestBiomajManagerPlugins(unittest.TestCase):
         """Check config instance is OK"""
         manager = Manager()
         manager.load_plugins()
-        from configparser import RawConfigParser
+        try:
+            from ConfigParser import RawConfigParser
+        except ImportError:
+            from configparser import RawConfigParser
         self.assertIsInstance(manager.plugins.myplugin.get_config(), RawConfigParser)
 
     @attr('plugins')
