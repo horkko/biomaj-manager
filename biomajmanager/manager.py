@@ -1364,7 +1364,7 @@ class Manager(object):
         """
         Synchronize database with data on disk (data.dir/dbname)
 
-        This method intends to synchronize disk state with info in database. It may appaer that we have
+        This method intends to synchronize disk state with info in database. It may appear that we have
         some extra data displayed and stored in the database ('production' field) that do not exists on
         disk. This might be due to a 'Ctrl-C' during a bank update of iterative updates without 'publish'
         call between each iteration.
@@ -1441,6 +1441,19 @@ class Manager(object):
                 else:
                     releases_dir.pop(prod['prod_dir'])
             else:
+                # If a bank is being update, we may find a filed 'status.over.status' set to 'null
+                if 'status' in self.bank.bank and self.bank.bank['status']['over']['status']:
+                    release = 'not known yet. Check directories in %s.' % self.bank.config.get('data.dir')
+                    if 'release' in self.bank.bank['status'] and self.bank.bank['status']['release']['status']:
+                        release = self.bank.bank['status']['release']['progress']
+                        update_dir = os.path.join(self.bank.config.get('data.dir'),
+                                                  self.bank.name,
+                                                  "_".join([self.bank.config.get('dir.version'), str(release)]))
+                        release = 'in %s' % update_dir
+                    Utils.warn("[%s] Bank is being updated and release is %s. Don't remove it!"
+                               % (self.bank.name, release))
+                    continue
+
                 # Here we need to delete entry from production
                 Utils.verbose("Added %s to be deleted" % prod['prod_dir'])
                 # Need to delete this release directory and set time deleted into db (sessions.deleted)
