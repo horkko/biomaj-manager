@@ -160,6 +160,14 @@ def main():
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
         sys.exit(0)
 
+    if options.brokenlinks:
+        if type(options.brokenlinks) == bool:
+            manager = Manager(global_cfg=options.config)
+            options.brokenlinks = os.path.join(manager.get_production_dir(), 'index')
+        brkln = Utils.get_broken_links(path=options.brokenlinks)
+        print("%d broken link(s)" % brkln)
+        sys.exit(0)
+
     if options.check_links:
         if not options.bank:
             Utils.error("A bank name is required")
@@ -169,6 +177,44 @@ def main():
             print("[%s] %d link(s) need to be created" % (options.bank, linker.created_links))
         else:
             print("[%s] All links OK" % options.bank)
+        sys.exit(0)
+
+    if options.cleanlinks:
+        Utils.start_timer()
+        manager = Manager(global_cfg=options.config)
+        if type(options.cleanlinks) == bool:
+            for key in Links.DIRS.iterkeys():
+                for ddir in Links.DIRS[key]:
+                    path = os.path.join(manager.get_production_dir(), ddir['target'])
+                    Utils.clean_symlinks(path=path, delete=True)
+        else:
+            Utils.clean_symlinks(path=options.cleanlinks, delete=True)
+        Utils.stop_timer()
+        etime = Utils.elapsed_time()
+        print("Cleaned link in %f sec" % etime)
+        sys.exit(0)
+
+    if options.cleansessions:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank, global_cfg=options.config)
+        manager.clean_sessions()
+        sys.exit(0)
+
+    if options.failedprocess:
+        if not options.bank:
+            Utils.error("A bank name is required")
+        manager = Manager(bank=options.bank, global_cfg=options.config)
+        session = options.failedprocess
+        if type(session) == bool:
+            session = None
+        failed = manager.get_failed_processes(session_id=session, full=True)
+        if len(failed):
+            failed.insert(0, ["Last run", "Session", "Release", "Process", "Executable", "Arguments"])
+            print("Failed process(es):")
+            print(tabulate(failed, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+        else:
+            print("No failed process(es)")
         sys.exit(0)
 
     if options.history:
@@ -440,22 +486,6 @@ def main():
             print("No sections found in bank(s)")
         sys.exit(0)
 
-    # Not yet implemented options
-    if options.cleanlinks:
-        Utils.start_timer()
-        manager = Manager(global_cfg=options.config)
-        if type(options.cleanlinks) == bool:
-            for key in Links.DIRS.iterkeys():
-                for ddir in Links.DIRS[key]:
-                    path = os.path.join(manager.get_production_dir(), ddir['target'])
-                    Utils.clean_symlinks(path=path, delete=True)
-        else:
-            Utils.clean_symlinks(path=options.cleanlinks, delete=True)
-        Utils.stop_timer()
-        etime = Utils.elapsed_time()
-        print("Cleaned link in %f sec" % etime)
-        sys.exit(0)
-
     if options.seqcount:
         if not options.bank:
             Utils.error("A bank name is required")
@@ -476,36 +506,6 @@ def main():
             sys.exti(1)
         sys.exit(0)
 
-    if options.cleansessions:
-        if not options.bank:
-            Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank, global_cfg=options.config)
-        manager.clean_sessions()
-        sys.exit(0)
-
-    if options.failedprocess:
-        if not options.bank:
-            Utils.error("A bank name is required")
-        manager = Manager(bank=options.bank, global_cfg=options.config)
-        session = options.failedprocess
-        if type(session) == bool:
-            session = None
-        failed = manager.get_failed_processes(session_id=session, full=True)
-        if len(failed):
-            failed.insert(0, ["Session", "Release", "Process", "Executable", "Arguments"])
-            print("Failed process(es):")
-            print(tabulate(failed, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
-        else:
-            print("No failed process(es)")
-        sys.exit(0)
-
-    if options.brokenlinks:
-        if type(options.brokenlinks) == bool:
-            manager = Manager(global_cfg=options.config)
-            options.brokenlinks = os.path.join(manager.get_production_dir(), 'index')
-        brkln = Utils.get_broken_links(path=options.brokenlinks)
-        print("%d broken link(s)" % brkln)
-        sys.exit(0)
 
 if __name__ == '__main__':
     main()
