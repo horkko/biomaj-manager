@@ -651,9 +651,9 @@ class Manager(object):
                         if not session['status'][step['name']]:
                             # We stop if a step of the update workflow failed
                             if full:
-                                failed.append([session_id, session['release'], step['name'], ""])
+                                failed.append([Utils.time2date(session_id), session_id, session['release'], step['name'], ""])
                             else:
-                                failed.append([step['name']])
+                                failed.append([Utils.time2date(session_id), step['name']])
                             break
 
             if 'process' in session and 'postprocess' in session['process']:
@@ -665,6 +665,7 @@ class Manager(object):
                                 data = []
                                 if full and self.bank.config.get(proc + ".args"):
                                     args = self.bank.config.get(proc + ".args").split(" ")
+                                    data.append(Utils.time2date(session_id) if session_id else "")
                                     data.append(session_id if session_id else "")
                                     data.append(session['release'])
                                     data.append(proc)
@@ -674,7 +675,7 @@ class Manager(object):
                                     for arg in args:
                                         failed.append(["", "", "", arg])
                                 else:
-                                    failed.append([proc])
+                                    failed.append([Utils.time2date(session_id), proc])
                                 session_id = None
         return failed
 
