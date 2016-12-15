@@ -675,7 +675,7 @@ class Manager(object):
                                     for arg in args:
                                         failed.append(["", "", "", arg])
                                 else:
-                                    failed.append([Utils.time2date(session_id), proc])
+                                    failed.append([Utils.time2date(session_id) if session_id else "", proc])
                                 session_id = None
         return failed
 
