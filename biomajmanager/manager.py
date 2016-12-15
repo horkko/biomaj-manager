@@ -651,9 +651,9 @@ class Manager(object):
                         if not session['status'][step['name']]:
                             # We stop if a step of the update workflow failed
                             if full:
-                                failed.append([Utils.time2date(session_id), session_id, session['release'], step['name'], ""])
+                                failed.append([Utils.time2date(session_id), session_id, session['release'], step['name'], "", ""])
                             else:
-                                failed.append([Utils.time2date(session_id), step['name']])
+                                failed.append([Utils.time2date(session_id), session_id, step['name']])
                             break
 
             if 'process' in session and 'postprocess' in session['process']:
@@ -663,19 +663,26 @@ class Manager(object):
                         for proc in processes[block][meta]:
                             if not processes[block][meta][proc]:
                                 data = []
-                                if full and self.bank.config.get(proc + ".args"):
-                                    args = self.bank.config.get(proc + ".args").split(" ")
+                                if full:
+				    args = [] 
+				    exe = self.bank.config.get(proc + ".exe")
+				    if self.bank.config.get(proc + ".args"):
+                                        args = self.bank.config.get(proc + ".args").split(" ")
                                     data.append(Utils.time2date(session_id) if session_id else "")
                                     data.append(session_id if session_id else "")
                                     data.append(session['release'])
                                     data.append(proc)
-                                    data.append(self.bank.config.get(proc + ".exe"))
-                                    data.append(args.pop(0))
+                                    data.append(exe if exe else "N/A")
+                                    data.append(args.pop(0) if len(args) else "N/A")
                                     failed.append(data)
-                                    for arg in args:
-                                        failed.append(["", "", "", arg])
+                                    if args and len(args):
+				        for arg in args:
+                                            failed.append(["", "", "", "", "", arg])
+				    # else:
+				    # 	failed.append(["", "", "", "", "", "N/A"])
                                 else:
-                                    failed.append([Utils.time2date(session_id) if session_id else "", proc])
+                                    failed.append([Utils.time2date(session_id) if session_id else "",
+						  session_id if session_id else "", proc])
                                 session_id = None
         return failed
 
