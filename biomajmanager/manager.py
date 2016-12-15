@@ -664,9 +664,9 @@ class Manager(object):
                             if not processes[block][meta][proc]:
                                 data = []
                                 if full:
-				    args = [] 
-				    exe = self.bank.config.get(proc + ".exe")
-				    if self.bank.config.get(proc + ".args"):
+                                    args = []
+                                    exe = self.bank.config.get(proc + ".exe")
+                                    if self.bank.config.get(proc + ".args"):
                                         args = self.bank.config.get(proc + ".args").split(" ")
                                     data.append(Utils.time2date(session_id) if session_id else "")
                                     data.append(session_id if session_id else "")
@@ -676,10 +676,8 @@ class Manager(object):
                                     data.append(args.pop(0) if len(args) else "N/A")
                                     failed.append(data)
                                     if args and len(args):
-				        for arg in args:
-                                            failed.append(["", "", "", "", "", arg])
-				    # else:
-				    # 	failed.append(["", "", "", "", "", "N/A"])
+                                       for arg in args:
+                                           failed.append(["", "", "", "", "", arg])
                                 else:
                                     failed.append([Utils.time2date(session_id) if session_id else "",
 						  session_id if session_id else "", proc])
