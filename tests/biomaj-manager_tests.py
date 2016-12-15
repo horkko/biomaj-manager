@@ -2513,7 +2513,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.assertTrue(manager.synchronize_db())
         self.utils.drop_db()
 
-    @attr('manager.1')
+    @attr('manager')
     @attr('manager.synchronizedb')
     def test_ManagerSynchDBWithCurrentReleaseAndRunningUpdateAndMissingProductionSimulateONReturnsTrue(self):
         """Do some tests inside loop over productions. Simulate mode ON returns True"""
