@@ -15,6 +15,7 @@ class Links(object):
         'blast+': [{'target': 'index/blast+'}],
         'bowtie': [{'target': 'index/bowtie'}],
         'bwa': [{'target': 'index/bwa'}],
+        'diamond': [{'target': 'index/diamond'}],
         'flat': [{'target': 'ftp'}],
         'fusioncatcher': [{'target': 'index/fusioncatcher'}],
         'gatk': [{'target': 'index/gatk'}],
@@ -32,7 +33,7 @@ class Links(object):
     # This creates a clone of the source directory (files and subdirs) into target
     CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
                             {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
-                            {'source': 'gmap', 'limit': 2},
+                            {'source': 'gmap', 'limit': 2}, {'source': 'diamond'},
                             {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
                             {'source': 'bdb', 'remove_ext': True}, {'source': 'taxo_rrna', 'remove_ext': True},
                             {'source': 'taxo_ncbi', 'remove_ext': True}],
