@@ -2799,7 +2799,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     def test_ManagerGetBankListBioMAJConfigNOTOK(self):
         """Check bank list throws SystemExit exception"""
         from biomaj.mongo_connector import MongoConnector
-        from biomaj.config import BiomajConfig
+        from biomaj_core.config import BiomajConfig
         # Unset MongoConnector and env BIOMAJ_CONF to force config relaod and Mongo reconnect
         MongoConnector.db = None
         BiomajConfig.global_config = None
@@ -2815,7 +2815,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     def test_ManagerGetBankListMongoConnectorNOTOK(self):
         """Check bank list throws ServerSelectionTimeoutError ConnectionFailure exception"""
         from biomaj.mongo_connector import MongoConnector
-        from biomaj.config import BiomajConfig
+        from biomaj_core.config import BiomajConfig
         # Unset MongoConnector and env BIOMAJ_CONF to force config relaod and Mongo reconnect
         config_file = 'global-wrongMongoURL.properties'
         self.utils.copy_file(ofile=config_file, todir=self.utils.conf_dir)

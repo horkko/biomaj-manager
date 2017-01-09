@@ -10,7 +10,6 @@ import shutil
 
 from biomaj.bank import Bank
 from biomaj.workflow import UpdateWorkflow
-# from biomaj.config import BiomajConfig
 from biomaj_core.config import BiomajConfig
 from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
