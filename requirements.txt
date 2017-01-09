@@ -1,4 +1,4 @@
-biomaj_core
+biomaj-core
 Jinja2
 git+https://github.com/svpino/rfeed#egg=rfeed
 Yapsy
