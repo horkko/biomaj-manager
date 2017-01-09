@@ -1447,8 +1447,8 @@ class Manager(object):
                 else:
                     releases_dir.pop(prod['prod_dir'])
             else:
-                # If a bank is being update, we may find a filed 'status.over.status' set to 'null
-                if 'status' in self.bank.bank and self.bank.bank['status']['over']['status']:
+                # If a bank is being update, we may find a field 'status.over.status' set to 'null'
+                if 'status' in self.bank.bank and self.bank.bank['status']['over']['status'] in ['null', 'false']:
                     release = 'not known yet. Check directories in %s.' % self.bank.config.get('data.dir')
                     if 'release' in self.bank.bank['status'] and self.bank.bank['status']['release']['status']:
                         release = self.bank.bank['status']['release']['progress']
