@@ -32,6 +32,7 @@ config = {
         'Programming Language :: Python :: 3.4'
     ],
     'install_requires': ['biomaj',
+                         'biomaj_core',
                          'Jinja2',
                          'Yapsy'],
     'include_package_data': True,
