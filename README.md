@@ -34,7 +34,7 @@ Usage
 =====
 ```
 usage: biomaj-manager.py [-h] [-A [Max release]] [-D] [-H] [-i] [-I] [-J] [-l]
-                         [-L] [-M] [-N] [-n] [-P] [-R] [-s] [-X] [-U] [-v]
+                         [-L] [-N] [-n] [-P] [-R] [-s] [-X] [-U] [-v]
                          [-V] [--test] [-Z] [-b BANK] [-B [path to check]]
                          [-C [path to clean]] [-c CONFIG] [--db_type DB_TYPE]
                          [-E [session id]] [-o OUT] [-F OFORMAT] [-r RELEASE]
@@ -62,8 +62,6 @@ optional arguments:
                         (Permissions required). [-b REQUIRED]
   -L, --bank_formats    List supported formats and index for each banks. [-b]
                         available.
-  -M, --to_mongo        [PLUGIN] Load bank(s) history into mongo database
-                        (bioweb). [-b and --db_type REQUIRED]
   -N, --news            Create news to display at BiomajWatcher. [Default
                         output txt]
   -n, --simulate        Simulate action, don't do it really.
@@ -85,15 +83,12 @@ optional arguments:
                         Remove old/broken links (Permissions required)
   -c CONFIG, --config CONFIG
                         BioMAJ global.properties configuration file
-  --db_type DB_TYPE     BioMAJ database type [MySQL, MongoDB]
   -E [session id], --failed-process [session id]
                         Get failed process(es) for a bank. Session id can be
                         used. [-b REQUIRED]
   -o OUT, --out OUT     Output file
   -F OFORMAT, --format OFORMAT
                         Output format. Supported [csv, html, json]
-  -r RELEASE, --release RELEASE
-                        Release number to use. [-b, -w REQUIRED]
   -S [blast2|golden], --section [blast2|golden]
                         Prints [blast2|golden] section(s) for a bank. [-b
                         REQUIRED]
@@ -104,9 +99,6 @@ optional arguments:
                         available]
   --visibility all|public|private
                         Banks visibility. Use with --show_update.
-  -w file:seq_num, --set_sequence_count file:seq_num
-                        Set the number of sequence(s) in the file. [-b
-                        REQUIRED]
 ```
 
 Plugins support

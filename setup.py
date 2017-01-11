@@ -5,7 +5,7 @@ except ImportError:
 
 config = {
     'name': 'biomajmanager',
-    'version': '1.1.9',
+    'version': '1.1.10',
     'packages': find_packages(),
     'scripts': ['bin/biomaj-manager.py'],
     'url': 'https://github.com/horkko/biomaj-manager',
@@ -31,8 +31,8 @@ config = {
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4'
     ],
-    'install_requires': ['biomaj',
-                         'biomaj-core',
+    'install_requires': ['biomaj>=3.1',
+                         'biomaj-core>=3.0.7',
                          'Jinja2',
                          'Yapsy'],
     'include_package_data': True,
