@@ -31,7 +31,7 @@ config = {
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4'
     ],
-    'install_requires': ['biomaj',
+    'install_requires': ['biomaj>=3.1.0',
                          'Jinja2',
                          'Yapsy',
                          'rfeed',

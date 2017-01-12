@@ -1,4 +1,4 @@
-biomaj
+biomaj>=3.1.0
 Jinja2
 rfeed
 Yapsy
