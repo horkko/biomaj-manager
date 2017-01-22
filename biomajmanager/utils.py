@@ -162,6 +162,7 @@ class Utils(object):
         dirs = []
         loop = 0
         for dir_path, dir_names, _ in os.walk(path):
+            loop += 1
             if limit and limit == loop:
                 if full:
                     dirs.append(dir_path)
@@ -173,7 +174,6 @@ class Utils(object):
                     dirs.append(dir_path)
                 else:
                     dirs.append(os.path.basename(dir_path))
-            loop += 1
         return dirs
 
     @staticmethod
@@ -224,6 +224,7 @@ class Utils(object):
             return subtrees
         loop = 0
         for dir_path, dir_name, _ in os.walk(path):
+            loop += 1
             if limit and limit == loop:
                 subtree = dir_path.split(path)[-1]
                 subtree = subtree.lstrip('/')
@@ -233,7 +234,6 @@ class Utils(object):
                 subtree = dir_path.split(path)[-1]
                 subtree = subtree.lstrip('/')
                 subtrees.append(subtree)
-            loop += 1
         return subtrees
 
     @staticmethod
@@ -323,7 +323,7 @@ class Utils(object):
         return user
 
     @staticmethod
-    def verbose(msg):
+    def verbose(msg, to=sys.stdout):
         """
         Prints verbose message. Requires Manager.verbose to be True
 
@@ -334,7 +334,7 @@ class Utils(object):
         """
         from .manager import Manager
         if Manager.verbose and Utils.show_verbose:
-            Utils.uprint('[VERBOSE] %s' % str(msg))
+            Utils.uprint('[VERBOSE] %s' % str(msg), to=to)
 
     @staticmethod
     def warn(msg):

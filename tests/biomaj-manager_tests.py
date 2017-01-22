@@ -233,6 +233,14 @@ class TestBiomajManagerUtils(unittest.TestCase):
 
     @attr('utils')
     @attr('utils.cleansymlinks')
+    def test_cleanSymlinksNoDeleteNoDeadLinks(self):
+        """Checks the method get returns True when no dead links found"""
+        Manager.set_verbose(True)
+        self.assertEqual(Utils.clean_symlinks(path=self.utils.tmp_dir, delete=False), 0)
+        Manager.set_verbose(False)
+
+    @attr('utils')
+    @attr('utils.cleansymlinks')
     def test_cleanSymlinksWithDelete(self):
         """Checks the method get the correct list of symlinks and report them"""
         open(os.path.join(self.utils.data_dir, 'news1.txt'), 'a').close()
@@ -272,8 +280,10 @@ class TestBiomajManagerUtils(unittest.TestCase):
         tdir = os.path.join(self.utils.tmp_dir, 'a', 'b', 'c', 'd')
         if not os.path.exists(tdir):
             os.makedirs(tdir)
-        deepest = Utils.get_deepest_dir(tdir, full=True)
+        deepest = Utils.get_deepest_dir(tdir, full=True, limit=1)
         self.assertEqual(deepest, tdir)
+        deepest = Utils.get_deepest_dir(tdir, full=False, limit=1)
+        self.assertEqual(deepest, os.path.basename(tdir))
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
@@ -363,6 +373,23 @@ class TestBiomajManagerUtils(unittest.TestCase):
         shutil.rmtree(self.utils.tmp_dir)
 
     @attr('utils')
+    @attr('utils.deepestdirs')
+    def test_DeepestDirsFullWithLimit(self):
+        """Check we get the right list of deepest dir using limit in depth"""
+        dir0 = os.path.join(self.utils.tmp_dir, 'a', 'b')
+        dir1 = os.path.join(dir0, 'c')
+        dir2 = os.path.join(dir0, 'd')
+        for od in [dir1, dir2]:
+            if not os.path.exists(od):
+                os.makedirs(od)
+        deepest = Utils.get_deepest_dirs(dir0, full=True, limit=3)
+        c1 = deepest[0]
+        d1 = deepest[1]
+        self.assertEqual(c1, dir1)
+        self.assertEqual(d1, dir2)
+        shutil.rmtree(self.utils.tmp_dir)
+
+    @attr('utils')
     @attr('utils.getfiles')
     def test_GetFiles(self):
         """Check we get the right file list from a directory"""
@@ -405,6 +432,17 @@ class TestBiomajManagerUtils(unittest.TestCase):
         os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'b1', 'b2', 'b3', 'b4'))
         os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'c1', 'c2'))
         returned = Utils.get_subtree(path=os.path.join(self.utils.tmp_dir, 'sub'))
+        expected = ["a1/a2/a3", "b1/b2/b3/b4", "c1/c2"]
+        self.assertListEqual(sorted(returned), sorted(expected))
+
+    @attr('utils')
+    @attr('utils.getsubtree')
+    def test_GetSubTreeRetrunsRgihtSubTreeWithLimit(self):
+        """Checks the method returns the right subtree list and limit is right used"""
+        os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'a1', 'a2', 'a3'))
+        os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'b1', 'b2', 'b3', 'b4'))
+        os.makedirs(os.path.join(self.utils.tmp_dir, 'sub', 'c1', 'c2'))
+        returned = Utils.get_subtree(path=os.path.join(self.utils.tmp_dir, 'sub'), limit=10)
         expected = ["a1/a2/a3", "b1/b2/b3/b4", "c1/c2"]
         self.assertListEqual(sorted(returned), sorted(expected))
 
@@ -539,6 +577,25 @@ class TestBiomajManagerUtils(unittest.TestCase):
     #     if blname:
     #         os.environ['LNAME'] = blname
 
+    @attr('utils')
+    @attr('utils.verbose')
+    def test_UtilsVerboseReturnsOK(self):
+        """Check the verbose method returns correct message"""
+        expected = "[VERBOSE] OK\n"
+        msg = "OK"
+        # Python3 support
+        try:
+            from StringIO import StringIO
+        except ImportError:
+            from io import StringIO
+        out = StringIO()
+        Manager.verbose = True
+        Utils.show_verbose = True
+        Utils.verbose(msg, to=out)
+        returned = out.getvalue()
+        self.assertEqual(expected, returned)
+        Manager.verbose = False
+        Utils.show_verbose = False
 
 class TestBiomajManagerWriter(unittest.TestCase):
     """Class for testing biomajmanager.writer class"""
