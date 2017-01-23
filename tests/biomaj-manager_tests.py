@@ -2257,7 +2257,7 @@ class TestBioMajManagerManager(unittest.TestCase):
     @attr('manager')
     @attr('manager.getbankremoteinfo')
     def test_ManagerGetBankRemoteInfoArgsNone(self):
-        """Check method works correctly wihtout error(s)"""
+        """Check method works correctly without error(s)"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         expected = [['db.name', 'alu'], ['protocol', 'ftp'], ['server', 'ftp.wip.ncbi.nlm.nih.gov'],
@@ -2266,13 +2266,21 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.getbankremoteinfo')
-    def test_ManagerGetBankRemoteInfoNoneValueAndThrows(self):
+    def test_ManagerGetBankRemoteInfoWarnFieldNotFound(self):
+        """Check the method handle warn no config field found"""
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        # db.name is added automatically if not found in field list
+        self.assertEqual(len(manager.get_bank_remote_info(fields=['notfound'])), 1)
+
+    @attr('manager')
+    @attr('manager.getbankremoteinfo')
+    def test_ManagerGetBankRemoteInfoNoneValueHandleProtcolMulti(self):
         """Check the method handle None value and throws in case of config error"""
         self.utils.copy_file(ofile='multi.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='multi')
         # db.name is added automatically if not found in field list
-        l = manager.get_bank_remote_info()
-        self.assertEqual(len(manager.get_bank_remote_info(fields=['notfound'])), 1)
+        self.assertEqual(len(manager.get_bank_remote_info()), 11)
 
     @attr('manager')
     @attr('manager.getsessionfromid')
@@ -2519,6 +2527,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         Manager.set_simulate(True)
         self.assertTrue(manager.synchronize_db())
         self.utils.drop_db()
+        Manager.set_simulate(False)
 
     @attr('manager')
     @attr('manager.synchronizedb')
@@ -2572,8 +2581,59 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.synchronizedb')
-    def test_ManagerSynchDBWithCurrentReleaseAndRunningUpdateAndMissingProductionSimulateONReturnsTrue(self):
-        """Do some tests inside loop over productions. Simulate mode ON returns True"""
+    def test_ManagerSynchDBWithCurrentReleaseAndPendingsAndMissingProductionSimulateOFFPrintsWarningReturnsTrue(self):
+        """Do some tests inside loop over productions. Simulate mode OFF, prints
+        [%s] Release %s ok in production and on disk, but sessions.workflow_status is False  returns True"""
+        # sid 1: current release, in prod, on disk
+        # sid 2: in prod, on disk, wf_status False, in pending
+        # sid 3: in prod, on disk, wf_status True, deleted
+        # sid 4: in prod, on disk, not in session
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        Manager.set_verbose(True)
+        # Needed for call get_bank_data_dir()
+        # Set production
+        production_data = [{'data_dir': self.utils.data_dir,
+                            'release': "1", 'dir_version': "alu",
+                            'session': 1, 'prod_dir': "alu_1"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "2", 'dir_version': "alu",
+                            'session': 2, 'prod_dir': "alu_2"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "3", 'dir_version': "alu",
+                            'session': 3, 'prod_dir': "alu_3"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "3", 'dir_version': "alu",
+                            'session': 4, 'prod_dir': "alu_4"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "10", 'dir_version': "alu",
+                            'session': 10, 'prod_dir': "alu_10"}]
+        # Set sessions
+        sessions_data = [{'id': 1, 'workflow_status': True, 'release': "1"},
+                         {'id': 2, 'workflow_status': False, 'release': "2"},
+                         {'id': 3, 'workflow_status': True, 'deleted': 2, 'release': "3"}]
+        # Set pendings
+        pending_data = [{'id': 3, 'release': "3"}, {'id': 1, 'release': "1"}]
+        manager.bank.bank['last_update_session'] = 3
+        manager.bank.bank['current'] = 1
+        manager.bank.bank['production'] = production_data
+        manager.bank.bank['sessions'] = sessions_data
+        manager.bank.bank['pending'] = pending_data
+        # Need to create some release directory to be tested, it is the current release (set in db and production)
+        for i in range(1, 6, 1):
+            release_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_' + str(i))
+            os.makedirs(release_dir)
+        # Create a 'current' dir
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'current'))
+        # Set auto_delete to True
+        Manager.set_simulate(False)
+        self.assertTrue(manager.synchronize_db())
+        self.utils.drop_db()
+
+    @attr('manager')
+    @attr('manager.synchronizedb')
+    def test_ManagerSynchDBWithCurrentReleaseAndRunningUpdateAndMissingProductionSimulateONUpdateRunningStatusTrue(self):
+        """Do some tests inside loop over productions. Simulate mode ON, update running and known release yet"""
         # sid 1: current release, in prod, on disk
         # sid 2: in prod, on disk, wf_status False, in pending
         # sid 3: in prod, on disk, wf_status not here, status here
@@ -2606,7 +2666,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         # Set pendings
         pending_data = [{'id': 3, 'release': "3"}, {'id': 2, 'release': "2"}]
         # Set status
-        status_data = {'over': {'status': True, 'progress': None}, 'release': {'status': True, 'progress': 10}}
+        status_data = {'over': {'status': False, 'progress': None}, 'release': {'status': True, 'progress': 10}}
         manager.bank.bank['last_update_session'] = 3
         manager.bank.bank['current'] = 1
         manager.bank.bank['status'] = status_data
@@ -2623,6 +2683,62 @@ class TestBioMajManagerManager(unittest.TestCase):
         Manager.set_simulate(True)
         self.assertTrue(manager.synchronize_db())
         self.utils.drop_db()
+        Manager.set_simulate(False)
+
+    @attr('manager')
+    @attr('manager.synchronizedb')
+    def test_ManagerSynchDBWithCurrentReleaseAndRunningUpdateAndMissingProductionSimulateONUpdateRunningStatusFalse(self):
+        """Do some tests inside loop over productions. Simulate mode ON, update is running and release not know yet"""
+        # sid 1: current release, in prod, on disk
+        # sid 2: in prod, on disk, wf_status False, in pending
+        # sid 3: in prod, on disk, wf_status not here, status here
+        # sid 4: in prod, on disk, wf_status True, deleted
+        # sid 5: in prod, on disk, not in session
+        self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
+        manager = Manager(bank='alu')
+        Manager.set_verbose(True)
+        # Needed for call get_bank_data_dir()
+        # Set production
+        production_data = [{'data_dir': self.utils.data_dir,
+                            'release': "1", 'dir_version': "alu",
+                            'session': 1, 'prod_dir': "alu_1"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "2", 'dir_version': "alu",
+                            'session': 2, 'prod_dir': "alu_2"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "3", 'dir_version': "alu",
+                            'session': 3, 'prod_dir': "alu_3"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "3", 'dir_version': "alu",
+                            'session': 4, 'prod_dir': "alu_4"},
+                           {'data_dir': self.utils.data_dir,
+                            'release': "10", 'dir_version': "alu",
+                            'session': 10, 'prod_dir': "alu_10"}]
+        # Set sessions
+        sessions_data = [{'id': 1, 'workflow_status': True, 'release': "1"},
+                         {'id': 2, 'workflow_status': False, 'release': "2"},
+                         {'id': 3, 'workflow_status': True, 'deleted': 2, 'release': "3"}]
+        # Set pendings
+        pending_data = [{'id': 3, 'release': "3"}, {'id': 2, 'release': "2"}]
+        # Set status
+        status_data = {'over': {'status': False, 'progress': None}, 'release': {'status': False, 'progress': 10}}
+        manager.bank.bank['last_update_session'] = 3
+        manager.bank.bank['current'] = 1
+        manager.bank.bank['status'] = status_data
+        manager.bank.bank['production'] = production_data
+        manager.bank.bank['sessions'] = sessions_data
+        manager.bank.bank['pending'] = pending_data
+        # Need to create some release directory to be tested, it is the current release (set in db and production)
+        for i in range(1, 6, 1):
+            release_dir = os.path.join(self.utils.data_dir, 'alu', 'alu_' + str(i))
+            os.makedirs(release_dir)
+        # Create a 'current' dir
+        os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'current'))
+        # Force auto_delete to False
+        Manager.set_simulate(True)
+        self.assertTrue(manager.synchronize_db())
+        self.utils.drop_db()
+        Manager.set_simulate(False)
 
     @attr('manager')
     @attr('manager.getbankdatadir')

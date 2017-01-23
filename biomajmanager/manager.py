@@ -1435,7 +1435,7 @@ class Manager(object):
                 # We then check everything ok in 'sessions'
                 session = self.get_session_from_id(prod['session'])
                 if session is None:
-                    Utils.warn("Session %s cannot be found!" % str(prod['session']))
+                    Utils.warn("Session %s in 'production' cannot be found in 'sessions'!" % str(prod['session']))
                     continue
                 if 'workflow_status' in session and not session['workflow_status']:
                     if prod['session'] not in pendings:
@@ -1448,7 +1448,7 @@ class Manager(object):
                     releases_dir.pop(prod['prod_dir'])
             else:
                 # If a bank is being update, we may find a field 'status.over.status' set to 'null'
-                if 'status' in self.bank.bank and self.bank.bank['status']['over']['status'] in ['null', 'false']:
+                if 'status' in self.bank.bank and self.bank.bank['status']['over']['status'] in ['null', False]:
                     release = 'not known yet. Check directories in %s.' % self.bank.config.get('data.dir')
                     if 'release' in self.bank.bank['status'] and self.bank.bank['status']['release']['status']:
                         release = self.bank.bank['status']['release']['progress']
