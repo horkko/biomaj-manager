@@ -1,6 +1,5 @@
-biomaj>=3.1
-biomaj-core>=3.0.7
+biomaj>=3.1.0
 Jinja2
-git+https://github.com/svpino/rfeed#egg=rfeed
+rfeed
 Yapsy
 humanfriendly

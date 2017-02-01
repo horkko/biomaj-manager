@@ -289,7 +289,7 @@ def main():
             manager.load_plugins()
             if not manager.plugins.bioweb.set_news(news.data):
                 Utils.error("Can't set news to collection")
-        elif options.rss:
+        if options.rss:
             rss = RSS(config=config)
             rss.generate_rss(data=news.data)
         else:
