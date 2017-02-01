@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 BioMAJ Manager - Swiss knife for BioMAJ 3
 
@@ -23,7 +21,7 @@ from biomajmanager.news import News, RSS
 from biomajmanager.utils import Utils
 from biomajmanager.links import Links
 from tabulate import tabulate
-__author__ = 'tuco'
+__author__ = 'Emmanuel Quevillon'
 
 
 def main():

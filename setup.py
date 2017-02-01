@@ -2,6 +2,8 @@ try:
     from setuptools import setup, find_packages
 except ImportError:
     from distutils.core import setup
+from distutils.command.install import install
+
 
 config = {
     'name': 'biomajmanager',
@@ -31,11 +33,13 @@ config = {
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4'
     ],
-    'install_requires': ['biomaj>=3.1',
-                         'biomaj-core>=3.0.7',
+    'install_requires': ['biomaj',
                          'Jinja2',
-                         'Yapsy'],
+                         'Yapsy',
+                         'humanfriendly',
+                         'rfeed'],
     'include_package_data': True,
+    'packages': ['biomajmanager'],
     'author': 'Emmanuel Quevillon',
     'author_email': 'tuco@pasteur.fr,horkko@gmail.com',
     'description': 'BioMAJ3 contribution Swiss knife'
