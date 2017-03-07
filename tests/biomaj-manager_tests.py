@@ -597,6 +597,53 @@ class TestBiomajManagerUtils(unittest.TestCase):
         Manager.verbose = False
         Utils.show_verbose = False
 
+    @attr('utils')
+    @attr('utils.nowarning')
+    def test_UtilsNoWarning(self):
+        """Check warning messages"""
+        import sys
+        serr = sys.stderr
+        try:
+            expected = "[WARNING] OK\n"
+            msg = "OK"
+            try:
+                from StringIO import StringIO
+            except ImportError:
+                from io import StringIO
+            err = StringIO()
+            sys.stderr = err
+            Utils.show_warn = True
+            Utils.warn(msg)
+            returned = err.getvalue()
+            self.assertEqual(expected, returned)
+        finally:
+            sys.stderr = serr
+
+    @attr('utils')
+    @attr('utils.nowarning')
+    def test_UtilsNoWarningSilent(self):
+        """Check warning messages"""
+        import sys
+        serr = sys.stderr
+        try:
+            Utils.show_warn = False
+            expected = ""
+            msg = "OK"
+            try:
+                from StringIO import StringIO
+            except ImportError:
+                from io import StringIO
+            err = StringIO()
+            sys.stderr = err
+            Utils.show_warn = False
+            Utils.warn(msg)
+            returned = err.getvalue()
+            self.assertEqual(expected, returned)
+            Utils.show_warn = True
+        finally:
+            sys.stderr = serr
+
+
 class TestBiomajManagerWriter(unittest.TestCase):
     """Class for testing biomajmanager.writer class"""
 

@@ -68,6 +68,8 @@ def main():
                         help="Show version")
     parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
                         help="Activate verbose mode")
+    parser.add_argument('-W', '--no-warning', dest="nowarn", action="store_true", default=False,
+                        help="Switch off warning messages")
     parser.add_argument('--test', dest="test", action="store_true", default=False,
                         help="Test method. [-b REQUIRED]")
     parser.add_argument('-Z', '--clean_sessions', dest="cleansessions", action="store_true", default=False,
@@ -112,6 +114,8 @@ def main():
         sys.exit(1)
     Manager.set_simulate(options.simulate)
     Manager.set_verbose(options.verbose)
+    # Switch on/off warnings
+    Utils.show_warn = options.nowarn
 
     if options.bank_formats:
         formats = []
