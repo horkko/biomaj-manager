@@ -159,10 +159,11 @@ def main():
         sys.exit(0)
 
     if options.brokenlinks:
-        if type(options.brokenlinks) == bool:
+        brokenlinks = options.brokenlinks
+        if type(brokenlinks) == bool:
             manager = Manager(global_cfg=options.config)
             options.brokenlinks = os.path.join(manager.get_production_dir(), 'index')
-        brkln = Utils.get_broken_links(path=options.brokenlinks)
+        brkln = Utils.get_broken_links(path=brokenlinks)
         print("%d broken link(s)" % brkln)
         sys.exit(0)
 
@@ -180,13 +181,14 @@ def main():
     if options.cleanlinks:
         Utils.start_timer()
         manager = Manager(global_cfg=options.config)
-        if type(options.cleanlinks) == bool:
+        cleanlinks = options.cleanlinks
+        if type(cleanlinks) == bool:
             for key in Links.DIRS.iterkeys():
                 for ddir in Links.DIRS[key]:
                     path = os.path.join(manager.get_production_dir(), ddir['target'])
                     Utils.clean_symlinks(path=path, delete=True)
         else:
-            Utils.clean_symlinks(path=options.cleanlinks, delete=True)
+            Utils.clean_symlinks(path=cleanlinks, delete=True)
         Utils.stop_timer()
         etime = Utils.elapsed_time()
         print("Cleaned link in %f sec" % etime)
@@ -345,9 +347,12 @@ def main():
         else:
             banks = Manager.get_bank_list()
         info = []
+        max_release = options.prodrelease
+        if type(max_release) == bool:
+            max_release = None
         for bank in banks:
             manager = Manager(bank=bank, global_cfg=options.config)
-            exceed = manager.check_production_size(max_release=options.prodrelease)
+            exceed = manager.check_production_size(max_release=max_release)
             if len(exceed):
                 info.append(exceed)
         if info:
