@@ -3560,6 +3560,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('decorators.deprecated')
     @attr('manager.setsequencecount')
     def test_ManagerSetSequenceCountSeqFileThrows(self):
         """Check missing arg seq_file throws"""
@@ -3570,6 +3571,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('decorators.deprecated')
     @attr('manager.setsequencecount')
     def test_ManagerSetSequenceCountSeqFileNotHereThrows(self):
         """Check missing file not exists throws"""
@@ -3580,6 +3582,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('decorators.deprecated')
     @attr('manager.setsequencecount')
     def test_ManagerSetSequenceCountSeqCountThrows(self):
         """Check missing args throws"""
@@ -3593,6 +3596,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('decorators.deprecated')
     @attr('manager.setsequencecount')
     def test_ManagerSetSequenceCountReleaseThrows(self):
         """Check missing args throws"""
@@ -3606,6 +3610,7 @@ class TestBioMajManagerManager(unittest.TestCase):
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('decorators.deprecated')
     @attr('manager.setsequencecount')
     def test_ManagerSetSequenceCountReturnsTrue(self):
         """Check method returns True"""
@@ -3614,12 +3619,18 @@ class TestBioMajManagerManager(unittest.TestCase):
         manager.bank.banks.update({'name': 'alu'}, {'$set': {'production.0.release': "54"}})
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
-        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2',
-                                                                         'news1.txt'),
-                                                   seq_count=10, release="54"))
+        # self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2',
+        #                                                                  'news1.txt'),
+        #                                            seq_count=10, release="54"))
+
+        with self.assertRaises(SystemExit):
+            self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2',
+                                                                             'news1.txt'),
+                                                       seq_count=10, release="54"))
         self.utils.drop_db()
 
     @attr('manager')
+    @attr('decorators.deprecated')
     @attr('manager.setsequencecount')
     def test_ManagerSetSequenceCountUpdateOKReturnsTrue(self):
         """Check method update db and returns True"""
@@ -3637,12 +3648,19 @@ class TestBioMajManagerManager(unittest.TestCase):
                                                       'news1.txt')}}})
         os.makedirs(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2'))
         open(os.path.join(self.utils.data_dir, 'alu', 'alu_54', 'blast2', 'news1.txt'), 'w').close()
-        self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir,
-                                                                         'alu',
-                                                                         'alu_54',
-                                                                         'blast2',
-                                                                         'news1.txt'),
-                                                   seq_count=10, release="54"))
+        # self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir,
+        #                                                                  'alu',
+        #                                                                  'alu_54',
+        #                                                                  'blast2',
+        #                                                                  'news1.txt'),
+        #                                            seq_count=10, release="54"))
+        with self.assertRaises(SystemExit):
+            self.assertTrue(manager.set_sequence_count(seq_file=os.path.join(self.utils.data_dir,
+                                                                             'alu',
+                                                                             'alu_54',
+                                                                             'blast2',
+                                                                             'news1.txt'),
+                                                       seq_count=10, release="54"))
         self.utils.drop_db()
 
     @attr('manager')

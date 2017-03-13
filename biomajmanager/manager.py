@@ -14,7 +14,7 @@ from biomaj_core.config import BiomajConfig
 from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
 from biomajmanager.plugins import Plugins
-from biomajmanager.decorators import bank_required, user_granted
+from biomajmanager.decorators import bank_required, user_granted, deprecated
 try:
     from ConfigParser import Error
 except ImportError:
@@ -1219,6 +1219,7 @@ class Manager(object):
             Utils.error("Problem with bank %s: %s" % (name, str(err)))
         return self.set_bank(bank=bank)
 
+    @deprecated
     @bank_required
     def set_sequence_count(self, seq_file=None, seq_count=None, release=None):
         """

@@ -1,3 +1,7 @@
-1.1.20:
+1.1.11:
+  - Added option --no-warning to switch off warning message(s) on demand
+  - DEPRECATED option -w/--set_sequence_count. Cannot perform it before end of a session is saved in database.
+
+1.1.10:
   - Bug fixes and improvements
   - Works with Biomaj micro services architecture
