@@ -329,6 +329,8 @@ class Utils(object):
 
         :param msg: Verbose message to print
         :type msg: str
+        :param to: File handle to print message to
+        :type to: file
         :return: Verbose message
         :rtype: str
         """

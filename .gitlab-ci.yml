@@ -11,4 +11,5 @@ variables:
 build:
     stage: test
     script:
+        - pip install biomaj>=3.1.0 biomaj-core>=3.0.8
         - nosetests -q -x
