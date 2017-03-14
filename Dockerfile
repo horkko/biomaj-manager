@@ -8,7 +8,7 @@ RUN yum clean all && \
     yum clean all
 
 ## Install Python required packages
-RUN pip install -U pip && pip -r install humanfriendly Yapsy pymongo==3.2 rfeed && pip install --egg biomaj>=3.1.0
+RUN pip install -U pip && pip install humanfriendly Yapsy pymongo==3.2 rfeed && pip install biomaj>=3.1.0
 
 # Create new user/group biomaj
 RUN groupadd -r biomaj && \
