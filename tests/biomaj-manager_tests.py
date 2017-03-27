@@ -201,7 +201,7 @@ class UtilsForTests(object):
                 else:
                     fout.write(line)
                     Utils.ok(line)
-        fout.close()
+            fout.close()
 
 
 class TestBiomajManagerUtils(unittest.TestCase):
