@@ -482,10 +482,9 @@ def main():
                             'description': manager.bank.config.get('db.fullname')}
             virtual_banks[bank] = info
         if virtual_banks.items():
-            virtual_banks['tool'] = options.vdbs
             writer = Writer(template_dir=options.template_dir, config=manager.config, output=options.out)
             writer.write(template='virtual_banks.j2.html',
-                         data={'banks': virtual_banks,
+                         data={'banks': virtual_banks, 'tool': options.vdbs,
                                'prod_dir': manager.config.get('GENERAL', 'data.dir'),
                                'elapsed': "%.3f" % Utils.elapsed_time(),
                                'generated': Utils.get_now()})
