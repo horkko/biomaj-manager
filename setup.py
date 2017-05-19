@@ -5,6 +5,11 @@ except ImportError:
 from distutils.command.install import install
 
 
+"""This class is used only to have install_egg_info called after the install"""
+class post_install(install):
+    def run(self):
+        install.run(self)
+
 config = {
     'name': 'biomajmanager',
     'version': '1.1.10',
@@ -39,10 +44,10 @@ config = {
                          'rfeed',
                          'humanfriendly'],
     'include_package_data': True,
-    'packages': ['biomajmanager'],
     'author': 'Emmanuel Quevillon',
     'author_email': 'tuco@pasteur.fr,horkko@gmail.com',
-    'description': 'BioMAJ3 contribution Swiss knife'
+    'description': 'BioMAJ3 contribution Swiss knife',
+    'cmdclass': {'install': post_install},
 }
 
 setup(**config)
