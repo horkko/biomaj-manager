@@ -549,34 +549,6 @@ class TestBiomajManagerUtils(unittest.TestCase):
         user = "fakeUser"
         self.assertNotEqual(Utils.user(), user)
 
-    # @attr('utils')
-    # @attr('utils.user')
-    # def test_userNoEnvironmentVariableThrows(self):
-    #     """Check method throws when none of USER and LOGNAME is available"""
-    #     buser = blogname = buname = blname = None
-    #     if 'USER' in os.environ:
-    #         buser = os.environ['USER']
-    #         del os.environ['USER']
-    #     if 'LOGNAME' in os.environ:
-    #         blogname = os.environ['LOGNAME']
-    #         del os.environ['LOGNAME']
-    #     if 'USERNAME' in os.environ:
-    #         buname = os.environ['USERNAME']
-    #         del os.environ['USERNAME']
-    #     if 'LNAME' in os.environ:
-    #         buname = os.environ['LNAME']
-    #         del os.environ['LNAME']
-    #     with self.assertRaises(SystemExit):
-    #         Utils.user()
-    #     if buser:
-    #         os.environ['USER'] = buser
-    #     if blogname:
-    #         os.environ['LOGNAME'] = blogname
-    #     if buname:
-    #         os.environ['USERNAME'] = buname
-    #     if blname:
-    #         os.environ['LNAME'] = blname
-
     @attr('utils')
     @attr('utils.verbose')
     def test_UtilsVerboseReturnsOK(self):
