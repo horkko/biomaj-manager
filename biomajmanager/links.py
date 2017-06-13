@@ -25,6 +25,7 @@ class Links(object):
         'picard': [{'target': 'index/picard'}],
         'samtools': [{'target': 'index/samtools'}],
         'soap': [{'target': 'index/soap'}],
+        'star': [{'target': 'index/star'}],
         'taxo_ncbi': [{'target': 'index/taxo_ncbi'}],
         'taxo_rrna': [{'target': 'index/taxo_rrna'}],
         'uncompressed': [{'target': 'release', 'fallback': 'flat'},
@@ -33,7 +34,7 @@ class Links(object):
     # This creates a clone of the source directory (files and subdirs) into target
     CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
                             {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
-                            {'source': 'gmap', 'limit': 2}, {'source': 'diamond'},
+                            {'source': 'gmap', 'limit': 2}, {'source': 'diamond'}, {'source': 'star'},
                             {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
                             {'source': 'bdb', 'remove_ext': True}, {'source': 'taxo_rrna', 'remove_ext': True},
                             {'source': 'taxo_ncbi', 'remove_ext': True}],
