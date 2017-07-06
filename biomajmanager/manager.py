@@ -890,7 +890,7 @@ class Manager(object):
         """
         Get the releases history of a bank from the database and build a Mongo like document in json
 
-        :return: history + extra info to be included into bioweb (Institut Pasteur only)
+        :return: history + extra info to be included into bioweb
         :rtype: list
         :raises SystemExit: If 'production' key not found in bank docuement
         :raises SystemExit: If 'session' key not found in bank docuement
@@ -899,12 +899,14 @@ class Manager(object):
         if 'production' in self.bank.bank and self.bank.bank['production']:
             productions = self.bank.bank['production']
         else:
-            Utils.error("No production found for bank %s" % self.bank.name)
+            Utils.warn("No production found for bank %s" % self.bank.name)
+            return list()
 
         if 'sessions' in self.bank.bank and self.bank.bank['sessions']:
             sessions = self.bank.bank['sessions']
         else:
-            Utils.error("No sessions found for bank %s" % self.bank.name)
+            Utils.warn("No sessions found for bank %s" % self.bank.name)
+            return list()
 
         history = []
         packages = self.get_bank_packages()
