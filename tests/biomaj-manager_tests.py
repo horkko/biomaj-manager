@@ -3150,25 +3150,23 @@ class TestBioMajManagerManager(unittest.TestCase):
 
     @attr('manager')
     @attr('manager.history')
-    def test_ManagerHistoryNoProductionRaisesError(self):
-        """Check when no 'production' field in bank, history raises exception"""
+    def test_ManagerHistoryNoProductionEmptyListTrue(self):
+        """Check when no 'production' field in bank, history retrusn empty list"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'] = None
-        with self.assertRaises(SystemExit):
-            manager.history()
+        self.assertFalse(manager.history())
         self.utils.drop_db()
 
     @attr('manager')
     @attr('manager.history')
-    def test_ManagerHistoryNoSessionsRaisesError(self):
-        """Check when no 'sessions' field in bank, history raises exception"""
+    def test_ManagerHistoryNoSessionsEmptyListTrue(self):
+        """Check when no 'sessions' field in bank, history returns empty list"""
         self.utils.copy_file(ofile='alu.properties', todir=self.utils.conf_dir)
         manager = Manager(bank='alu')
         manager.bank.bank['production'].append({'session': 100, 'release': 12})
         manager.bank.bank['sessions'] = None
-        with self.assertRaises(SystemExit):
-            manager.history()
+        self.assertFalse(manager.history())
         self.utils.drop_db()
 
     @attr('manager')
