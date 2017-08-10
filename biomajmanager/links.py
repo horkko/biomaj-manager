@@ -2,8 +2,7 @@
 from biomajmanager.utils import Utils
 from biomajmanager.manager import Manager
 import os
-
-__author__ = 'tuco'
+__author__ = 'Emmanuel Quevillon'
 
 
 class Links(object):
@@ -31,14 +30,25 @@ class Links(object):
         'uncompressed': [{'target': 'release', 'fallback': 'flat'},
                          {'target': 'index/golden', 'requires': 'golden'}],
         }
-    # This creates a clone of the source directory (files and subdirs) into target
-    CLONE_DIRS = {'index': [{'source': 'bowtie'}, {'source': 'bwa'}, {'source': 'gatk'}, {'source': 'picard'},
-                            {'source': 'samtools'}, {'source': 'fusioncatcher'}, {'source': 'golden'},
-                            {'source': 'gmap', 'limit': 2}, {'source': 'diamond'}, {'source': 'star'},
-                            {'source': 'soap'}, {'source': 'blast2'}, {'source': 'blast+'}, {'source': 'hmmer'},
-                            {'source': 'bdb', 'remove_ext': True}, {'source': 'taxo_rrna', 'remove_ext': True},
+    # This creates a clone of the source directory (files and subdirs)
+    # into target
+    CLONE_DIRS = {'index': [{'source': 'bowtie'},
+                            {'source': 'bwa'},
+                            {'source': 'gatk'},
+                            {'source': 'picard'},
+                            {'source': 'samtools'},
+                            {'source': 'fusioncatcher'},
+                            {'source': 'golden'},
+                            {'source': 'gmap', 'limit': 2},
+                            {'source': 'diamond'},
+                            {'source': 'star'},
+                            {'source': 'soap'},
+                            {'source': 'blast2'},
+                            {'source': 'blast+'},
+                            {'source': 'hmmer'},
+                            {'source': 'bdb', 'remove_ext': True},
+                            {'source': 'taxo_rrna', 'remove_ext': True},
                             {'source': 'taxo_ncbi', 'remove_ext': True}],
-                  # 'fasta': [{'source': 'blast2', 'remove_ext': True}, {'source': 'fasta', 'remove_ext': True}]
                   }
 
     def __init__(self, manager=None):
@@ -48,8 +58,10 @@ class Links(object):
         :param manager: Manager instance
         :type manager: :class:`biomajmanager.manager.Manager`
         :raises SystemExit: If 'manager' not given
-        :raises SystemExit: If 'manager' arg not an instance of :class:`biomajmanager.manager.Manager`
-        :raises SystemExit: If current production dir can't be found for current bank
+        :raises SystemExit: If 'manager' arg not an instance of
+                            :class:`biomajmanager.manager.Manager`
+        :raises SystemExit: If current production dir can't be found for
+                            current bank
         """
         self.source = None
         self.target = None
@@ -62,14 +74,16 @@ class Links(object):
         self.bank_name = self.manager.bank.name
 
         if not self.manager.config.has_option('GENERAL', 'data.dir'):
-            Utils.error("'data.dir' not defined in global.properties or bank.properties")
+            Utils.error("'data.dir' not defined in global.properties or "
+                        "bank.properties")
         if not self.manager.config.has_option('MANAGER', 'production.dir'):
             Utils.error("'production.dir' not defined in manager.properties.")
         self.prod_dir = self.manager.config.get('MANAGER', 'production.dir')
 
         current_release = self.manager.current_release()
         if current_release is None:
-            Utils.error("Can't determine current release for bank %s" % self.bank_name)
+            Utils.error("Can't determine current release for bank %s"
+                        % self.bank_name)
         # Get the 'current'
         bank_data_dir = self.manager.get_current_link()
         self.bank_data_dir = bank_data_dir
@@ -106,14 +120,17 @@ class Links(object):
         Create a list of links
 
         :param dirs: Directory to symlink
-        :type dirs: dict {'source1': ['target1', 'target2', ...], 'source2': [], ...}
+        :type dirs: dict {'source1': ['target1', 'target2', ...],
+                          'source2': [], ...}
         :param files: Files to symlink
-        :type files: dict {'source1': ['target1','target2', ...], 'source2': [], ...},
+        :type files: dict {'source1': ['target1','target2', ...],
+                           'source2': [], ...},
         :param clone_dirs: Directory to clone
         :type clone_dirs: dict
         :return: Number of created links
         :rtype: int
-        :raises SystemExit: If user noth allowed to create link, see :py:data:`global.properties:admin`
+        :raises SystemExit: If user noth allowed to create link,
+                            see :py:data:`global.properties:admin`
         """
         props = self.manager.bank.get_properties()
         admin = None
@@ -162,8 +179,10 @@ class Links(object):
         :return: True if all is ok, throws otherwise
         :rtype: bool
         :raises SystemExit: If 'source' or 'target' are None
-        :raises SystemExit: If 'data.dir' not set in :py:data:`global.properties`
-        :raises SystemExit: If 'production.dir' not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'data.dir' not set in
+                            :py:data:`global.properties`
+        :raises SystemExit: If 'production.dir' not set in
+                            :py:data:`manager.properties`
         """
         if not source:
             Utils.error("source required")
@@ -171,25 +190,31 @@ class Links(object):
             Utils.error("target required")
         return True
 
-    def _clone_structure(self, source=None, target=None, remove_ext=False, limit=0):
+    def _clone_structure(self, source=None, target=None, remove_ext=False,
+                         limit=0):
         """
-        Create a directory structure from a source to a target point and link all files from source inside target
+        Create a directory structure from a source to a target point and link
+        all files from source inside target
 
         :param source: Source directory to clone
         :type source: str
         :param target: Destination directory to create if does not exist
         :type target: str
-        :param remove_ext: Create another link of the file without the file name extension
+        :param remove_ext: Create another link of the file without the file
+                           name extension
         :type remove_ext: bool
         :param limit: Limit subtree seach to value, default 0, no limit
         :tpye limit: int
         :return: True if structure cloning build OK, throws otherwise
         :rtype: bool
-        :raise SystemExit: If error occurred during directory structure building
+        :raise SystemExit: If error occurred during directory structure
+                           building
         """
         self._check_source_target_parameters(source=source, target=target)
-        # Check do_links.clone_dirs. As we want to recreate the same architecture as for the source,
-        # we need to recreate the target because Utils.get_subtree removes the source path which contains
+        # Check do_links.clone_dirs. As we want to recreate the same
+        # architecture as for the source,
+        # we need to recreate the target because Utils.get_subtree removes the
+        # source path which contains
         # the target name
         target = os.path.join(target, source)
         source = os.path.join(self.bank_data_dir, source)
@@ -198,9 +223,12 @@ class Links(object):
         try:
             for subtree in subtrees:
                 end_target = os.path.join(self.prod_dir, target, subtree)
-                if not os.path.exists(end_target) and not os.path.isdir(end_target):
+                if not os.path.exists(end_target)\
+                        and not os.path.isdir(end_target):
                     if Manager.get_simulate() and Manager.get_verbose():
-                        Utils.verbose("[_clone_structure] [%s] Creating directory %s" % (self.bank_name, end_target))
+                        Utils.verbose("[_clone_structure] [%s] Creating "
+                                      "directory %s"
+                                      % (self.bank_name, end_target))
                     else:
                         if not Manager.get_simulate():
                             os.makedirs(end_target)
@@ -216,34 +244,42 @@ class Links(object):
                     tlink = os.path.join(end_target, ffile)
                     links.append((slink, tlink))
                     if Manager.get_verbose():
-                        Utils.verbose("[_generate_files_link] append slink %s" % slink)
-                        Utils.verbose("[_generate_files_link] append tlink %s" % tlink)
-                        # If asked to create another symbolic link without extension name
+                        Utils.verbose("[_generate_files_link] append slink %s"
+                                      % slink)
+                        Utils.verbose("[_generate_files_link] append tlink %s"
+                                      % tlink)
+                        # If asked to create another symbolic link without
+                        # extension name
                     if remove_ext:
                         new_file = os.path.splitext(os.path.basename(ffile))[0]
                         tlink = os.path.join(end_target, new_file)
                         links.append((slink, tlink))
                         if Manager.get_verbose():
-                            Utils.verbose("[_generate_files_link] [rm_ext=%s] append slink %s"
+                            Utils.verbose("[_generate_files_link] [rm_ext=%s] "
+                                          "append slink %s"
                                           % (str(remove_ext), slink))
-                            Utils.verbose("[_generate_files_link] [rm_ext=%s] append tlink %s"
+                            Utils.verbose("[_generate_files_link] [rm_ext=%s] "
+                                          "append tlink %s"
                                           % (str(remove_ext), tlink))
                 # Set self.target for _make_links
                 self.target = end_target
                 self._make_links(links=links)
         except OSError as err:
-            Utils.error("[%s] Can't create %s dir: %s (%s)" % (self.bank_name, end_target, str(err),
-                                                               os.access(end_target, os.W_OK)))
+            Utils.error("[%s] Can't create %s dir: %s (%s)"
+                        % (self.bank_name, end_target, str(err),
+                           os.access(end_target, os.W_OK)))
 
         return True
 
-    def _generate_dir_link(self, source=None, target=None, hard=False, fallback=None, requires=None, limit=0):
+    def _generate_dir_link(self, source=None, target=None, hard=False,
+                           fallback=None, requires=None, limit=0):
         """
         Create a symbolic link between 'source' and 'target' for a directory
 
         :param source: Source directory to link
         :type source: str
-        :param target: Destination directory name (relative to config param 'production.dir')
+        :param target: Destination directory name (relative to config param
+                       'production.dir')
         :type target: str
         :param hard: Create hard link instead of symlink
         :type hard: bool (default False)
@@ -251,13 +287,15 @@ class Links(object):
         :type fallback: str
         :param requires: A required directory
         :type requires: str
-        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :param limit: Limit deepest search to `limit` depth, default 0,
+                      no limit
         :type limit: int
         :return: Number of created link(s)
         :rtype: int
         """
-        if not self._prepare_links(source=source, target=target, fallback=fallback,
-                                   requires=requires, get_deepest=True, limit=limit):
+        if not self._prepare_links(source=source, target=target,
+                                   fallback=fallback, requires=requires,
+                                   get_deepest=True, limit=limit):
             return 0
 
         slink = os.path.join(self.source)
@@ -266,26 +304,30 @@ class Links(object):
         self._make_links(links=[(slink, tlink)], hard=hard)
 
         if Manager.get_simulate() and Manager.get_verbose():
-            Utils.verbose("%s -> %s directory link done" % (self.target, self.source))
+            Utils.verbose("%s -> %s directory link done"
+                          % (self.target, self.source))
         return self.created_links
 
     def _generate_files_link(self, source=None, target=None, remove_ext=False):
         """
         Links list of file from 'source' to 'target' directory.
 
-        If remove_ext is set to True, then another link is created. This link is the same as the
-        target link, without the file extension
+        If remove_ext is set to True, then another link is created.
+        This link is the same as the target link, without the file extension
 
         :param source: Source directory to link
         :type source: str
-        :param target: Destination directory name (relative to config param 'production_dir')
+        :param target: Destination directory name (relative to config param
+                       'production_dir')
         :type target: str
-        :param remove_ext: Create another link of the file without the file name extension
+        :param remove_ext: Create another link of the file without the file
+                           name extension
         :type remove_ext: bool (default False)
         :return: Number of created link(s)
         :rtype: int
         """
-        if not self._prepare_links(source=source, target=target, get_deepest=True):
+        if not self._prepare_links(source=source, target=target,
+                                   get_deepest=True):
             return 0
 
         # Get files in the source directory
@@ -307,13 +349,16 @@ class Links(object):
                 tlink = os.path.join(self.target, new_file)
                 links.append((slink, tlink))
                 if Manager.get_verbose():
-                    Utils.verbose("[_generate_files_link] [rm_ext=%s] append slink %s" % (str(remove_ext), slink))
-                    Utils.verbose("[_generate_files_link] [rm_ext=%s] append tlink %s" % (str(remove_ext), tlink))
+                    Utils.verbose("[_generate_files_link] [rm_ext=%s] append "
+                                  "slink %s" % (str(remove_ext), slink))
+                    Utils.verbose("[_generate_files_link] [rm_ext=%s] append "
+                                  "tlink %s" % (str(remove_ext), tlink))
 
         self._make_links(links=links)
 
         if Manager.get_simulate() and Manager.get_verbose():
-            Utils.verbose("%s -> %s file link done" % (self.target, self.source))
+            Utils.verbose("%s -> %s file link done"
+                          % (self.target, self.source))
         return self.created_links
 
     def _make_links(self, links=None, hard=False):
@@ -334,22 +379,28 @@ class Links(object):
         for slink, tlink in links:
             if not os.path.exists(tlink) and not os.path.islink(tlink):
                 if Manager.get_simulate() and Manager.get_verbose():
-                    Utils.verbose("Linking %s -> %s" % (tlink, os.path.relpath(slink, start=self.target)))
+                    Utils.verbose("Linking %s -> %s"
+                                  % (tlink,
+                                     os.path.relpath(slink,
+                                                     start=self.target)))
                 else:
                     try:
                         if not Manager.get_simulate():
-                            source_link = os.path.relpath(slink, start=self.target)
+                            source_link = os.path.relpath(slink,
+                                                          start=self.target)
                             if hard:
                                 os.link(source_link, tlink)
                             else:
                                 os.symlink(source_link, tlink)
                     except OSError as err:
                         Utils.error("[%s] Can't create %slink %s: %s" %
-                                    (self.manager.bank.name, 'hard ' if hard else 'sym', tlink, str(err)))
+                                    (self.manager.bank.name, 'hard '
+                                     if hard else 'sym', tlink, str(err)))
                     self.add_link()
         return self.created_links
 
-    def _prepare_links(self, source=None, target=None, get_deepest=False, fallback=None, requires=None, limit=0):
+    def _prepare_links(self, source=None, target=None, get_deepest=False,
+                       fallback=None, requires=None, limit=0):
         """
         Prepare stuff to create links
 
@@ -363,13 +414,16 @@ class Links(object):
         :type fallback: str
         :param requires: A required file or directory
         :type requires: str
-        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :param limit: Limit deepest search to `limit` depth, default 0,
+                      no limit
         :type limit: int
         :return: Boolean
         :rtype: bool
         :raises SystemExit: If 'source' or 'target' are None
-        :raises SystemExit: If 'data.dir' not set in :py:data:`global.properties`
-        :raises SystemExit: If 'production.dir' not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'data.dir' not set in
+                            :py:data:`global.properties`
+        :raises SystemExit: If 'production.dir' not set in
+                            :py:data:`manager.properties`
         :raises SystemExit: If 'target' directory cannot be created
         """
         self._check_source_target_parameters(source=source, target=target)
@@ -380,7 +434,8 @@ class Links(object):
 
         if requires is not None:
             if not os.path.exists(os.path.join(data_dir, requires)):
-                Utils.warn("[%s] Can't create %s, requires param %s not here." % (bank_name, source, requires))
+                Utils.warn("[%s] Can't create %s, requires param %s not here."
+                           % (bank_name, source, requires))
                 return False
 
         if not os.path.isdir(source):
@@ -390,27 +445,32 @@ class Links(object):
                 return False
             else:
                 if self.manager.get_verbose():
-                    Utils.verbose("[%s] %s does not exist. Fallback to %s" % (bank_name, source, fallback))
+                    Utils.verbose("[%s] %s does not exist. Fallback to %s"
+                                  % (bank_name, source, fallback))
                 source = os.path.join(data_dir, fallback)
                 if not os.path.isdir(source):
                     if self.manager.get_verbose():
-                        Utils.warn("[%s] Fallback %s does not exist" % (bank_name, source))
+                        Utils.warn("[%s] Fallback %s does not exist"
+                                   % (bank_name, source))
                         return False
 
         if get_deepest:
-            source = Utils.get_deepest_dir(source, full=get_deepest, limit=limit)
+            source = Utils.get_deepest_dir(source, full=get_deepest,
+                                           limit=limit)
         target = os.path.join(target_dir, target)
 
         # Check destination directory where to create link(s)
         if not os.path.exists(target) and not os.path.isdir(target):
             if Manager.get_simulate() and Manager.get_verbose():
-                Utils.verbose("[_prepare_links] [%s] Creating directory %s" % (bank_name, target))
+                Utils.verbose("[_prepare_links] [%s] Creating directory %s"
+                              % (bank_name, target))
             else:
                 try:
                     if not Manager.get_simulate():
                         os.makedirs(target)
                 except OSError as err:
-                    Utils.error("[%s] Can't create %s dir: %s" % (bank_name, target, str(err)))
+                    Utils.error("[%s] Can't create %s dir: %s"
+                                % (bank_name, target, str(err)))
 
         self.source = source
         self.target = target

@@ -5,6 +5,7 @@ import sys
 import getpass
 from time import time
 from datetime import datetime
+__author__ = 'Emmanuel Quevillon'
 
 
 class Utils(object):
@@ -23,8 +24,10 @@ class Utils(object):
         """
         Search for broken symlinks.
 
-        Given a path, it search for all symlinks 'path' directory and remove broken symlinks.
-        If delete is True, remove broken symlink(s), otherwise lists broken symlinks.
+        Given a path, it search for all symlinks 'path' directory and remove
+        broken symlinks.
+        If delete is True, remove broken symlink(s), otherwise lists broken
+        symlinks.
 
         :param path: Path to search symlinks from
         :type path: str
@@ -53,7 +56,8 @@ class Utils(object):
                 if Manager.verbose:
                     Utils.ok("No dead link found (%s)" % str(path))
             else:
-                Utils.uprint("* %d link(s) need to be cleaned (%s):" % (int(len(broken)), str(path)))
+                Utils.uprint("* %d link(s) need to be cleaned (%s):"
+                             % (int(len(broken)), str(path)))
                 if Manager.verbose:
                     Utils.uprint("\n".join(broken))
                     Utils.warn("\n".join(broken))
@@ -105,7 +109,8 @@ class Utils(object):
         """
         Search for broken symlinks from a particular path.
 
-        If path is not given or None, then it search from the production directory.
+        If path is not given or None, then it search from the production
+        directory.
 
         :param path: Path to search broken links from
         :type path: str
@@ -147,7 +152,8 @@ class Utils(object):
         :type path: str
         :param full: Get the full path otherwise the directory only
         :type full: bool
-        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :param limit: Limit deepest search to `limit` depth, default 0,
+        no limit
         :type limit: int
         :return: List of directories
         :rtype: list
@@ -185,20 +191,23 @@ class Utils(object):
         :type path: str
         :param full: Returns complete path or not
         :type full: bool
-        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :param limit: Limit deepest search to `limit` depth, default 0,
+                      no limit
         :type limit: int
         :return: Directory name
         :rtype: str
         """
         dirs = Utils.get_deepest_dirs(path, full=full, limit=limit)
         if len(dirs) > 1:
-            Utils.warn("More than one deepest dir found at %s: Only first returned" % str(path))
+            Utils.warn("More than one deepest dir found at %s: Only first "
+                       "returned" % str(path))
         return dirs[0]
 
     @staticmethod
     def get_now():
         """
-        Get current time from :class:`time.time` formatted using :py:const:`Utils.DATE_FMT`
+        Get current time from :class:`time.time` formatted using
+        :py:const:`Utils.DATE_FMT`
 
         :returns: Current time formatted using :class:`Utils.DATE_FMT`
         :rtype: :class:`time.time`
@@ -213,7 +222,8 @@ class Utils(object):
         E.g.: File system is /t/a1/a2/a3, get_subtree(path='/t') -> /a1/a2/a3
         :param path: Root path to get subtree structure from
         :type path: str
-        :param limit: Limit deepest search to `limit` depth, default 0, no limit
+        :param limit: Limit deepest search to `limit` depth, default 0,
+                      no limit
         :type limit: int
         :return: List of found subtree
         :rtype: list
@@ -251,7 +261,8 @@ class Utils(object):
 
     @staticmethod
     def reset_timer():
-        """Reset to *0.0* :py:func:`timer_start` and :py:func:`timer_stop` for a new :py:func:`elapsed_time()` count"""
+        """Reset to *0.0* :py:func:`timer_start` and :py:func:`timer_stop`
+         for a new :py:func:`elapsed_time()` count"""
         Utils.timer_start = 0.0
         Utils.timer_stop = 0.0
 
@@ -280,7 +291,8 @@ class Utils(object):
     @staticmethod
     def time2datefmt(otime, fmt=DATE_FMT):
         """
-        Converts a timestamp into a date following the format fmt, default to Utils.DATE_FMT
+        Converts a timestamp into a date following the format fmt,
+        default to Utils.DATE_FMT
 
         :param otime: Timestamp to convert
         :type otime: time
@@ -312,7 +324,8 @@ class Utils(object):
     @staticmethod
     def user():
         """
-        Returns the current user running or using the script. Given by getpass.getuser()
+        Returns the current user running or using the script.
+        Given by getpass.getuser()
 
         :return: User name
         :rtype: str

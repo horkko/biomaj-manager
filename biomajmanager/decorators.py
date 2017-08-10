@@ -1,7 +1,7 @@
 """Global decorators for BioMAJ Manager"""
 from biomajmanager.utils import Utils
 from functools import wraps
-__author__ = 'tuco'
+__author__ = 'Emmanuel Quevillon'
 
 
 def bank_required(func):
@@ -16,12 +16,14 @@ def bank_required(func):
     """
     @wraps(func)
     def _check_bank_required(*args, **kwargs):
-        """Small function to check a bank object is set in BioMAJ Manager instance"""
+        """Small function to check a bank object is set in BioMAJ Manager
+         instance"""
         self = args[0]
         if self.bank is None:
             Utils.error("A bank name is required")
         return func(*args, **kwargs)
     return _check_bank_required
+
 
 def deprecated(func):
     """
@@ -36,11 +38,13 @@ def deprecated(func):
     """
     @wraps(func)
     def _dep_func(*args, **kwargs):
-        Utils.error("Call to deprecated function '{}'. Not executed.".format(func.__name__))
+        Utils.error("Call to deprecated function '{}'. Not executed."
+                    .format(func.__name__))
     _dep_func.__name__ = func.__name__
     _dep_func.__doc__ = func.__doc__
     _dep_func.__dict__.update(func.__dict__)
     return _dep_func
+
 
 def user_granted(func):
     """
@@ -70,7 +74,8 @@ def user_granted(func):
             if 'owner' in props and props['owner']:
                 admin = props['owner']
         if not admin:
-            Utils.error("Could not find admin user either in config nor in bank")
+            Utils.error("Could not find admin user either in config nor "
+                        "in bank")
 
         user = self.get_current_user()
 

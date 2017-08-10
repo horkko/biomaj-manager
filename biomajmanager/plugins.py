@@ -3,6 +3,7 @@ from biomajmanager.utils import Utils
 from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
 import os
+__author__ = 'Emmanuel Quevillon'
 
 
 class Plugins(object):
@@ -20,9 +21,12 @@ class Plugins(object):
         :param name: Name of the plugin to load. [DEFAULT: load all plugins]
         :type name: String
         :raises SystemExit: If 'manager' arg is not given
-        :raises SystemExit: If 'PLUGINS' section not found in :py:data:`manager.properties`
-        :raises SystemExit: If 'plugins.dir' not set in :py:data:`manager.properties`
-        :raises SystemExit: If 'plugins.list' not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'PLUGINS' section not found in
+                            :py:data:`manager.properties`
+        :raises SystemExit: If 'plugins.dir' not set in
+                            :py:data:`manager.properties`
+        :raises SystemExit: If 'plugins.list' not set in
+                            :py:data:`manager.properties`
         :raises SystemExit: If 'plugins.dir' does not exist
         """
         self.pm = None
@@ -43,8 +47,9 @@ class Plugins(object):
 
         if not os.path.isdir(self.config.get('MANAGER', 'plugins.dir')):
             Utils.error("Can't find plugins.dir")
-        plugin_manager = PluginManager(directories_list=[self.config.get('MANAGER', 'plugins.dir')],
-                                       categories_filter={Plugins.CATEGORY: BMPlugin})
+        plugin_manager = PluginManager(
+            directories_list=[self.config.get('MANAGER', 'plugins.dir')],
+            categories_filter={Plugins.CATEGORY: BMPlugin})
         plugin_manager.collectPlugins()
         self.pm = plugin_manager
         self.name = name
@@ -61,7 +66,8 @@ class Plugins(object):
             Utils.verbose("[manager] plugin name => %s" % pluginInfo.name)
             if pluginInfo.name in user_plugins:
                 if not pluginInfo.is_activated:
-                    Utils.verbose("[manager] plugin %s activated" % pluginInfo.name)
+                    Utils.verbose("[manager] plugin %s activated"
+                                  % pluginInfo.name)
                     plugin_manager.activatePluginByName(pluginInfo.name)
                 setattr(self, pluginInfo.name, pluginInfo.plugin_object)
                 pluginInfo.plugin_object.set_config(self.config)

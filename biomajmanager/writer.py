@@ -4,6 +4,7 @@ from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 from biomajmanager.utils import Utils
 import os
 import sys
+__author__ = 'Emmanuel Quevillon'
 
 
 class Writer(object):
@@ -21,8 +22,10 @@ class Writer(object):
         :param output: Output file. Default STDOUT
         :type output: str
         :raises SystemExit: If 'template_dir' is not given
-        :raises SystemExit: If 'MANAGER' section not found in :py:data:`manager.properties`
-        :raises SystemExit: If 'template.dir' not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'MANAGER' section not found in
+                            :py:data:`manager.properties`
+        :raises SystemExit: If 'template.dir' not set in
+                            :py:data:`manager.properties`
         """
         self.env = None
         self.output = None
@@ -30,7 +33,8 @@ class Writer(object):
 
         if template_dir is not None:
             if not os.path.isdir(template_dir):
-                Utils.error("Template dir %s is not a directory" % template_dir)
+                Utils.error("Template dir %s is not a directory"
+                            % template_dir)
             self.template_dir = template_dir
         elif config is not None:
             if not config.has_section('MANAGER'):
@@ -41,7 +45,8 @@ class Writer(object):
                 self.template_dir = config.get('MANAGER', 'template.dir')
         if self.template_dir is None:
             Utils.error("'template.dir' not set")
-        self.env = Environment(loader=FileSystemLoader(os.path.join(self.template_dir)),
+        self.env = Environment(loader=FileSystemLoader(
+                                         os.path.join(self.template_dir)),
                                trim_blocks=True, lstrip_blocks=True,
                                extensions=['jinja2.ext.with_'])
         self.output = output
@@ -69,9 +74,11 @@ class Writer(object):
         try:
             template = self.env.get_template(template)
         except TemplateNotFound as err:
-            Utils.error("Template %s not found in %s" % (err, self.template_dir))
+            Utils.error("Template %s not found in %s"
+                        % (err, self.template_dir))
         except TemplateSyntaxError as err:
-            Utils.error("Syntax error found in template '%s', line %d: %s" % (err.name, err.lineno, err.message))
+            Utils.error("Syntax error found in template '%s', line %d: %s"
+                        % (err.name, err.lineno, err.message))
 
         if self.output is None:
             ofile = sys.stdout

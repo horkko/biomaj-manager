@@ -25,87 +25,129 @@ __author__ = 'Emmanuel Quevillon'
 
 
 def main():
-    """This is the main function treating arguments passed on the command line."""
+    """This is the main function treating arguments passed on the
+    command line."""
     description = "BioMAJ Manager adds some functionality around BioMAJ."
     parser = argparse.ArgumentParser(description=description)
     # Options without value
-    parser.add_argument('-A', '--check_prod_release', dest="prodrelease", metavar='Max release', type=int,
-                        const=True, nargs='?',
-                        help="Look for bank having stored releases greater than [Max release, default to \
-                             'keep.old.version']. [-b available]")
-    parser.add_argument('-D', '--save_versions', dest="save_versions", action="store_true", default=False,
-                        help="Prints info about all banks into version file. (Requires permissions)")
-    parser.add_argument('-H', '--history', dest="history", action="store_true", default=False,
+    parser.add_argument('-A', '--check_prod_release', dest="prodrelease",
+                        metavar='Max release', type=int, const=True, nargs='?',
+                        help="Look for bank having stored releases greater than"
+                             " [Max release, default to 'keep.old.version']. "
+                             "[-b available]")
+    parser.add_argument('-D', '--save_versions', dest="save_versions",
+                        action="store_true", default=False,
+                        help="Prints info about all banks into version file."
+                             "(Requires permissions)")
+    parser.add_argument('-H', '--history', dest="history", action="store_true",
+                        default=False,
                         help="Prints banks releases history. [-b] available.")
-    parser.add_argument('-i', '--info', dest="info", action="store_true", default=False,
+    parser.add_argument('-i', '--info', dest="info", action="store_true",
+                        default=False,
                         help="Print info about a bank. [-b REQUIRED]")
-    parser.add_argument('-I', '--remote-info', dest="remoteinfo", action="store_true", default=False,
-                        help="Print remote info for a bank remote connection. [-b REQUIRED]")
-    parser.add_argument('-J', '--check_links', dest="check_links", action="store_true", default=False,
-                        help="Check if the bank required symlinks to be created (Permissions required). [-b REQUIRED]")
-    parser.add_argument('-l', '--links', dest="links", action="store_true", default=False,
-                        help="Just (re)create symlink, don't do any bank switch. (Permissions required). [-b REQUIRED]")
-    parser.add_argument('-L', '--bank_formats', dest="bank_formats", action="store_true", default=False,
-                        help="List supported formats and index for each banks. [-b] available.")
-    parser.add_argument('-M', '--to_mongo', dest="to_mongo", action="store_true", default=False,
-                        help="[PLUGIN] Load bank(s) history into mongo database (bioweb). [-b and --db_type REQUIRED]")
-    parser.add_argument('-N', '--news', dest="news", action="store_true", default=False,
-                        help="Create news to display at BiomajWatcher. [Default output txt]")
-    parser.add_argument('-n', '--simulate', dest="simulate", action="store_true", default=False,
+    parser.add_argument('-I', '--remote-info', dest="remoteinfo",
+                        action="store_true", default=False,
+                        help="Print remote info for a bank remote connection. "
+                             "[-b REQUIRED]")
+    parser.add_argument('-J', '--check_links', dest="check_links",
+                        action="store_true", default=False,
+                        help="Check if the bank required symlinks to be "
+                             "created (Permissions required). [-b REQUIRED]")
+    parser.add_argument('-l', '--links', dest="links", action="store_true",
+                        default=False,
+                        help="Just (re)create symlink, don't do any bank "
+                             "switch. (Permissions required). [-b REQUIRED]")
+    parser.add_argument('-L', '--bank_formats', dest="bank_formats",
+                        action="store_true", default=False,
+                        help="List supported formats and index for each banks."
+                             "[-b] available.")
+    parser.add_argument('-M', '--to_mongo', dest="to_mongo",
+                        action="store_true", default=False,
+                        help="[PLUGIN] Load bank(s) history into mongo "
+                             "database (bioweb). [-b and --db_type REQUIRED]")
+    parser.add_argument('-N', '--news', dest="news", action="store_true",
+                        default=False,
+                        help="Create news to display at BiomajWatcher. "
+                             "[Default output txt]")
+    parser.add_argument('-n', '--simulate', dest="simulate",
+                        action="store_true", default=False,
                         help="Simulate action, don't do it really.")
-    parser.add_argument('-P', '--show_pending', dest="pending", action="store_true", default=False,
+    parser.add_argument('-P', '--show_pending', dest="pending",
+                        action="store_true", default=False,
                         help="Show pending release(s). [-b] available")
-    parser.add_argument('-R', '--rss', dest="rss", action="store_true", default=False,
+    parser.add_argument('-R', '--rss', dest="rss", action="store_true",
+                        default=False,
                         help="Create RSS feed. [-o available]")
-    parser.add_argument('-s', '--switch', dest="switch", action="store_true", default=False,
+    parser.add_argument('-s', '--switch', dest="switch", action="store_true",
+                        default=False,
                         help="Switch a bank to its new version. [-b REQUIRED]")
-    parser.add_argument('-X', '--synchronize_db', dest="synchronizedb", action="store_true", default=False,
+    parser.add_argument('-X', '--synchronize_db', dest="synchronizedb",
+                        action="store_true", default=False,
                         help="Synchronize database and bank data on disk")
-    parser.add_argument('-U', '--show_update', dest="show_update", action="store_true", default=False,
-                        help="If -b passed prints if bank needs to be updated. Otherwise, prints all bank that\
-                              need to be updated. [-b and --visibility] available.")
-    parser.add_argument('-v', '--version', dest="version", action="store_true", default=False,
+    parser.add_argument('-U', '--show_update', dest="show_update",
+                        action="store_true", default=False,
+                        help="If -b passed prints if bank needs to be updated."
+                             " Otherwise, prints all bank that need to be "
+                             "updated. [-b and --visibility] available.")
+    parser.add_argument('-v', '--version', dest="version", action="store_true",
+                        default=False,
                         help="Show version")
-    parser.add_argument('-V', '--verbose', dest="verbose", action="store_true", default=False,
+    parser.add_argument('-V', '--verbose', dest="verbose", action="store_true",
+                        default=False,
                         help="Activate verbose mode")
-    parser.add_argument('-W', '--no-warning', dest="nowarn", action="store_true", default=False,
+    parser.add_argument('-W', '--no-warning', dest="nowarn",
+                        action="store_true", default=False,
                         help="Switch off warning messages")
-    parser.add_argument('--test', dest="test", action="store_true", default=False,
+    parser.add_argument('--test', dest="test", action="store_true",
+                        default=False,
                         help="Test method. [-b REQUIRED]")
-    parser.add_argument('-Z', '--clean_sessions', dest="cleansessions", action="store_true", default=False,
-                        help="Clean dead sessions from the database. [-b REQUIRED]")
+    parser.add_argument('-Z', '--clean_sessions', dest="cleansessions",
+                        action="store_true", default=False,
+                        help="Clean dead sessions from the database. "
+                             "[-b REQUIRED]")
     # Options with value required
     parser.add_argument('-b', '--bank', dest="bank",
                         help="Bank name")
-    parser.add_argument('-B', '--broken_links', dest="brokenlinks", metavar="path to check", type=str,
-                        const=True, nargs='?',
-                        help="Check for broken symlinks in production directory.")
-    parser.add_argument('-C', '--clean_links', dest="cleanlinks", metavar="path to clean", type=str,
-                        const=True, nargs='?',
+    parser.add_argument('-B', '--broken_links', dest="brokenlinks",
+                        metavar="path to check", type=str, const=True,
+                        nargs='?',
+                        help="Check for broken symlinks in production "
+                             "directory.")
+    parser.add_argument('-C', '--clean_links', dest="cleanlinks",
+                        metavar="path to clean", type=str, const=True,
+                        nargs='?',
                         help="Remove old/broken links (Permissions required)")
     parser.add_argument('-c', '--config', dest="config",
                         help="BioMAJ global.properties configuration file")
     parser.add_argument('--db_type', dest="db_type",
                         help="BioMAJ database type [MySQL, MongoDB]")
-    parser.add_argument('-E', '--failed-process', dest="failedprocess", metavar='session id', type=float,
-                        const=True, nargs='?',
-                        help="Get failed process(es) for a bank. Session id can be used. [-b REQUIRED]")
+    parser.add_argument('-E', '--failed-process', dest="failedprocess",
+                        metavar='session id', type=float, const=True,
+                        nargs='?',
+                        help="Get failed process(es) for a bank. Session id "
+                             "can be used. [-b REQUIRED]")
     parser.add_argument('-o', '--out', dest="out",
                         help="Output file")
     parser.add_argument('-F', '--format', dest="oformat",
                         help="Output format. Supported [csv, html, json]")
     parser.add_argument('-r', '--release', dest="release",
                         help="Release number to use. [-b, -w REQUIRED]")
-    parser.add_argument('-S', '--section', dest="tool", metavar="[blast2|golden]",
-                        help="Prints [blast2|golden] section(s) for a bank. [-b REQUIRED]")
+    parser.add_argument('-S', '--section', dest="tool",
+                        metavar="[blast2|golden]",
+                        help="Prints [blast2|golden] section(s) for a bank. "
+                             "[-b REQUIRED]")
     parser.add_argument('-T', '--templates', dest="template_dir",
                         help="Template directory. Overwrites template_dir")
     parser.add_argument('--vdbs', dest="vdbs", metavar="[blast2|golden]",
-                        help="Create virtual database HTML pages for tool. [-b available]")
-    parser.add_argument('--visibility', dest="visibility", default="public", metavar="all|public|private",
+                        help="Create virtual database HTML pages for tool. "
+                             "[-b available]")
+    parser.add_argument('--visibility', dest="visibility", default="public",
+                        metavar="all|public|private",
                         help="Banks visibility. Use with --show_update.")
-    parser.add_argument('-w', '--set_sequence_count', dest='seqcount', metavar="file:seq_num",
-                        help="Set the number of sequence(s) in the file. [-b REQUIRED]")
+    parser.add_argument('-w', '--set_sequence_count', dest='seqcount',
+                        metavar="file:seq_num",
+                        help="Set the number of sequence(s) in the file. "
+                             "[-b REQUIRED]")
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -133,10 +175,12 @@ def main():
             dbformats = manager.formats_as_string()
             dbformats['raw'] = manager.bank.config.get('db.formats')
             formats.append({'name': bank, 'formats': dbformats,
-                            'fullname': manager.bank.config.get('db.fullname').replace('"', '')})
+                            'fullname': manager.bank.config.get('db.fullname')
+                           .replace('"', '')})
 
         if options.oformat:
-            writer = Writer(config=manager.config, output=options.out, template_dir=options.template_dir)
+            writer = Writer(config=manager.config, output=options.out,
+                            template_dir=options.template_dir)
             writer.write(template='banks_formats.j2.' + options.oformat,
                          data={'banks': formats, 'header': supp_formats,
                                'elapsed': "%.3f" % Utils.elapsed_time()})
@@ -156,7 +200,8 @@ def main():
                 info.append(list_fmt)
             if len(info):
                 info.insert(0, ['Bank'] + supp_formats)
-                print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+                print(tabulate(info, headers='firstrow', tablefmt='psql',
+                               floatfmt=".6f"))
             else:
                 print("No formats supported")
         print("Elapsed time %.3f sec" % Utils.elapsed_time())
@@ -166,7 +211,8 @@ def main():
         brokenlinks = options.brokenlinks
         if type(brokenlinks) == bool:
             manager = Manager(global_cfg=options.config)
-            options.brokenlinks = os.path.join(manager.get_production_dir(), 'index')
+            options.brokenlinks = os.path.join(manager.get_production_dir(),
+                                               'index')
         brkln = Utils.get_broken_links(path=brokenlinks)
         print("%d broken link(s)" % brkln)
         sys.exit(0)
@@ -177,7 +223,8 @@ def main():
         manager = Manager(bank=options.bank, global_cfg=options.config)
         linker = Links(manager=manager)
         if linker.check_links():
-            print("[%s] %d link(s) need to be created" % (options.bank, linker.created_links))
+            print("[%s] %d link(s) need to be created"
+                  % (options.bank, linker.created_links))
         else:
             print("[%s] All links OK" % options.bank)
         sys.exit(0)
@@ -189,7 +236,8 @@ def main():
         if type(cleanlinks) == bool:
             for key in Links.DIRS.iterkeys():
                 for ddir in Links.DIRS[key]:
-                    path = os.path.join(manager.get_production_dir(), ddir['target'])
+                    path = os.path.join(manager.get_production_dir(),
+                                        ddir['target'])
                     Utils.clean_symlinks(path=path, delete=True)
         else:
             Utils.clean_symlinks(path=cleanlinks, delete=True)
@@ -214,9 +262,11 @@ def main():
             session = None
         failed = manager.get_failed_processes(session_id=session, full=True)
         if len(failed):
-            failed.insert(0, ["Last run", "Session", "Release", "Process", "Executable", "Arguments"])
+            failed.insert(0, ["Last run", "Session", "Release", "Process",
+                              "Executable", "Arguments"])
             print("Failed process(es):")
-            print(tabulate(failed, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+            print(tabulate(failed, headers='firstrow', tablefmt='psql',
+                           floatfmt=".6f"))
         else:
             print("No failed process(es)")
         sys.exit(0)
@@ -237,18 +287,24 @@ def main():
             if options.oformat == 'json':
                 print(json.dumps([h for hist in history for h in hist]))
             else:
-                writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
+                writer = Writer(config=manager.config,
+                                template_dir=options.template_dir,
+                                output=options.out)
                 writer.write(template='history.j2.' + options.oformat,
-                             data={'history': history, 'generated': Utils.get_now(),
+                             data={'history': history,
+                                   'generated': Utils.get_now(),
                                    'elapsed': "%.3f" % Utils.elapsed_time()})
         else:
             if len(history):
                 for bank in history:
-                    info = [['[%s] Release' % bank['name'], 'Status', 'Created', 'Removed']]
+                    info = [['[%s] Release'
+                             % bank['name'], 'Status', 'Created', 'Removed']]
                     for hist in bank['history']:
-                        info.append([hist['version'], hist['status'], hist['publication_date'],
+                        info.append([hist['version'], hist['status'],
+                                     hist['publication_date'],
                                      hist['removal_date']])
-                    print(tabulate(info, headers="firstrow", tablefmt='psql', floatfmt=".6f"))
+                    print(tabulate(info, headers="firstrow", tablefmt='psql',
+                                   floatfmt=".6f"))
             else:
                 print("No history available")
         sys.exit(0)
@@ -258,11 +314,14 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         info = manager.bank_info()
-        print(tabulate(info['info'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
-        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+        print(tabulate(info['info'], headers='firstrow', tablefmt='psql',
+                       floatfmt=".6f"))
+        print(tabulate(info['prod'], headers='firstrow', tablefmt='psql',
+                       floatfmt=".6f"))
         # do we have some pending release(s)
         if 'pend' in info and len(info['pend']) > 1:
-            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+            print(tabulate(info['pend'], headers='firstrow', tablefmt='psql',
+                           floatfmt=".6f"))
         sys.exit(0)
 
     if options.remoteinfo:
@@ -282,7 +341,8 @@ def main():
         linker = Links(manager=manager)
         linker.do_links()
         etime = Utils.elapsed_time()
-        print("[%s] %d link(s) created (%f sec)" % (options.bank, linker.created_links, etime))
+        print("[%s] %d link(s) created (%f sec)"
+              % (options.bank, linker.created_links, etime))
         sys.exit(0)
 
     if options.news:
@@ -301,7 +361,8 @@ def main():
         else:
             if options.oformat is None:
                 options.oformat = 'txt'
-            writer = Writer(config=config, template_dir=options.template_dir, output=options.out)
+            writer = Writer(config=config, template_dir=options.template_dir,
+                            output=options.out)
             writer.write(template='news.j2.' + options.oformat, data=news.data)
         sys.exit(0)
 
@@ -317,34 +378,40 @@ def main():
             pending = manager.get_pending_sessions()
             if pending:
                 if options.oformat:
-                    writer = Writer(config=manager.config, template_dir=options.template_dir, output=options.out)
-                    writer.write(template='pending.j2.' + options.oformat, data={'pending': pending})
+                    writer = Writer(config=manager.config,
+                                    template_dir=options.template_dir,
+                                    output=options.out)
+                    writer.write(template='pending.j2.' + options.oformat,
+                                 data={'pending': pending})
                 else:
                     seen = {}
                     for pend in pending:
                         release = pend['release']
                         sess_id = pend['id']
-                        # As for now we have pending as many time as they are run
                         if sess_id in seen:
                             continue
                         last_run = manager.get_session_from_id(sess_id)
                         if last_run is not None:
-                            last_run = Utils.time2datefmt(last_run['last_update_time'], Utils.DATE_FMT)
+                            last_run = Utils.time2datefmt(
+                                last_run['last_update_time'], Utils.DATE_FMT)
                         else:
                             last_run = "N/A"
-                        info.append([bank, sess_id, str(release), str(last_run)])
+                        info.append([bank, sess_id, str(release),
+                                     str(last_run)])
                         seen[sess_id] = True
             manager.set_bank_from_name(name=bank)
         if info:
             info.insert(0, ["Bank", "Session", "Release", "Last Run"])
             print("Pending banks:")
-            print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+            print(tabulate(info, headers='firstrow', tablefmt='psql',
+                           floatfmt=".6f"))
         else:
             print("No pending session")
         sys.exit(0)
 
     if options.prodrelease:
-        # Search for bank having production release entries greater than limit. Default to 'keep.old.version'
+        # Search for bank having production release entries greater than limit.
+        # Default to 'keep.old.version'
         banks = []
         if options.bank:
             banks.append(options.bank)
@@ -360,7 +427,8 @@ def main():
             if len(exceed):
                 info.append(exceed)
         if info:
-            print("%d banks have exceeded production release limit" % int(len(info)))
+            print("%d banks have exceeded production release limit"
+                  % int(len(info)))
             info.insert(0, ["Bank", "Production release", "Limit"])
             print(tabulate(info, headers='firstrow', tablefmt='psql'))
         sys.exit(0)
@@ -393,11 +461,14 @@ def main():
         elif len(updates) > 0:
             info = []
             for bank in updates:
-                info.append([bank['name'], bank['current_release'], bank['next_release']])
+                info.append([bank['name'], bank['current_release'],
+                             bank['next_release']])
             if len(info):
                 info.insert(0, ["Bank", "Current release", "Next release"])
-                print("Next bank switch will take place on %s @ 00:00AM" % next_switch)
-                print(tabulate(info, headers='firstrow', tablefmt='psql', floatfmt=".6f"))
+                print("Next bank switch will take place on %s @ 00:00AM"
+                      % next_switch)
+                print(tabulate(info, headers='firstrow', tablefmt='psql',
+                               floatfmt=".6f"))
         else:
             print("No bank need to be updated")
         sys.exit(0)
@@ -446,7 +517,8 @@ def main():
             elif options.db_type.lower() == 'mysql':
                 manager.plugins.bioweb.update_bioweb_from_mysql()
             else:
-                Utils.error("%s not supported. Only mysql or mongodb" % options.db_type)
+                Utils.error("%s not supported. Only mysql or mongodb"
+                            % options.db_type)
         sys.exit(0)
 
     if options.tool:
@@ -454,17 +526,21 @@ def main():
             Utils.error("A bank name is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         sections = manager.get_bank_sections(tool=options.tool)
-        print("[%s] %s dbs and section(s):" % (options.bank, str(options.tool)))
+        print("[%s] %s dbs and section(s):"
+              % (options.bank, str(options.tool)))
         for alpha in sections.keys():
             for type_name in sections[alpha].keys():
                 if type_name in sections[alpha] and sections[alpha][type_name]:
-                    print("[%s] %s: %s" % (alpha, type_name, ", ".join(sections[alpha][type_name])))
+                    print("[%s] %s: %s"
+                          % (alpha, type_name,
+                             ", ".join(sections[alpha][type_name])))
         sys.exit(0)
 
     if options.version:
         version = pkg_resources.require('biomajmanager')[0].version
         biomaj_version = pkg_resources.require('biomaj')[0].version
-        print("BioMAJ Manager: %s (BioMAJ: %s)" % (str(version), str(biomaj_version)))
+        print("BioMAJ Manager: %s (BioMAJ: %s)"
+              % (str(version), str(biomaj_version)))
         sys.exit(0)
 
     if options.vdbs:
@@ -479,13 +555,16 @@ def main():
             manager = Manager(bank=bank, global_cfg=options.config)
             info = manager.get_bank_sections(tool=options.vdbs)
             info['info'] = {'version': manager.current_release(),
-                            'description': manager.bank.config.get('db.fullname')}
+                            'description':
+                                manager.bank.config.get('db.fullname')}
             virtual_banks[bank] = info
         if virtual_banks.items():
-            writer = Writer(template_dir=options.template_dir, config=manager.config, output=options.out)
+            writer = Writer(template_dir=options.template_dir,
+                            config=manager.config, output=options.out)
             writer.write(template='virtual_banks.j2.html',
                          data={'banks': virtual_banks, 'tool': options.vdbs,
-                               'prod_dir': manager.config.get('GENERAL', 'data.dir'),
+                               'prod_dir':
+                                   manager.config.get('GENERAL', 'data.dir'),
                                'elapsed': "%.3f" % Utils.elapsed_time(),
                                'generated': Utils.get_now()})
         else:
@@ -499,8 +578,10 @@ def main():
             Utils.error("Release number is required")
         manager = Manager(bank=options.bank, global_cfg=options.config)
         sfile, scnt = options.seqcount.split(':')
-        if not manager.set_sequence_count(seq_file=sfile, seq_count=scnt, release=options.release):
-            Utils.error("Can't set sequence number (%d) for %s, release %s" % (scnt, sfile, options.release))
+        if not manager.set_sequence_count(seq_file=sfile, seq_count=scnt,
+                                          release=options.release):
+            Utils.error("Can't set sequence number (%d) for %s, release %s"
+                        % (scnt, sfile, options.release))
         sys.exit(0)
 
     if options.synchronizedb:

@@ -15,6 +15,8 @@ from biomaj.mongo_connector import MongoConnector
 from biomajmanager.utils import Utils
 from biomajmanager.plugins import Plugins
 from biomajmanager.decorators import bank_required, user_granted, deprecated
+__author__ = 'Emmanuel Quevillon'
+
 try:
     from ConfigParser import Error
 except ImportError:
@@ -70,7 +72,8 @@ class Manager(object):
             if self.config.has_option('GENERAL', 'data.dir'):
                 self.bank_prod = self.config.get('GENERAL', 'data.dir')
         except SystemExit as err:
-            Utils.error("Can't load configuration file. Exit with code %s" % str(err))
+            Utils.error("Can't load configuration file. Exit with code %s"
+                        % str(err))
 
         if bank is not None:
             try:
@@ -85,9 +88,10 @@ class Manager(object):
         """
         Load biomaj-manager configuration file (manager.properties).
 
-        It uses BiomajConfig.load_config() to first load global.properties and determine
-        where the config.dir is. manager.properties must be located at the same place as
-        global.properties or file parameter must point to manager.properties
+        It uses BiomajConfig.load_config() to first load global.properties and
+        determine where the config.dir is. manager.properties must be located
+        at the same place as global.properties or file parameter must point to
+        manager.properties
 
         :param cfg: Path to config file to load
         :type cfg: str
@@ -147,13 +151,16 @@ class Manager(object):
         # Bank is updating?
         if self.bank.is_locked():
             if Manager.get_verbose():
-                Utils.verbose("[%s] Can't switch, bank is being updated" % self.bank.name)
+                Utils.verbose("[%s] Can't switch, bank is being updated"
+                              % self.bank.name)
             return False
-        # If there is no published bank yet, ask the user to do it first. Can't switch to new release version
+        # If there is no published bank yet, ask the user to do it first.
+        # Can't switch to new release version
         # if no bank is published yet
         if not self.bank_is_published():
             if Manager.get_verbose():
-                Utils.verbose("[%s] There's no published bank yet. Publish it first" % self.bank.name)
+                Utils.verbose("[%s] There's no published bank yet. "
+                              "Publish it first" % self.bank.name)
             return False
 
         # Bank construction failed?
@@ -163,7 +170,8 @@ class Manager(object):
 
         if not self.update_ready():
             if Manager.get_verbose():
-                Utils.verbose("[%s] Can't switch, bank is not ready" % self.bank.name)
+                Utils.verbose("[%s] Can't switch, bank is not ready"
+                              % self.bank.name)
             return False
         return True
 
@@ -172,10 +180,12 @@ class Manager(object):
         """
         Check the number of production(s) release stored in the database.
 
-        It happens that some bank have a number of production release stored in the database greater than
-        the limit set by 'keep.old.version'. This method find bank with such case.
+        It happens that some bank have a number of production release stored in
+        the database greater than the limit set by 'keep.old.version'.
+        This method find bank with such case.
 
-        :param max_release: Maximum number of release in production. Default to 'keep.old.version'
+        :param max_release: Maximum number of release in production.
+        Default to 'keep.old.version'
         type max_release: int
         :return: List of three elemetns, bank, production elements, limit
         :rtype: list
@@ -186,7 +196,8 @@ class Manager(object):
         if limit is None:
             limit = int(self.bank.config.get('keep.old.version'))
         if 'production' not in self.bank.bank:
-            Utils.error("[%s] No 'production' found in database" % self.bank.name)
+            Utils.error("[%s] No 'production' found in database"
+                        % self.bank.name)
         # We do not consider the published release 'current'
         if 'current' in self.bank.bank:
             current = self.bank.bank['current']
@@ -198,10 +209,12 @@ class Manager(object):
 
         if plen > limit:
             if Manager.get_verbose():
-                Utils.warn("[%s] Production release exceeds limit (%d/%d)" % (self.bank.name, plen, limit))
+                Utils.warn("[%s] Production release exceeds limit (%d/%d)"
+                           % (self.bank.name, plen, limit))
             return [self.bank.name, plen, limit]
         elif Manager.get_verbose():
-            Utils.ok("[%s] Production release number OK. Entries %d, limit %d" % (self.bank.name, plen, limit))
+            Utils.ok("[%s] Production release number OK. Entries %d, limit %d"
+                     % (self.bank.name, plen, limit))
         return []
 
     @bank_required
@@ -209,14 +222,16 @@ class Manager(object):
         """
         Clean sessions in database.
 
-        Doing multiple update for a bank, can lead to have an asynchronous state between what we have
-        in the database, in particular in 'sessions' JSON fields.
-        This method tries to clean the 'sessions' JSON fields from the database as we can have some
-        session that are marked as 'deleted' in the database and are still present on the disk. Or a
-        session marked as 'deleted' but found in 'production' field like it is online!
-        tries to
-        In simulate mode, just creates a small report of what to do to clean 'sessions'.
-        In non simulate mode, does it automatically for you.
+        Doing multiple update for a bank, can lead to have an asynchronous
+        state between what we have in the database, in particular in 'sessions'
+        JSON fields.
+        This method tries to clean the 'sessions' JSON fields from the database
+        as we can have session that are marked as 'deleted' in the database
+        and are still present on the disk. Or a session marked as 'deleted' but
+        found in 'production' field like it is online!
+
+        In simulate mode, just creates a small report of what to do to clean
+        'sessions'. In non simulate mode, does it automatically for you.
 
         :return: True or False
         :rtype: bool
@@ -237,7 +252,8 @@ class Manager(object):
 
         bank_data_dir = self.get_bank_data_dir()
         if bank_data_dir is None:
-            Utils.warn("Can't get path to bank data dir. Is bank published or data.dir set?")
+            Utils.warn("Can't get path to bank data dir. Is bank published or "
+                       "data.dir set?")
             return False
 
         sessions = self.bank.bank['sessions']
@@ -248,15 +264,24 @@ class Manager(object):
                 continue
             if current and current == session['id']:
                 continue
-            # If session marked as deleted we don't care about it unless it is found on disk
+            # If session marked as deleted we don't care about it unless it is
+            # found on disk
             if 'deleted' in session:
-                if os.path.exists(os.path.join(bank_data_dir, session['dir_version'] + "_" + str(session['release']))):
-                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but directory %s found disk" %
-                               (self.bank.name, str(session['release']), session['id'], session['deleted'],
-                                session['dir_version'] + "_" + str(session['release'])))
+                bank_path = os.path.join(bank_data_dir,
+                                         session['dir_version'] + "_" +
+                                         str(session['release']))
+                if os.path.exists(os.path.join(bank_path)):
+                    Utils.warn("[%s] Release %s, session %f marked as deleted"
+                               " (%f) but directory %s found disk" %
+                               (self.bank.name, str(session['release']),
+                                session['id'], session['deleted'],
+                                session['dir_version'] + "_" +
+                                str(session['release'])))
                 elif session['id'] in productions:
-                    Utils.warn("[%s] Release %s, session %f marked as deleted (%f) but found in production" %
-                               (self.bank.name, str(session['release']), session['id'], session['deleted']))
+                    Utils.warn("[%s] Release %s, session %f marked as deleted"
+                               " (%f) but found in production" %
+                               (self.bank.name, str(session['release']),
+                                session['id'], session['deleted']))
                     field_name = 'production'
                     id_key = 'session'
                 else:
@@ -266,8 +291,10 @@ class Manager(object):
             if 'workflow_status' in session and not session['workflow_status']:
                 if session['id'] in pendings:
                     continue
-            tasks_to_do.append({'release': str(session['release']), 'sid': session['id'],
-                                'type': field_name, 'key': id_key})
+            tasks_to_do.append({'release': str(session['release']),
+                                'sid': session['id'],
+                                'type': field_name,
+                                'key': id_key})
 
         if len(tasks_to_do):
             cleaned = 0
@@ -275,14 +302,17 @@ class Manager(object):
                 if auto_clean is True:
                     self.bank.banks.update({'name': self.bank.name},
                                            {'$pull': {task['type']:
-                                                          {task['key']: task['sid'], 'release': str(task['release'])}
-                                                      }
-                                           })
+                                            {task['key']: task['sid'],
+                                             'release': str(task['release'])}
+                                             }
+                                            })
                     cleaned += 1
                 else:
-                    Utils.ok("Clean needed for release %s, session %f" % (str(task['release']), task['sid']))
+                    Utils.ok("Clean needed for release %s, session %f"
+                             % (str(task['release']), task['sid']))
             if auto_clean is True:
-                Utils.ok("[%s] %d session(s) cleaned" % (self.bank.name, cleaned))
+                Utils.ok("[%s] %d session(s) cleaned"
+                         % (self.bank.name, cleaned))
         return True
 
     @bank_required
@@ -302,7 +332,8 @@ class Manager(object):
             session = self.get_session_from_id(self.bank.bank['current'])
             if session and 'release' in session and session['release']:
                 release = session['release']
-            elif session and 'remoterelease' in session and session['remoterelease']:
+            elif session and 'remoterelease' in session and \
+                    session['remoterelease']:
                 release = session['remoterelease']
             if release:
                 current = release
@@ -378,55 +409,69 @@ class Manager(object):
 
         :return: Path to the current bank data dir
         :rtype: str
-        :raises SystemExit: If 'current release' cannot be found in 'production' db field
-        :raises SystemExit: If 'production.data_dir' not found in 'production' document
+        :raises SystemExit: If 'current release' cannot be found in
+                'production' db field
+        :raises SystemExit: If 'production.data_dir' not found in 'production'
+        document
         :raises SystemExit: If no current release is found
         """
         release = self.current_release()
         if release:
             prod = self.bank.get_production(release)
             if not prod:
-                Utils.error("Can't find production for release %s" % str(release))
+                Utils.error("Can't find production for release %s"
+                            % str(release))
             elif 'data_dir' in prod:
                 if 'dir_version' in prod:
                     return os.path.join(prod['data_dir'], prod['dir_version'])
                 else:
                     return os.path.join(prod['data_dir'], self.bank.name)
             else:
-                Utils.error("Can't get current production directory, 'data_dir' " +
-                            "missing in production document field")
-        Utils.warn("Can't get current production directory: 'current_release' not available")
+                Utils.error("Can't get current production directory,"
+                            "'data_dir' missing in production document field")
+        Utils.warn("Can't get current production directory: 'current_release'"
+                   " not available")
 
     @staticmethod
     def get_bank_list(visibility="public"):
         """
         Get the list of bank available from the database
 
-        :param visibility: Type of bank visibility, default to 'public'. Supported ['all', 'public', 'private']
+        :param visibility: Type of bank visibility, default to 'public'.
+        Supported ['all', 'public', 'private']
         :type visibility: str
         :return: List of bank name.
         :rtype: list
-        :raises SystemExit: If visibility argument is not one of ('all', 'public', 'private')
+        :raises SystemExit: If visibility argument is not one of
+        (all', 'public', 'private')
         :raises SystemExit: If cannot connect to MongoDB
         """
-        if visibility not in ['all', 'public', 'private']:
-            Utils.error("Bank visibility '%s' not supported. Only one of ['all', 'public', 'private']" % visibility)
+        avlbl_visu = ['all', 'public', 'private']
+        if visibility not in avlbl_visu:
+            Utils.error("Bank visibility '%s' not supported. Available %s"
+                        % (str(visibility), str(avlbl_visu)))
         # Don't read config again
         if BiomajConfig.global_config is None:
             try:
                 BiomajConfig.load_config()
             except Exception as err:
-                Utils.error("Problem loading biomaj configuration: %s" % str(err))
+                Utils.error("Problem loading biomaj configuration: %s"
+                            % str(err))
         from pymongo.errors import PyMongoError
         try:
             bank_list = []
             if MongoConnector.db is None:
-                # We  surrounded this block of code with a try/except because there's a behavior
-                # difference between pymongo 2.7 and 3.2. 2.7 immediately raised exception if it
-                # cannot connect, 3.2 waits for a database access to connect to the server
-                MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),
-                               BiomajConfig.global_config.get('GENERAL', 'db.name'))
-            banks = MongoConnector.banks.find({'properties.visibility': visibility}, {'name': 1, '_id': 0})
+                # We  surrounded this block of code with a try/except because
+                # there's a difference of behavior between pymongo 2.7 and 3.2.
+                # 2.7 immediately raised exception if it cannot connect,
+                # 3.2 waits for a database access to connect to the server
+                MongoConnector(BiomajConfig.global_config.get('GENERAL',
+                                                              'db.url'),
+                               BiomajConfig.global_config.get('GENERAL',
+                                                              'db.name'))
+            banks = MongoConnector.banks.find({'properties.visibility':
+                                               visibility},
+                                              {'name': 1, '_id': 0})
             for bank in banks:
                 # Avoid document without bank name
                 if 'name' in bank:
@@ -448,7 +493,8 @@ class Manager(object):
         """
         remote = []
         if fields is None:
-            fields = ['protocol', 'server', 'remote.dir', 'files.num.threads', 'extract.threads']
+            fields = ['protocol', 'server', 'remote.dir', 'files.num.threads',
+                      'extract.threads']
 
         # Ensure bank name is searched
         if 'db.name' not in fields:
@@ -458,7 +504,8 @@ class Manager(object):
             try:
                 value = self.bank.config.get(field)
                 if value is None:
-                    Utils.warn("Field '%s' not found in bank configuration, skipping." % field)
+                    Utils.warn("Field '%s' not found in bank config, skipping."
+                               % field)
                     continue
                 if field == 'protocol' and value == 'multi':
                     cfields = self.get_config_regex(regex='^remote\.file\..*$')
@@ -467,15 +514,17 @@ class Manager(object):
                 else:
                     remote.append([field, value])
             except Error as err:
-                Utils.warn("Field %s not found in bank configuration: %s" % (field, str(err)))
+                Utils.warn("Field %s not found in bank configuration: %s"
+                           % (field, str(err)))
         return remote
 
     @bank_required
     def get_bank_packages(self):
         """
-        Retrieve the list of linked packages for the current bank
+        Retrieve the list of linked packages for the current bank.
 
-        :return: List of defined packages for a bank ('pack@<pack_name>@<pack_version>')
+        :return: List of defined packages for a bank
+         ('pack@<pack_name>@<pack_version>')
         :rtype: list
         """
         # Check db.packages is set for the current bank
@@ -484,7 +533,8 @@ class Manager(object):
             if Manager.get_verbose():
                 Utils.warn("[%s] db.packages not set!" % self.bank.name)
         else:
-            packs = self.bank.config.get('db.packages').replace('\\', '').replace('\n', '').strip().split(',')
+            packs = self.bank.config.get('db.packages').replace('\\', '')\
+                        .replace('\n', '').strip().split(',')
             for pack in packs:
                 packages.append('pack@' + pack)
         return packages
@@ -499,7 +549,8 @@ class Manager(object):
 
         :param tool: Name of the index to search section(s) for
         :type tool: str
-        :return: {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]}, 'pro': {'dbs': [ ... ], 'sections': ... }
+        :return: {'nuc': {'dbs': ['db1', 'db2', ...], 'sections': [ ...]},
+                  'pro': {'dbs': [ ... ], 'sections': ... }
         :rtype: dict
         :raises SystemExit: If not tool name is given
         """
@@ -512,11 +563,13 @@ class Manager(object):
             secname = dbname + '.sections'
             sections[key] = {'dbs': [], 'sections': []}
             if self.bank.config.get(dbname):
-                for db in self.bank.config.get(dbname).replace('\\', '').replace('\n', '').split(','):
+                for db in self.bank.config.get(dbname).replace('\\', '')\
+                              .replace('\n', '').split(','):
                     if db and db != '':
                         sections[key]['dbs'].append(db)
             if self.bank.config.get(secname):
-                for db in self.bank.config.get(secname).replace('\\', '').replace('\n', '').split(','):
+                for db in self.bank.config.get(secname).replace('\\', '')\
+                              .replace('\n', '').split(','):
                     if db and db != '':
                         sections[key]['sections'].append(db)
         return sections
@@ -540,29 +593,36 @@ class Manager(object):
 
         :return: Path to the current production bank
         :rtype: str
-        :raises SystemExit: If no 'current release' cannot be found in 'production' db field
-        :raises SystemExit: If 'production.data_dir' not found in 'production' document
+        :raises SystemExit: If no 'current release' cannot be found in
+         'production' db field
+        :raises SystemExit: If 'production.data_dir' not found in 'production'
+         document
         :raises SystemExit: If no current release is found
         """
         release = self.current_release()
         if release:
             prod = self.bank.get_production(release)
             if not prod:
-                Utils.error("Can't find production for release %s" % str(release))
+                Utils.error("Can't find production for release %s"
+                            % str(release))
             elif 'data_dir' in prod and 'prod_dir' in prod:
-                return os.path.join(prod['data_dir'], self.bank.name, prod['prod_dir'])
+                return os.path.join(prod['data_dir'],
+                                    self.bank.name, prod['prod_dir'])
             else:
-                Utils.error("Can't get current production directory, 'prod_dir' or 'data_dir' " +
-                            "missing in production document field")
+                Utils.error("Current production directory not found."
+                            "'prod_dir'/'data_dir' missing in production"
+                            "document field")
         else:
-            Utils.error("Can't get current production directory: 'current_release' not available")
+            Utils.error("Can't get current production directory: "
+                        "'current_release' not available")
 
-    def get_config_regex(self, section='GENERAL', regex=None, with_values=True):
+    def get_config_regex(self, section='GENERAL', regex=None,
+                         with_values=True):
         """
-        Pick up values from the configuration file based on a regular expression.
+        Pick up values from configuration file based on a regular expression.
 
-        By default it returns the corresponding list of values found. If with_values
-        set to False, it returns only the keys.
+        By default it returns the corresponding list of values found.
+        If with_values set to False, it returns only the keys.
 
         :param section: Section to read, default 'GENERAL'
         :type section: str
@@ -570,7 +630,8 @@ class Manager(object):
         :type regex: str
         :param with_values: Returns values instead of keys, default True
         :type with_values: bool
-        :return: Sorted List of list [key] or [key, value] if with_value is True
+        :return: Sorted List of list [key] or [key, value] if with_value is
+                 True
         :rtype: list
         :raises SystemExit: If not 'regex' arg given
         """
@@ -610,9 +671,10 @@ class Manager(object):
         """
         Get the list of failed process(es) for a particular run (session)
 
-        When a bank update failed, we can have a look at the log to know which process(es) failed.
-        With this method, you don't need to open the log, which can be huge, we pick up the info
-        directy from the database.
+        When a bank update failed, we can have a look at the log to know which
+        process(es) failed.
+        With this method, you don't need to open the log, which can be huge,
+        we pick up info directly from the database.
 
         :param session_id: Session id to search failed process(es) from
         :type session_id: float
@@ -622,11 +684,13 @@ class Manager(object):
         :rtype: list
         """
         if 'sessions' not in self.bank.bank:
-            Utils.error("Can't search for failed process(es), no 'session' key found")
+            Utils.error("Can't search for failed process(es), no 'session' "
+                        "key found")
 
         sessions = []
         failed = []
-        Utils.verbose("[%s][get_failed_processes] Looking for session %s" % (self.bank.name, str(session_id)))
+        Utils.verbose("[%s][get_failed_processes] Looking for session %s"
+                      % (self.bank.name, str(session_id)))
 
         if not session_id:
             sessions = self.bank.bank['sessions']
@@ -651,9 +715,12 @@ class Manager(object):
                         if not session['status'][step['name']]:
                             # We stop if a step of the update workflow failed
                             if full:
-                                failed.append([Utils.time2date(session_id), session_id, session['release'], step['name'], "", ""])
+                                failed.append([Utils.time2date(session_id),
+                                               session_id, session['release'],
+                                               step['name'], "", ""])
                             else:
-                                failed.append([Utils.time2date(session_id), session_id, step['name']])
+                                failed.append([Utils.time2date(session_id),
+                                               session_id, step['name']])
                             break
 
             if 'process' in session and 'postprocess' in session['process']:
@@ -667,20 +734,36 @@ class Manager(object):
                                     args = []
                                     exe = self.bank.config.get(proc + ".exe")
                                     if self.bank.config.get(proc + ".args"):
-                                        args = self.bank.config.get(proc + ".args").split(" ")
-                                    data.append(Utils.time2date(session_id) if session_id else "")
-                                    data.append(session_id if session_id else "")
+                                        args = self.bank.config.get(proc
+                                                                    + ".args")\
+                                            .split(" ")
+                                    if session_id:
+                                        data.append(
+                                            Utils.time2date(session_id))
+                                        data.append(session_id)
+                                    else:
+                                        data.append("")
+                                        data.append("")
                                     data.append(session['release'])
                                     data.append(proc)
-                                    data.append(exe if exe else "N/A")
-                                    data.append(args.pop(0) if len(args) else "N/A")
+                                    if exe:
+                                        data.append(exe)
+                                    else:
+                                        data.append("N/A")
+                                    if len(args):
+                                        data.append(args.pop(0))
+                                    else:
+                                        data.append("N/A")
                                     failed.append(data)
                                     if args and len(args):
-                                       for arg in args:
-                                           failed.append(["", "", "", "", "", arg])
+                                        for arg in args:
+                                            failed.append(
+                                                ["", "", "", "", "", arg])
                                 else:
-                                    failed.append([Utils.time2date(session_id) if session_id else "",
-						  session_id if session_id else "", proc])
+                                    failed.append([Utils.time2date(session_id)
+                                                   if session_id else "",
+                                                   session_id if session_id
+                                                   else "", proc])
                                 session_id = None
         return failed
 
@@ -703,13 +786,15 @@ class Manager(object):
             return formats
 
         for path_dir, dirs, _ in os.walk(path):
-            if path_dir == path or not len(dirs) or os.path.basename(path_dir) == 'flat':
+            if path_dir == path or not len(dirs)\
+                    or os.path.basename(path_dir) == 'flat':
                 continue
             for d in dirs:
-                formats.append('@'.join(['pack', os.path.basename(path_dir), d or '-']))
+                formats.append('@'.join(['pack',
+                                         os.path.basename(path_dir),
+                                         d or '-']))
         formats.sort()
         return formats
-
 
     @bank_required
     def get_future_link(self):
@@ -726,7 +811,8 @@ class Manager(object):
     @bank_required
     def get_last_production_ok(self):
         """
-        Search for the last release in production which ran ok and which is not 'online' (current)
+        Search for the last release in production which ran ok and which is not
+        'online' (current)
 
         :return: 'production' document from the database
                  None if production is empty
@@ -760,7 +846,8 @@ class Manager(object):
     @bank_required
     def get_pending_sessions(self):
         """
-        Request the database to check if some session(s) is/are pending to complete
+        Request the database to check if some session(s) is/are pending to
+        complete
 
         :return: List of dict {'release'=release, 'id': id} or None
         :rtype: list or None
@@ -789,14 +876,17 @@ class Manager(object):
 
         :return: Release number or None
         :rtype: str
-        :raises SystemExit: If no 'remoterelease' key found in published release document
+        :raises SystemExit: If no 'remoterelease' key found in published
+                release document
         """
         if self.bank_is_published():
             session = self.get_session_from_id(self.bank.bank['current'])
-            if session and 'remoterelease' in session and session['remoterelease']:
+            if session and 'remoterelease' in session\
+                    and session['remoterelease']:
                 return str(session['remoterelease'])
             else:
-                Utils.error("[%s] Can't find a 'remoterelease' for session %s" % (self.bank.name, session['id']))
+                Utils.error("[%s] Can't find a 'remoterelease' for session %s"
+                            % (self.bank.name, session['id']))
         return None
 
     @bank_required
@@ -888,12 +978,13 @@ class Manager(object):
     @bank_required
     def history(self):
         """
-        Get the releases history of a bank from the database and build a Mongo like document in json
+        Get the releases history of a bank from the database and build a Mongo
+        like document in json
 
-        :return: history + extra info to be included into bioweb (Institut Pasteur only)
+        :return: history + extra info
         :rtype: list
-        :raises SystemExit: If 'production' key not found in bank docuement
-        :raises SystemExit: If 'session' key not found in bank docuement
+        :raises SystemExit: If 'production' key not found in bank document
+        :raises SystemExit: If 'session' key not found in bank document
         """
         productions = sessions = None
         if 'production' in self.bank.bank and self.bank.bank['production']:
@@ -908,13 +999,15 @@ class Manager(object):
 
         history = []
         packages = self.get_bank_packages()
-        description = self.bank.config.get('db.fullname').replace('"', '').strip()
+        description = self.bank.config.get('db.fullname').replace('"', '')\
+            .strip()
         bank_type = self.bank.config.get('db.type').split(',')
         bank_format = self.bank.config.get('db.formats').split(',')
         fmt = "%Y-%m-%d %H:%M"
         status = 'unpublished'
 
-        for prod in sorted(productions, key=lambda k: k['session'], reverse=True):
+        for prod in sorted(productions, key=lambda k: k['session'],
+                           reverse=True):
             if 'current' in self.bank.bank and self.bank.bank['current']:
                 if prod['session'] == self.bank.bank['current']:
                     status = 'online'
@@ -930,7 +1023,8 @@ class Manager(object):
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(prod['remoterelease']),
-                            'publication_date': str(Utils.time2datefmt(prod['session'], fmt=fmt)),
+                            'publication_date': str(Utils.time2datefmt(
+                                prod['session'], fmt=fmt)),
                             'removal_date': None,
                             'bank_type': bank_type,
                             'bank_format': bank_format,
@@ -952,8 +1046,10 @@ class Manager(object):
                             'type': 'bank',
                             'name': self.bank.name,
                             'version': str(sess['remoterelease']),
-                            'publication_date': str(Utils.time2datefmt(sess['last_update_time'], fmt=fmt)),
-                            'removal_date': str(Utils.time2datefmt(sess['deleted'], fmt=fmt)),
+                            'publication_date': str(Utils.time2datefmt(
+                                sess['last_update_time'], fmt=fmt)),
+                            'removal_date': str(Utils.time2datefmt(
+                                sess['deleted'], fmt=fmt)),
                             'bank_type': bank_type,
                             'bank_formats': bank_format,
                             'packageVersions': packages,
@@ -965,48 +1061,58 @@ class Manager(object):
     @bank_required
     def last_session_failed(self):
         """
-        Check if the last building bank session failed, base on 'last_update_session' field.
+        Check if the last building bank session failed, base on
+        'last_update_session' field.
 
-        - If we find a pending session, we return False and warn the user to finish it
-        - Then, we look into session and check that the last session.status.over is True/False
+        - If we find a pending session, we return False and warn the user to
+          finish it
+        - Then, we look into session and check that last session.status.over is
+          True/False
 
         :return: If the last update session failed
         :rtype: bool
-        :raises SystemExit: If the session id of 'last_update_session' is not found in 'sessions' document
+        :raises SystemExit: If the session id of 'last_update_session' is not
+                found in 'sessions' document
         """
         has_failed = False
         last_update_id = None
 
-        if 'last_update_session' in self.bank.bank and self.bank.bank['last_update_session']:
+        if 'last_update_session' in self.bank.bank\
+                and self.bank.bank['last_update_session']:
             last_update_id = self.bank.bank['last_update_session']
-        # If no last_update_session, this mean not last session ran. We return False
+        # If no last_update_session, this mean not last session ran.
+        # We return False
         else:
             return has_failed
 
         # We have to be careful as pending session have over.status to false
         pending = self.get_pending_sessions()
 
-        # Check the last updated session is not pending. We consider pending session has failed because not ended
+        # Check the last updated session is not pending. We consider pending
+        # session has failed because not ended
         if pending and last_update_id:
             for pend in pending:
                 if pend['id'] == last_update_id:
                     if Manager.get_verbose():
-                        Utils.warn("[%s] The last updated session is pending (release %s). Complete workflow first,"
-                                   " or update bank" % (self.bank.name, pend['release']))
+                        Utils.warn("[%s] The last updated session is pending "
+                                   "(release %s). Complete workflow first,"
+                                   " or update bank"
+                                   % (self.bank.name, pend['release']))
                     has_failed = True
                     return has_failed
 
         # We then search in the session, based on 'last_update_session' field
         session = self.get_session_from_id(last_update_id)
         if session is None:
-            # Utils.error("[%s] Can't find last_update_session %f in sessions! Please fix it!"
-            #             % (self.bank.name, last_update_id))
-            Utils.warn("[%s] Can't find last_update_session %f in sessions! Please fix it!"
+            Utils.warn("[%s] Can't find last_update_session %f in sessions! "
+                       "Please fix it!"
                        % (self.bank.name, last_update_id))
             return True
         # If session terminated OK, status.over should be True
-        # biomaj >= 3.0.14, new field 'workflow_status' which tells if the update workflow went ok
-        # We do not count on status.over anymore, we have new field 'workflow_status'
+        # biomaj >= 3.0.14, new field 'workflow_status' which tells if
+        # the update workflow went ok
+        # We do not count on status.over anymore, we have new field
+        # 'workflow_status'
         if 'workflow_status' in session:
             has_failed = not session['workflow_status']
         else:
@@ -1030,7 +1136,8 @@ class Manager(object):
 
     def load_plugins(self):
         """
-        Load all the plugins and activate them from manager.properties (plugins.list property)
+        Load all the plugins and activate them from manager.properties
+        (plugins.list property)
 
         :returns: Instance of biomajmanager.plugins.Plugins
         :rtype: :class:`biomajmanager.plugins.Plugins`
@@ -1042,15 +1149,19 @@ class Manager(object):
         """
         Returns the date of the next bank switch
 
-        This method is used to guess when the next bank switch will occur. By default, we consider switching to new
-        bank release every other sunday on even week. However, you can configure it with 'switch.week' parameter
+        This method is used to guess when the next bank switch will occur.
+        By default, we consider switching to new
+        bank release every other sunday on even week. However, you can
+        configure it with 'switch.week' parameter
         from 'manager.properties' or even pass it as an argument to the method.
 
-        :param week: Week to perform the switch (Supported ['even', 'odd', 'each'])
+        :param week: Week to perform the switch
+               (Supported ['even', 'odd', 'each'])
         :type week: str
         :return: Next bank switch date as datetime.datetime
         :rtype: :class:`datetime.datetime`
-        :raises SystemExit: If 'week' arg value is none of ('even', 'odd', 'each')
+        :raises SystemExit: If 'week' arg value is none of
+                ('even', 'odd', 'each')
         """
         if week is None:
             if self.config.has_option('MANAGER', 'switch.week'):
@@ -1059,7 +1170,8 @@ class Manager(object):
                 Utils.error("Week type is required")
 
         if week != 'even' and week != 'odd' and week != 'each':
-            Utils.error("Wrong week type %s, supported ['even', 'odd', 'each']" % str(week))
+            Utils.error("Wrong week type %s, supported ['even', 'odd', 'each']"
+                        % str(week))
 
         week_number = datetime.datetime.today().isocalendar()[1]
         today = datetime.datetime.today()
@@ -1087,7 +1199,8 @@ class Manager(object):
         :return: Next release or None
         :rtype: str
         :raises SystemExit: If no production ok found
-        :raises SystemExit: If no session found for the next release we are looking for
+        :raises SystemExit: If no session found for the next release we are
+                looking for
         """
         next_release = None
         session = None
@@ -1096,7 +1209,8 @@ class Manager(object):
             return self._next_release
         production = self.get_last_production_ok()
         if production is None:
-            Utils.error("No 'production' release found searching for next release")
+            Utils.error("No 'production' release found searching for "
+                        "next release")
         session = self.get_session_from_id(production['session'])
         if session is not None:
             # Pending sessions are excluded
@@ -1106,9 +1220,11 @@ class Manager(object):
                 elif 'remoterelease' in session:
                     next_release = session['remoterelease']
                 else:
-                    Utils.error("Can't find 'release' or 'remoterelease' field in session")
+                    Utils.error("Can't find 'release' or 'remoterelease' "
+                                "field in session")
         else:
-            Utils.error("Can't find release in session '%s'" % str(production['session']))
+            Utils.error("Can't find release in session '%s'"
+                        % str(production['session']))
 
         self._next_release = next_release
         return self._next_release
@@ -1124,8 +1240,10 @@ class Manager(object):
         """
         Restarts jobs stopped by calling 'stop_running_jobs'.
 
-        This must be set in manager.properties configuration file, section 'JOBS'.
-        You must set 'restart.stopped.jobs.exe' [MANDATORY] and 'restart.stopped.jobs.args'
+        This must be set in manager.properties configuration file,
+        section 'JOBS'.
+        You must set 'restart.stopped.jobs.exe' [MANDATORY] and
+        'restart.stopped.jobs.args'
         [OPTIONAL]
 
         :param args: List of args to pass to the command
@@ -1150,14 +1268,16 @@ class Manager(object):
             bank_file = os.path.join(self.get_production_dir(),
                                      'doc',
                                      'versions',
-                                     'versions.' + datetime.datetime.now().strftime("%Y-%m-%d"))
+                                     'versions.' + datetime.datetime.now()
+                                     .strftime("%Y-%m-%d"))
         # Check path exists
         directory = os.path.dirname(bank_file)
         if not os.path.isdir(directory):
             try:
                 os.makedirs(directory)
             except OSError as err:
-                Utils.error("Can't create destination directory %s: %s" % (directory, str(err)))
+                Utils.error("Can't create destination directory %s: %s"
+                            % (directory, str(err)))
 
         try:
             banks = Manager.get_bank_list()
@@ -1165,15 +1285,22 @@ class Manager(object):
             with open(bank_file, mode='w') as fv:
                 for bank in banks:
                     bank = Bank(name=bank, no_log=True)
-                    if 'current' in bank.bank and bank.bank['current'] and 'production' in bank.bank:
+                    if 'current' in bank.bank and bank.bank['current']\
+                            and 'production' in bank.bank:
                         for prod in bank.bank['production']:
                             if bank.bank['current'] == prod['session']:
-                                # bank / release / creation / size / remote server
-                                file_line = FILE_PATTERN % (bank.name, "Release " + prod['remoterelease'],
-                                                            Utils.time2datefmt(prod['session']),
-                                                            str(prod['size']) if 'size' in prod and prod['size']
-                                                                              else 'NA',
-                                                            bank.config.get('server'))
+                                # bank/release/creation/size/remote server
+                                file_line = FILE_PATTERN\
+                                            % (bank.name,
+                                               "Release "
+                                               + prod['remoterelease'],
+                                               Utils.time2datefmt(
+                                                   prod['session']),
+                                               str(prod['size'])
+                                               if 'size' in prod
+                                                and prod['size']
+                                               else 'NA',
+                                               bank.config.get('server'))
                                 if Manager.simulate:
                                     Utils.uprint(file_line)
                                 else:
@@ -1223,9 +1350,11 @@ class Manager(object):
     @bank_required
     def set_sequence_count(self, seq_file=None, seq_count=None, release=None):
         """
-        Set the number of sequence found in a file. This is set in the production field under the name of 'files_infos'
+        Set the number of sequence found in a file. This is set in the
+        production field under the name of 'files_infos'
 
-        This method is used to have some more info about a particular file while displaying status of a bank release.
+        This method is used to have some more info about a particular file
+        while displaying status of a bank release.
         At the same time, it also set the size of the file.
 
         :param seq_file: File path to set info
@@ -1250,27 +1379,36 @@ class Manager(object):
         if release is None:
             Utils.error("A release is required")
         file_size = humanfriendly.format_size(os.path.getsize(seq_file))
-        res = self.bank.banks.find({'name': self.bank.name, 'production.release': release,
+        res = self.bank.banks.find({'name': self.bank.name,
+                                    'production.release': release,
                                     'production.files_info.name': seq_file})
         if res.count() == 0:
             res = self.bank.banks.update_one({'name': self.bank.name,
                                               'production.release': release},
-                                             {'$push': {'production.$.files_info':
-                                                            {'name': seq_file,
-                                                             'seq_count': seq_count,
-                                                             'size': file_size}}},
+                                             {'$push':
+                                             {'production.$.files_info':
+                                              {'name': seq_file,
+                                               'seq_count': seq_count,
+                                               'size': file_size}}},
                                              upsert=True)
         else:
-            production = self.bank.banks.find({'name': self.bank.name, 'production.release': release},
+            production = self.bank.banks.find({'name': self.bank.name,
+                                               'production.release': release},
                                               {'production.$.files_info': 1})
             for prod in production:
                 for p in prod['production']:
                     cnt = 0
                     for info in p['files_info']:
                         if info['name'] == seq_file:
-                            p['files_info'][cnt].update({'name': seq_file, 'seq_count': seq_count, 'size': file_size})
-                            res = self.bank.banks.update_one({'name': self.bank.name, 'production.release': release},
-                                                             {'$set': {'production.$.files_info': p['files_info']}})
+                            p['files_info'][cnt].update({'name': seq_file,
+                                                         'seq_count': seq_count,
+                                                         'size': file_size})
+                            res = self.bank.banks.update_one({'name':
+                                                              self.bank.name,
+                                                              'production.release': release},
+                                                             {'$set':
+                                                                  {'production.$.files_info': p['files_info']}
+                                                              })
                             break
                         cnt += 1
         if Manager.get_verbose():
@@ -1279,7 +1417,6 @@ class Manager(object):
             Utils.ok("[%s] Documents matched: %d, documents modified: %d" %
                      (self.bank.name, matched, modified))
         return True
-
 
     @staticmethod
     def set_simulate(value):
@@ -1354,9 +1491,10 @@ class Manager(object):
         """
         Stop running jobs using bank(s).
 
-        This calls an external script which must be set in the manager.properties
+        This calls an external script which must be set in manager.properties
         configuration file, section JOBS.
-        You must set 'stop.running.jobs.exe' [MANDATORY] and 'stop.running.jobs.args'
+        You must set 'stop.running.jobs.exe' [MANDATORY] and
+        'stop.running.jobs.args'
         [OPTIONAL]
 
         :param args: List of args to pass to the commande
@@ -1371,50 +1509,51 @@ class Manager(object):
         """
         Synchronize database with data on disk (data.dir/dbname)
 
-        This method intends to synchronize disk state with info in database. It may appear that we have
-        some extra data displayed and stored in the database ('production' field) that do not exists on
-        disk. This might be due to a 'Ctrl-C' during a bank update of iterative updates without 'publish'
-        call between each iteration.
+        This method intends to synchronize disk state with info in database. It
+        may appear that we have some extra data displayed and stored in the
+        database ('production' field) that do not exists on disk. This might be
+        due to a 'Ctrl-C' during a bank update of iterative updates without
+        'publish' call between each iteration.
 
-        :param date_deleted: User date to set for 'sessions.deleted', format YYYY/MM/DD (%Y/%m/%d)
+        :param date_deleted: User date to set for 'sessions.deleted', format
+        YYYY/MM/DD (%Y/%m/%d)
         :type date_deleted: str
         :return: State of the operation
         :rtype: bool
         :raise SystemExit: If some configuration are not set
         """
-        for option in ['synchrodb.delete.dir', 'synchrodb.set.sessions.deleted']:
-            if not self.config.has_option('MANAGER', option):
-                Utils.error("Option '%s' not set" % str(option))
-
-        if self.config.get('MANAGER', 'synchrodb.delete.dir') not in ['auto', 'manual']:
-            Utils.error("'synchrodb.delete.dir' value '%s' not supported. Available %s" %
-                        (self.config.get('MANAGER', 'synchrodb.delete.dir'), str(['auto', 'manual'])))
-
-        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') not in ['auto', 'manual']:
-            Utils.error("'set.sessions.deleted' value '%s' not supported. Available %s" %
-                        (self.config.get('MANAGER', 'synchrodb.set.sessions.deleted'), str(['auto', 'manual'])))
-
+        auto_delete = False
         deleted_time = time.time()
 
-        if self.config.get('MANAGER', 'synchrodb.delete.dir') == 'auto':
-            auto_delete = True
-        else:
-            auto_delete = False
-        # auto_delete set to False is simulate mode ON
-        if Manager.get_simulate():
-            auto_delete = False
+        for option in ['synchrodb.delete.dir',
+                       'synchrodb.set.sessions.deleted']:
+            if not self.config.has_option('MANAGER', option):
+                Utils.error("Option '%s' not set" % str(option))
+            if self.config.get('MANAGER', option) not in ['auto', 'manual']:
+                Utils.error("'%s' value '%s' not supported. Supported %s" %
+                            (option, self.config.get('MANAGER',
+                                                     'synchrodb.delete.dir'),
+                             str(['auto', 'manual'])))
 
-        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == 'manual':
+        # auto_delete set to True is simulate mode OFF and config value is auto
+        if self.config.get('MANAGER', 'synchrodb.delete.dir') == 'auto' and \
+                not Manager.get_simulate():
+            auto_delete = True
+
+        if self.config.get('MANAGER', 'synchrodb.set.sessions.deleted') == \
+                'manual':
             if date_deleted is None:
                 Utils.error("Missing 'date_deleted' parameter")
             deleted_time = datetime.datetime.strptime(date_deleted, "%Y/%m/%d")
 
         bank_data_dir = self.get_bank_data_dir()
         if bank_data_dir is None:
-            Utils.warn("Can't get path to bank data dir. Is bank published or data.dir set?")
+            Utils.warn("Can't get bank data dir path. Is bank published or "
+                       "data.dir set?")
             return False
 
-        # Taken from http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
+        # Taken from
+        # http://stackoverflow.com/questions/7781545/how-to-get-all-folder-only-in-a-given-path-in-python
         releases_dir = {x: 1 for x in next(os.walk(bank_data_dir))[1]}
         pendings = {}
 
@@ -1425,7 +1564,8 @@ class Manager(object):
         tasks_to_do = []
         last_run = None
         if 'last_update_session' in self.bank.bank:
-            last_run = self.get_session_from_id(self.bank.bank['last_update_session'])
+            last_run = self.get_session_from_id(
+                self.bank.bank['last_update_session'])
 
         for prod in productions:
             # If release dir not found in production, we remove it from disk
@@ -1436,11 +1576,15 @@ class Manager(object):
                 # We then check everything ok in 'sessions'
                 session = self.get_session_from_id(prod['session'])
                 if session is None:
-                    Utils.warn("Session %s in 'production' cannot be found in 'sessions'!" % str(prod['session']))
+                    Utils.warn("Session %s in 'production' cannot be found in"
+                               " 'sessions'!" % str(prod['session']))
                     continue
-                if 'workflow_status' in session and not session['workflow_status']:
+                if 'workflow_status' in session and not \
+                        session['workflow_status']:
                     if prod['session'] not in pendings:
-                        Utils.warn("[%s] Release %s ok in production and on disk, but sessions.workflow_status is False"
+                        Utils.warn("[%s] Release %s ok in production and on "
+                                   "disk, but sessions.workflow_status "
+                                   "is False"
                                    % (self.bank.name, prod['prod_dir']))
                 elif 'deleted' in session and session['deleted']:
                     Utils.warn("[%s] Session %s marked as deleted, should not!"
@@ -1448,23 +1592,35 @@ class Manager(object):
                 else:
                     releases_dir.pop(prod['prod_dir'])
             else:
-                # If a bank is being update, we may find a field 'status.over.status' set to 'null'
-                if 'status' in self.bank.bank and self.bank.bank['status']['over']['status'] in ['null', False]:
-                    release = 'not known yet. Check directories in %s.' % self.bank.config.get('data.dir')
-                    if 'release' in self.bank.bank['status'] and self.bank.bank['status']['release']['status']:
-                        release = self.bank.bank['status']['release']['progress']
-                        update_dir = os.path.join(self.bank.config.get('data.dir'),
+                # If a bank is being update, we may find a field
+                # 'status.over.status' set to 'null'
+                if 'status' in self.bank.bank and \
+                                self.bank.bank['status']['over']['status']\
+                                in ['null', False]:
+                    release = 'not known yet. Check directories in %s.' % \
+                              self.bank.config.get('data.dir')
+                    if 'release' in self.bank.bank['status']\
+                            and self.bank.bank['status']['release']['status']:
+                        release = self.bank.bank['status']['release']
+                        ['progress']
+                        rdir = "_".join([self.bank.config.get('dir.version'),
+                                         str(release)])
+                        update_dir = os.path.join(self.bank.config.get(
+                                                                   'data.dir'),
                                                   self.bank.name,
-                                                  "_".join([self.bank.config.get('dir.version'), str(release)]))
+                                                  rdir)
                         release = 'in %s' % update_dir
-                    Utils.warn("[%s] Bank is being updated and release is %s. Don't remove it!"
+                    Utils.warn("[%s] Bank release %s is being updated. "
+                               "DO NOT REMOVE IT!"
                                % (self.bank.name, release))
                     continue
 
                 # Here we need to delete entry from production
                 Utils.verbose("Added %s to be deleted" % prod['prod_dir'])
-                # Need to delete this release directory and set time deleted into db (sessions.deleted)
-                tasks_to_do.append({'dir': os.path.join(bank_data_dir, prod['prod_dir']),
+                # Need to delete this release directory and set time deleted
+                # into db (sessions.deleted)
+                tasks_to_do.append({'dir': os.path.join(bank_data_dir,
+                                                        prod['prod_dir']),
                                     'time': deleted_time,
                                     'key': 'production',
                                     'release': prod['release'],
@@ -1474,44 +1630,65 @@ class Manager(object):
             seen = False
             for task in tasks_to_do:
                 if auto_delete:
-                    Utils.verbose("Updating production (session id %f) ... " % task['sid'])
+                    Utils.verbose("Updating production (session id %f) ... "
+                                  % task['sid'])
                     self.bank.banks.update({'name': self.bank.name},
-                                           {'$pull': {'production': {'release': task['release'],
-                                                                     'session': task['sid']}
-                                                      }})
+                                           {'$pull': {'production':
+                                            {'release':
+                                                task['release'],
+                                             'session':
+                                                task['sid']}
+                                                 }
+                                            }
+                                           )
                     if task['time']:
-                        Utils.verbose("Updating sessions (id %f) ... " % task['sid'])
-                        # In case 'sessions.deleted' already set don't change it
-                        session = self.bank.banks.find({'name': self.bank.name, 'sessions.id': task['sid'],
-                                                        'sessions.deleted': {'$exists': False}},
-                                                       {'sessions.$': 1, '_id': 0})
+                        Utils.verbose("Updating sessions (id %f) ... "
+                                      % task['sid'])
+                        # If 'sessions.deleted' already set don't change it
+                        session = self.bank.banks.find({'name': self.bank.name,
+                                                        'sessions.id':
+                                                            task['sid'],
+                                                        'sessions.deleted':
+                                                            {'$exists': False}
+                                                        },
+                                                       {'sessions.$': 1,
+                                                        '_id': 0})
                         if not session.count():
-                            self.bank.banks.update({'name': self.bank.name, 'sessions.id': task['sid']},
-                                                   {'$set': {'sessions.$.deleted': deleted_time}})
+                            self.bank.banks.update({'name': self.bank.name,
+                                                    'sessions.id':
+                                                        task['sid']},
+                                                   {'$set': {
+                                                       'sessions.$.deleted':
+                                                           deleted_time}})
                 else:
                     if not seen:
                         Utils.ok("You need to:")
                         seen = True
-                    Utils.ok("- remove %s entry for release %s" % (task['key'], str(task['release'])))
+                    Utils.ok("- remove %s entry for release %s"
+                             % (task['key'], str(task['release'])))
                     if 'time' in task:
-                        Utils.ok("- set sessions[id=%f].deleted to %s" % (task['sid'], str(task['time'])))
+                        Utils.ok("- set sessions[id=%f].deleted to %s"
+                                 % (task['sid'], str(task['time'])))
 
         if len(releases_dir):
             # Ctrl-C during bank update
             seen = False
             pendings = []
             if 'pending' in self.bank.bank:
-                pendings = {x['release']: x['id'] for x in self.bank.bank['pending']}
+                pendings = {x['release']: x['id'] for x in self.bank.bank[
+                    'pending']}
             for release in releases_dir:
                 if release == 'current' or release == 'future_release':
                     continue
                 pr = release[len(self.bank.name) + 1:]
-                # Sometime, last update session create a directory on disk. In such case,
-                # we do not remove this directory, it will be use for next update
+                # Sometime, last update session create a directory on disk.
+                # In such case, we do not remove this directory, it will be use
+                # for next update
                 if pr == last_run['release']:
                     continue
                 if not seen:
-                    Utils.warn("Some directories found on disk and not in production:")
+                    Utils.warn("Some directories found on disk and not in "
+                               "production:")
                     seen = True
                 if auto_delete:
                     try:
@@ -1519,15 +1696,19 @@ class Manager(object):
                         Utils.verbose("Removing extra dir %s ... " % path)
                         shutil.rmtree(path)
                         if pr in pendings:
-                            Utils.verbose("Removing pending release %s from database ... " % str(pr))
+                            Utils.verbose("Removing pending release %s from "
+                                          "database ... " % str(pr))
                             self.bank.banks.update({'name': self.bank.name},
-                                                   {'$pull': {'pending': {'release': pr}}})
+                                                   {'$pull':
+                                                    {'pending':
+                                                     {'release': pr}}})
                     except OSError as err:
                         Utils.error("Can't delete '%s': %s" % (path, str(err)))
                 else:
                     Utils.warn("- %s" % str(release))
                     if pr in pendings:
-                        Utils.warn("- Remove pending release %s from database" % str(pr))
+                        Utils.warn("- Remove pending release %s from database"
+                                   % str(pr))
         return True
 
     @bank_required
@@ -1535,9 +1716,12 @@ class Manager(object):
         """
         Check the bank release is ready to be published.
 
-        We first check we have a last session recorded using 'last_update_session'. It must be here, otherwise, warning.
-        Then, if we've got a 'current', we check 'current' is not equal to'last_update_session', meaning no update has
-        been performed since last publish. If 'current' is not equal to 'last_update_session', we need to search for
+        We first check we have a last session recorded using
+        'last_update_session'. It must be here, otherwise, warning.
+        Then, if we've got a 'current', we check 'current' is not equal to
+        'last_update_session', meaning no update has
+        been performed since last publish. If 'current' is not equal to
+        'last_update_session', we need to search for
         the last update that went ok and is ok for publishing.
         Otherwise, we warn the user and we return false.
 
@@ -1560,8 +1744,9 @@ class Manager(object):
             if current_id == last_update_id:
                 ready = False
                 if Manager.get_verbose():
-                    Utils.warn(("[%s] There is no update ready to be published. " +
-                               "Last session is already online") % self.bank.name)
+                    Utils.warn(("[%s] There is no update ready to be published"
+                               ". Last session is already online")
+                               % self.bank.name)
                 return ready
 
         production = self.get_last_production_ok()
@@ -1590,22 +1775,26 @@ class Manager(object):
         """
         Check that the config for the jobs submission is OK
 
-        :param name: Name of the config value to check. Will be '<name>.exe' in section 'JOBS
+        :param name: Name of the config value to check. Will be '<name>.exe'
+        in section 'JOBS
         :type name: str
         :return: Jobs configuration values
         :rtype: bool
-        :raises SystemExit: If 'JOBS' section not found in configuration file (manager.properties)
+        :raises SystemExit: If 'JOBS' section not found in configuration file
+                (manager.properties)
         :raises SystemExit: If script's executable path is not found
         """
         if not self.config.has_section('JOBS'):
             Utils.error("[jobs] No JOBS section defined")
         exe = "%s.exe" % name
         if not self.config.has_option('JOBS', exe):
-            Utils.warn("[jobs: %s] %s not set in configuration file. Action aborted." % (name, exe))
+            Utils.warn("[jobs: %s] %s not set in configuration file. "
+                       "Action aborted." % (name, exe))
             return False
         script = self.config.get('JOBS', exe)
         if not os.path.exists(script):
-            Utils.error("[jobs: %s] script (%s) not found! Action aborted." % (name, exe))
+            Utils.error("[jobs: %s] script (%s) not found! Action aborted."
+                        % (name, exe))
         return True
 
     def _get_config_jobs(self, name):
@@ -1642,7 +1831,8 @@ class Manager(object):
 
     def _run_command(self, exe=None, args=None, quiet=False):
         """
-        Just run a system command using subprocess. STDOUT and STDERR are redirected to /dev/null (os.devnull)
+        Just run a system command using subprocess. STDOUT and STDERR are
+        redirected to /dev/null (os.devnull)
 
         :param exe: Executable to launch
         :type exe: str
@@ -1688,16 +1878,19 @@ class Manager(object):
                     readable, _, _ = select.select(inputs, [], [], 1)
                 time.sleep(sleep)
             if proc.returncode != 0:
-                Utils.error("[run command] command %s FAILED with exit code %d!" % (command, proc.returncode))
+                Utils.error("[run command] Command %s FAILED with exit code "
+                            "%d!" % (command, proc.returncode))
         except OSError as err:
-            Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args), str(err.strerror)))
+            Utils.error("Can't run command '%s': %s" % (" ".join([exe] + args),
+                                                        str(err.strerror)))
         return True
 
     def _submit_job(self, name, args=None):
         """
         Submit a job.
 
-        :param name: Name of the defined job in the manager.properties file, section 'JOBS'
+        :param name: Name of the defined job in the manager.properties file,
+                     section 'JOBS'
         :type name: str
         :param args: List of args to pass to the command
         :type args: list

@@ -5,6 +5,7 @@ from rfeed import Item, Feed, Guid
 from datetime import datetime
 import os
 import sys
+__author__ = 'Emmanuel Quevillon'
 try:
     from ConfigParser import NoOptionError, NoSectionError
 except ImportError:
@@ -25,11 +26,14 @@ class News(object):
         :type news_dir: str
         :param config: Configuration object
         :type config: :class:`configParser`
-        :param max_news: Number of news to get when displaying news (default :const:`News.MAX_NEWS`)
+        :param max_news: Number of news to get when displaying news
+                         (default :const:`News.MAX_NEWS`)
         :type max_news: int
         :raises SystemExit: If 'news_dir' is not a directory
-        :raises SystemExit: If 'NEWS' section is not defined in :py:data:`manager.properties`
-        :raises SystemExit: If 'news.dir' is not set in :py:data:`manager.properties`
+        :raises SystemExit: If 'NEWS' section is not defined in
+                            :py:data:`manager.properties`
+        :raises SystemExit: If 'news.dir' is not set in
+                            :py:data:`manager.properties`
         """
         self.news_dir = None
         self.max_news = News.MAX_NEWS
@@ -80,10 +84,8 @@ class News(object):
         # shamefully copied from
         # http://stackoverflow.com/questions/168409/how-do-you-get-a-directory-listing-sorted-by-creation-date-in-python
         # get all entries in the directory w/ stats
-        files = (os.path.join(self.news_dir, file) for file in os.listdir(self.news_dir))
-        #files = ((os.stat(path), path) for path in files)
-        #files = ((stat[ST_CTIME], path) for stat, path in files if S_ISREG(stat[ST_MODE]))
-        #for _, ifile in sorted(files):
+        files = (os.path.join(self.news_dir, file)
+                 for file in os.listdir(self.news_dir))
         for ifile in sorted(files):
             with open(ifile) as new:
                 Utils.verbose("[news] Reading news file %s ..." % ifile)
@@ -91,7 +93,8 @@ class News(object):
                 text = ''
                 for line in new.readlines():
                     text += line
-                news_data.append({'label': label, 'date': date, 'title': title, 'text': text, 'item': item})
+                news_data.append({'label': label, 'date': date, 'title': title,
+                                  'text': text, 'item': item})
                 item += 1
                 new.close()
         if reverse:
@@ -113,7 +116,8 @@ class RSS(News):
             self.rss_file = rss_file
         if 'config' in kwargs:
             self.config = kwargs['config']
-            if self.config.has_option('RSS', 'rss.file') and self.rss_file is None:
+            if self.config.has_option('RSS', 'rss.file')\
+                    and self.rss_file is None:
                 self.rss_file = self.config.get('RSS', 'rss.file')
         if self.rss_file is None:
             self.fh = sys.stdout
@@ -150,9 +154,12 @@ class RSS(News):
                 item = Item(title=new['title'],
                             description=new['text'],
                             author=self.config.get('RSS', 'feed.author'),
-                            guid=Guid(self.config.get('RSS', 'feed.news.link') + '#' + str(new['item'])),
+                            guid=Guid(self.config.get('RSS', 'feed.news.link')
+                                      + '#' + str(new['item'])),
                             pubDate=datetime.strptime(new['date'],
-                                                      self.config.get('RSS', 'rss.date.format')
+                                                      self.config.get(
+                                                          'RSS',
+                                                          'rss.date.format')
                                                       .replace('%%', '%'))
                             )
                 items.append(item)

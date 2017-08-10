@@ -14,8 +14,7 @@ from biomajmanager.news import News, RSS
 from biomajmanager.plugins import Plugins
 from biomajmanager.writer import Writer
 from biomajmanager.utils import Utils
-
-__author__ = 'tuco'
+__author__ = 'Emmanuel Quevillon'
 
 
 class UtilsForTests(object):
